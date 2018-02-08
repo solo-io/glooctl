@@ -15,8 +15,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -25,25 +23,9 @@ var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "create a resource",
 	Long:  `Create a resource`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("create called:", cmd.LocalFlags().Lookup("file").Value, args)
-
-	},
 }
 
 func init() {
 	rootCmd.AddCommand(createCmd)
-	createCmd.PersistentFlags().StringP("file", "f", "", "file with resource definition")
-	createCmd.PersistentFlags().IntP("wait", "w", 0, "seconds to wait, 0 - return immediately")
-	createCmd.PersistentFlags().StringP("namespace", "n", "", "resource namespace")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// createCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// createCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	CreateGlobalFlags(createCmd, true)
 }

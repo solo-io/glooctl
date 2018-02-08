@@ -3,12 +3,12 @@ package k8s
 import (
 	"fmt"
 	"log"
-	"strings"
 	"time"
 
 	gluev1 "github.com/solo-io/glue/pkg/api/types/v1"
 	crdclient "github.com/solo-io/glue/pkg/platform/kube/crd/client/clientset/versioned"
 	"github.com/solo-io/glue/pkg/platform/kube/crd/solo.io/v1"
+	platform "github.com/solo-io/gluectl/platform"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
@@ -38,15 +38,16 @@ func NewExecutor(config interface{}) *Executor {
 	}
 }
 
-func (e *Executor) RunCreateUpstreamFromFile(file, namespace string, wait int) {
+func (e *Executor) RunCreateUpstream(gparams *platform.GlobalParams, uparams *platform.UpstreamParams) {
 
-}
+	if uparams.Name == "" || uparams.UType == "" {
+		log.Fatal("Both Name and Type of the Upstream must be provided")
+	}
 
-func (e *Executor) RunCreateUpstream(name, namespace, utype, spec string, wait int) {
-	x := upstreamFromArgs(name, utype, spec)
-	e.client.GlueV1().Upstreams(namespace).Create(x)
-	err := e.wait(wait, func(e *Executor) bool {
-		s := e.getUpstreamCrdStatus(name)
+	x := upstreamFromArgs(uparams.Name, uparams.UType, uparams.Spec)
+	e.client.GlueV1().Upstreams(gparams.Namespace).Create(x)
+	err := e.wait(gparams.WaitSec, func(e *Executor) bool {
+		s := e.getUpstreamCrdStatus(uparams.Name, gparams.Namespace)
 		if s != "" {
 			log.Printf("Create Upstream Status: %s\n", s)
 			return true
@@ -55,6 +56,8 @@ func (e *Executor) RunCreateUpstream(name, namespace, utype, spec string, wait i
 	})
 	if err != nil {
 		log.Println(err)
+	} else {
+		log.Println("Upstream created")
 	}
 }
 
@@ -65,16 +68,7 @@ func getClientConfig(kubeConfig string) (*rest.Config, error) {
 	return rest.InClusterConfig()
 }
 
-func upstreamFromArgs(name, utype, spec string) *v1.Upstream {
-	// spec example: "key1=val1;key2=val2"
-	ss := strings.Split(spec, ";")
-	s := make(map[string]interface{})
-	for _, v := range ss {
-		kw := strings.Split(v, "=")
-		if len(kw) == 2 {
-			s[kw[0]] = kw[1]
-		}
-	}
+func upstreamFromArgs(name, utype string, spec map[string]interface{}) *v1.Upstream {
 
 	return &v1.Upstream{
 		ObjectMeta: metav1.ObjectMeta{
@@ -83,13 +77,14 @@ func upstreamFromArgs(name, utype, spec string) *v1.Upstream {
 		Spec: v1.DeepCopyUpstream{
 			Name: name,
 			Type: gluev1.UpstreamType(utype),
-			Spec: s,
+			Spec: spec,
 		},
+		Status: "",
 	}
 }
 
-func (e *Executor) getUpstreamCrdStatus(name string) string {
-	o, err := e.client.GlueV1().Upstreams("").Get(name, metav1.GetOptions{})
+func (e *Executor) getUpstreamCrdStatus(name, namespace string) string {
+	o, err := e.client.GlueV1().Upstreams(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		log.Println(err)
 		return ""

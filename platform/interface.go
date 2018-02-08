@@ -1,6 +1,17 @@
 package platform
 
+type GlobalParams struct {
+	FileName  string
+	Namespace string
+	WaitSec   int
+}
+
+type UpstreamParams struct {
+	Name  string
+	UType string
+	Spec  map[string]interface{}
+}
+
 type Executor interface {
-	RunCreateUpstreamFromFile(file, namespace string, wait int)
-	RunCreateUpstream(name, namespace, utype, spec string, wait int)
+	RunCreateUpstream(gparams *GlobalParams, uparams *UpstreamParams)
 }
