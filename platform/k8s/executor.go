@@ -1,6 +1,7 @@
 package k8s
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -44,9 +45,17 @@ func (e *Executor) RunCreateUpstreamFromFile(file, namespace string, wait int) {
 func (e *Executor) RunCreateUpstream(name, namespace, utype, spec string, wait int) {
 	x := upstreamFromArgs(name, utype, spec)
 	e.client.GlueV1().Upstreams(namespace).Create(x)
-	e.wait(wait, func(e *Executor) bool {
-		return true
+	err := e.wait(wait, func(e *Executor) bool {
+		s := e.getUpstreamCrdStatus(name)
+		if s != "" {
+			log.Printf("Create Upstream Status: %s\n", s)
+			return true
+		}
+		return false
 	})
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 func getClientConfig(kubeConfig string) (*rest.Config, error) {
@@ -57,6 +66,7 @@ func getClientConfig(kubeConfig string) (*rest.Config, error) {
 }
 
 func upstreamFromArgs(name, utype, spec string) *v1.Upstream {
+	// spec example: "key1=val1;key2=val2"
 	ss := strings.Split(spec, ";")
 	s := make(map[string]interface{})
 	for _, v := range ss {
@@ -78,11 +88,24 @@ func upstreamFromArgs(name, utype, spec string) *v1.Upstream {
 	}
 }
 
-func (e *Executor) wait(w int, cb func(e *Executor) bool) {
+func (e *Executor) getUpstreamCrdStatus(name string) string {
+	o, err := e.client.GlueV1().Upstreams("").Get(name, metav1.GetOptions{})
+	if err != nil {
+		log.Println(err)
+		return ""
+	}
+	return string(o.Status)
+}
+
+func (e *Executor) wait(w int, cb func(e *Executor) bool) error {
+	if w <= 0 {
+		return nil
+	}
 	for i := 0; i < w; i++ {
 		if cb(e) {
-			break
+			return nil
 		}
 		time.Sleep(time.Second)
 	}
+	return fmt.Errorf("Wait timeout")
 }
