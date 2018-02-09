@@ -23,7 +23,7 @@ import (
 var upstreamCmd = &cobra.Command{
 	Use:   "upstream",
 	Short: "Create upstream",
-	Long:  `Create upstream configuration object using config file or command line arguments`,
+	Long:  `Create upstream configuration object using config file and/or command line arguments`,
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
 		ex := common.GetExecutor()

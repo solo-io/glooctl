@@ -15,31 +15,25 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/solo-io/gluectl/platform/common"
 	"github.com/spf13/cobra"
 )
 
 // upstreamDelCmd represents the upstreamDel command
 var upstreamDelCmd = &cobra.Command{
 	Use:   "upstream",
-	Short: "upstream",
-	Long:  `Upstream`,
+	Short: "Delete upstream",
+	Long:  `Delete Upstream by name`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("upstreamDel called")
+		LoadUpstreamParamsFromFile()
+		ex := common.GetExecutor()
+		gp := GetGlobalFlags()
+		up := GetUpstreamParams()
+		ex.RunDeleteUpstream(gp, up)
 	},
 }
 
 func init() {
 	deleteCmd.AddCommand(upstreamDelCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// upstreamDelCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// upstreamDelCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	CreateUpstreamParams(upstreamDelCmd, false)
 }

@@ -14,4 +14,8 @@ type UpstreamParams struct {
 
 type Executor interface {
 	RunCreateUpstream(gparams *GlobalParams, uparams *UpstreamParams)
+	RunUpdateUpstream(gparams *GlobalParams, uparams *UpstreamParams)
+	RunDeleteUpstream(gparams *GlobalParams, uparams *UpstreamParams)
+	RunGetUpstream(gparams *GlobalParams, uparams *UpstreamParams)
+	RunDescribeUpstream(gparams *GlobalParams, uparams *UpstreamParams)
 }

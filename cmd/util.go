@@ -46,9 +46,9 @@ func GetGlobalFlags() *platform.GlobalParams {
 
 func CreateUpstreamParams(cmd *cobra.Command, isSpec bool) {
 	cmd.PersistentFlags().StringVar(&uparams.Name, "name", "", "upstream name")
-	cmd.PersistentFlags().StringVar(&uparams.UType, "type", "", "upstream type")
 
 	if isSpec {
+		cmd.PersistentFlags().StringVar(&uparams.UType, "type", "", "upstream type")
 		if !paramDefsLoaded {
 			// TODO: Shouldn't need a lock, but check ...
 			log.Println("Reading Spec definitions for Glue Plugins ...")
@@ -81,10 +81,9 @@ func CreateUpstreamParams(cmd *cobra.Command, isSpec bool) {
 }
 
 func GetUpstreamParams() *platform.UpstreamParams {
-	if uparams.UType == "" {
-		log.Fatal("Upstream interface type was not defined")
+	if uparams.UType != "" {
+		uparams.Spec = specs[uparams.UType]
 	}
-	uparams.Spec = specs[uparams.UType]
 	return uparams
 }
 

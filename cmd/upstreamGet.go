@@ -15,32 +15,27 @@
 package cmd
 
 import (
-	"fmt"
-
+	"github.com/solo-io/gluectl/platform/common"
 	"github.com/spf13/cobra"
 )
 
 // upstreamGetCmd represents the upstreamGet command
 var upstreamGetCmd = &cobra.Command{
 	Use:   "upstream",
-	Short: "upstream",
-	Long:  `Upstream`,
+	Short: "Get upstream(s)",
+	Long:  `Get upstream (by name) or all upstreams in the namespace`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("upstreamGet called")
+		LoadUpstreamParamsFromFile()
+		ex := common.GetExecutor()
+		gp := GetGlobalFlags()
+		up := GetUpstreamParams()
+		ex.RunGetUpstream(gp, up)
 	},
 }
 
 func init() {
 	getCmd.AddCommand(upstreamGetCmd)
+	CreateUpstreamParams(upstreamGetCmd, false)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// upstreamGetCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// upstreamGetCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
