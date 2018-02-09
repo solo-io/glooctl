@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 
 	"github.com/solo-io/gluectl/platform"
 	"github.com/spf13/cobra"
@@ -51,29 +50,47 @@ func CreateUpstreamParams(cmd *cobra.Command, isSpec bool) {
 		cmd.PersistentFlags().StringVar(&uparams.UType, "type", "", "upstream type")
 		if !paramDefsLoaded {
 			// TODO: Shouldn't need a lock, but check ...
-			log.Println("Reading Spec definitions for Glue Plugins ...")
+			fmt.Println("Reading Spec definitions for Glue Plugins ...")
 			readParamsDefinitions()
 			paramDefsLoaded = true
-		}
 
-		for t, m := range paramDefs {
-			specs[t] = make(map[string]interface{})
-			for _, s := range m {
-				name := fmt.Sprintf("%s.%s", t, s.Name)
-				switch s.Type {
-				case ParameterTypeString:
-					b := s.DefaultValue.(string)
-					specs[t][s.Name] = &b
-					cmd.PersistentFlags().StringVar(&b, name, b, s.Description)
-				case ParameterTypeInt:
-					b := s.DefaultValue.(int)
-					specs[t][s.Name] = &b
-					cmd.PersistentFlags().IntVar(&b, name, b, s.Description)
-				case ParameterTypeBool:
-					b := s.DefaultValue.(bool)
-					specs[t][s.Name] = &b
-					cmd.PersistentFlags().BoolVar(&b, name, b, s.Description)
-				default:
+			for t, m := range paramDefs {
+				specs[t] = make(map[string]interface{})
+				for _, s := range m {
+					name := fmt.Sprintf("spec.%s", s.Name)
+					switch s.Type {
+					case ParameterTypeString:
+						b := s.DefaultValue.(string)
+						specs[t][s.Name] = &b
+						cmd.PersistentFlags().StringVar(&b, name, b, s.Description)
+					case ParameterTypeInt:
+						b := s.DefaultValue.(int)
+						specs[t][s.Name] = &b
+						cmd.PersistentFlags().IntVar(&b, name, b, s.Description)
+					case ParameterTypeBool:
+						b := s.DefaultValue.(bool)
+						specs[t][s.Name] = &b
+						cmd.PersistentFlags().BoolVar(&b, name, b, s.Description)
+					default:
+					}
+				}
+			}
+		} else {
+			for t, m := range paramDefs {
+				for _, s := range m {
+					name := fmt.Sprintf("spec.%s", s.Name)
+					switch s.Type {
+					case ParameterTypeString:
+						b := specs[t][s.Name].(*string)
+						cmd.PersistentFlags().StringVar(b, name, *b, s.Description)
+					case ParameterTypeInt:
+						b := specs[t][s.Name].(*int)
+						cmd.PersistentFlags().IntVar(b, name, *b, s.Description)
+					case ParameterTypeBool:
+						b := specs[t][s.Name].(*bool)
+						cmd.PersistentFlags().BoolVar(b, name, *b, s.Description)
+					default:
+					}
 				}
 			}
 		}

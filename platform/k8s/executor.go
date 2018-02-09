@@ -3,7 +3,6 @@ package k8s
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
 	"text/tabwriter"
 	"time"
@@ -29,11 +28,11 @@ func NewExecutor(config interface{}) *Executor {
 	}
 	cfg, err := getClientConfig(s)
 	if err != nil {
-		log.Fatal("Cannot create k8s client", err)
+		Fatal("Cannot create k8s client", err)
 	}
 	client, err := crdclient.NewForConfig(cfg)
 	if err != nil {
-		log.Fatal("Cannot create glue CRDs clientset", err)
+		Fatal("Cannot create glue CRDs clientset", err)
 	}
 	return &Executor{
 		cfg:    cfg,
@@ -51,24 +50,24 @@ func (e *Executor) RunUpdateUpstream(gparams *platform.GlobalParams, uparams *pl
 
 func (e *Executor) RunDeleteUpstream(gparams *platform.GlobalParams, uparams *platform.UpstreamParams) {
 	if uparams.Name == "" {
-		log.Fatal("Name of the Upstream must be provided")
+		Fatal("Name of the Upstream must be provided")
 	}
 	err := e.client.GlueV1().Upstreams(gparams.Namespace).Delete(uparams.Name, &metav1.DeleteOptions{})
 	if err != nil {
-		log.Fatal(err)
+		Fatal(err)
 	}
 	err = e.wait(gparams.WaitSec, func(e *Executor) bool {
 		s := e.getUpstreamCrdStatus(uparams.Name, gparams.Namespace, false)
 		if s != "" {
-			log.Printf("Upstream Status: %s\n", s)
+			fmt.Printf("Upstream Status: %s\n", s)
 			return true
 		}
 		return false
 	})
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 	} else {
-		log.Println("Upstream deleted")
+		fmt.Println("Upstream deleted")
 	}
 }
 
@@ -105,7 +104,6 @@ func upstreamFromArgs(name, utype string, spec map[string]interface{}) *v1.Upstr
 func (e *Executor) getUpstreamCrdStatus(name, namespace string, ignoreErr bool) string {
 	o, err := e.client.GlueV1().Upstreams(namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
-		//		log.Println(err)
 		if ignoreErr {
 			return ""
 		} else {
@@ -132,41 +130,41 @@ func (e *Executor) wait(w int, cb func(e *Executor) bool) error {
 func (e *Executor) updateUpstream(gparams *platform.GlobalParams, uparams *platform.UpstreamParams, isCreate bool) {
 
 	if uparams.Name == "" || uparams.UType == "" {
-		log.Fatal("Both Name and Type of the Upstream must be provided")
+		Fatal("Both Name and Type of the Upstream must be provided")
 	}
 
 	x := upstreamFromArgs(uparams.Name, uparams.UType, uparams.Spec)
 	if isCreate {
 		_, err := e.client.GlueV1().Upstreams(gparams.Namespace).Create(x)
 		if err != nil {
-			log.Fatal(err)
+			Fatal(err)
 		}
 	} else {
 		o, err := e.client.GlueV1().Upstreams(gparams.Namespace).Get(uparams.Name, metav1.GetOptions{})
 		if err != nil {
-			log.Fatal(err)
+			Fatal(err)
 		}
 		x.ObjectMeta = o.ObjectMeta
 		_, err = e.client.GlueV1().Upstreams(gparams.Namespace).Update(x)
 		if err != nil {
-			log.Fatal(err)
+			Fatal(err)
 		}
 	}
 	err := e.wait(gparams.WaitSec, func(e *Executor) bool {
 		s := e.getUpstreamCrdStatus(uparams.Name, gparams.Namespace, true)
 		if s != "" {
-			log.Printf("Upstream Status: %s\n", s)
+			fmt.Printf("Upstream Status: %s\n", s)
 			return true
 		}
 		return false
 	})
 	if err != nil {
-		log.Println(err)
+		fmt.Println(err)
 	} else {
 		if isCreate {
-			log.Println("Upstream created")
+			fmt.Println("Upstream created")
 		} else {
-			log.Println("Upstream updated")
+			fmt.Println("Upstream updated")
 		}
 	}
 }
@@ -182,7 +180,7 @@ func (e *Executor) getUpstream(gparams *platform.GlobalParams, uparams *platform
 		// List
 		ll, err := e.client.GlueV1().Upstreams(gparams.Namespace).List(metav1.ListOptions{})
 		if err != nil {
-			log.Fatal(err)
+			Fatal(err)
 		}
 		for _, o := range ll.Items {
 			e.printUpstream(&o, isDescribe, w)
@@ -191,7 +189,7 @@ func (e *Executor) getUpstream(gparams *platform.GlobalParams, uparams *platform
 		// Single
 		o, err := e.client.GlueV1().Upstreams(gparams.Namespace).Get(uparams.Name, metav1.GetOptions{})
 		if err != nil {
-			log.Fatal(err)
+			Fatal(err)
 		}
 		e.printUpstream(o, isDescribe, w)
 	}
@@ -210,4 +208,9 @@ func (e *Executor) printUpstream(o *v1.Upstream, isDescribe bool, w *tabwriter.W
 	} else {
 		fmt.Fprintf(w, " %s \t %s \t %s \t %s\n", o.Name, o.Namespace, o.Spec.Type, o.Status)
 	}
+}
+
+func Fatal(x ...interface{}) {
+	fmt.Println("\nERROR: ", x)
+	os.Exit(1)
 }
