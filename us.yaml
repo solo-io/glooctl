@@ -1,0 +1,5 @@
+name: upstryaml
+type: kubernetes
+spec: 
+  servicename: service2
+  serviceport: 9090

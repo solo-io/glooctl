@@ -11,10 +11,7 @@ var upstreamCmd = &cobra.Command{
 	Long:  `Create upstream configuration object using config file and/or command line arguments`,
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
-		ex := common.GetExecutor()
-		gp := GetGlobalFlags()
-		up := GetUpstreamParams()
-		ex.RunCreateUpstream(gp, up)
+		common.GetExecutor().RunCreateUpstream(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -24,10 +21,7 @@ var upstreamDelCmd = &cobra.Command{
 	Long:  `Delete Upstream by name`,
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
-		ex := common.GetExecutor()
-		gp := GetGlobalFlags()
-		up := GetUpstreamParams()
-		ex.RunDeleteUpstream(gp, up)
+		common.GetExecutor().RunDeleteUpstream(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -37,11 +31,7 @@ var upstreamDescribeCmd = &cobra.Command{
 	Long:  `Describe upstream (by name) or all upstreams in the namespace`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		LoadUpstreamParamsFromFile()
-		ex := common.GetExecutor()
-		gp := GetGlobalFlags()
-		up := GetUpstreamParams()
-		ex.RunDescribeUpstream(gp, up)
+		common.GetExecutor().RunDescribeUpstream(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -51,11 +41,7 @@ var upstreamGetCmd = &cobra.Command{
 	Long:  `Get upstream (by name) or all upstreams in the namespace`,
 
 	Run: func(cmd *cobra.Command, args []string) {
-		LoadUpstreamParamsFromFile()
-		ex := common.GetExecutor()
-		gp := GetGlobalFlags()
-		up := GetUpstreamParams()
-		ex.RunGetUpstream(gp, up)
+		common.GetExecutor().RunGetUpstream(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -65,10 +51,7 @@ var upstreamUpdateCmd = &cobra.Command{
 	Long:  `Update upstream configuration object using config file and/or command line arguments`,
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
-		ex := common.GetExecutor()
-		gp := GetGlobalFlags()
-		up := GetUpstreamParams()
-		ex.RunUpdateUpstream(gp, up)
+		common.GetExecutor().RunUpdateUpstream(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 

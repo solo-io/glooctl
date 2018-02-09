@@ -17,10 +17,10 @@ const (
 )
 
 var (
-	uparams         = &platform.UpstreamParams{}
-	specs           = make(map[string]map[string]interface{})
-	paramDefs       = make(map[string][]ParamDefinition)
-	paramDefsLoaded = false
+	uparams   = &platform.UpstreamParams{}
+	specs     = make(map[string]map[string]interface{})
+	defSpecs  = make(map[string]map[string]interface{})
+	paramDefs = make(map[string][]ParamDefinition)
 )
 
 type ParameterType string
@@ -46,31 +46,33 @@ func CreateTypeParam(cmds ...*cobra.Command) {
 
 func CreateSpecParams(cmds ...*cobra.Command) {
 
-	// TODO: Shouldn't need a lock, but check ...
 	fmt.Println("Reading Spec definitions for Glue Plugins ...")
 	readParamsDefinitions()
-	paramDefsLoaded = true
 
 	for t, m := range paramDefs {
 		specs[t] = make(map[string]interface{})
+		defSpecs[t] = make(map[string]interface{})
 		for _, s := range m {
 			name := fmt.Sprintf("spec.%s", s.Name)
 			switch s.Type {
 			case ParameterTypeString:
 				b := s.DefaultValue.(string)
 				specs[t][s.Name] = &b
+				defSpecs[t][s.Name] = s.DefaultValue.(string)
 				for _, cmd := range cmds {
 					cmd.PersistentFlags().StringVar(&b, name, b, s.Description)
 				}
 			case ParameterTypeInt:
 				b := s.DefaultValue.(int)
 				specs[t][s.Name] = &b
+				defSpecs[t][s.Name] = s.DefaultValue.(int)
 				for _, cmd := range cmds {
 					cmd.PersistentFlags().IntVar(&b, name, b, s.Description)
 				}
 			case ParameterTypeBool:
 				b := s.DefaultValue.(bool)
 				specs[t][s.Name] = &b
+				defSpecs[t][s.Name] = s.DefaultValue.(bool)
 				for _, cmd := range cmds {
 					cmd.PersistentFlags().BoolVar(&b, name, b, s.Description)
 				}
@@ -108,6 +110,30 @@ func LoadUpstreamParamsFromFile() {
 	}
 	if uparams.UType == "" {
 		uparams.UType = string(config.Type)
+	}
+
+	if uparams.UType != "" {
+		for n, p := range specs[uparams.UType] {
+			v := defSpecs[uparams.UType][n]
+			eq := false
+			switch v.(type) {
+			case string:
+				s := p.(*string)
+				eq = *s == v
+			case int:
+				s := p.(*int)
+				eq = *s == v
+			case bool:
+				s := p.(*bool)
+				eq = *s == v
+			default:
+			}
+			if eq {
+				if config.Spec[n] != nil {
+					specs[uparams.UType][n] = config.Spec[n]
+				}
+			}
+		}
 	}
 }
 
