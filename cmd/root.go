@@ -23,7 +23,10 @@ import (
 	"github.com/spf13/viper"
 )
 
-var cfgFile string
+var (
+	cfgFile     string
+	interactive bool
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -52,6 +55,7 @@ func init() {
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gluectl.yaml)")
+	rootCmd.PersistentFlags().BoolVarP(&interactive, "interactive", "i", false, "run in interactive mode")
 }
 
 // initConfig reads in config file and ENV variables if set.

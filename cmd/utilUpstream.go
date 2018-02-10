@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"io/ioutil"
+	"os"
 
 	"github.com/solo-io/glue/pkg/api/types/v1"
 	"github.com/solo-io/gluectl/platform"
@@ -77,6 +78,7 @@ func CreateSpecParams(cmds ...*cobra.Command) {
 					cmd.PersistentFlags().BoolVar(&b, name, b, s.Description)
 				}
 			default:
+				fmt.Printf("Unknown parameter type: %s\n", s.Type)
 			}
 		}
 	}
@@ -84,9 +86,22 @@ func CreateSpecParams(cmds ...*cobra.Command) {
 
 func GetUpstreamParams() *platform.UpstreamParams {
 	if uparams.UType != "" {
+		if !IsUpstreamTypeValid(&uparams.UType) {
+			fmt.Printf("Invalid Upstream Type: %s\n", uparams.UType)
+			os.Exit(1)
+		}
 		uparams.Spec = specs[uparams.UType]
 	}
 	return uparams
+}
+
+func IsUpstreamTypeValid(utype *string) bool {
+	for t, _ := range specs {
+		if *utype == t {
+			return true
+		}
+	}
+	return false
 }
 
 func LoadUpstreamParamsFromFile() {
@@ -127,6 +142,7 @@ func LoadUpstreamParamsFromFile() {
 				s := p.(*bool)
 				eq = *s == v
 			default:
+				fmt.Printf("Unknown parameter type: %t\n", v)
 			}
 			if eq {
 				if config.Spec[n] != nil {
