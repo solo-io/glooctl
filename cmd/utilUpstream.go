@@ -47,7 +47,6 @@ func CreateTypeParam(cmds ...*cobra.Command) {
 
 func CreateSpecParams(cmds ...*cobra.Command) {
 
-	fmt.Println("Reading Spec definitions for Glue Plugins ...")
 	readParamsDefinitions()
 
 	for t, m := range paramDefs {

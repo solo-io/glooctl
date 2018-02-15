@@ -1,11 +1,8 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
-	"os"
 	"strconv"
-	"strings"
 )
 
 func InteractiveModeUpstream(cmd string) {
@@ -17,8 +14,8 @@ func InteractiveModeUpstream(cmd string) {
 		fallthrough
 	case "update":
 		getNameAndNamespace(true)
-		getType()
-		getSpec()
+		getUpstreamType()
+		getUpstreamSpec()
 	case "delete":
 		getNameAndNamespace(true)
 	case "get":
@@ -29,37 +26,9 @@ func InteractiveModeUpstream(cmd string) {
 	}
 }
 
-func getString(prompt, defstr string, isRequired bool) *string {
-	for {
-		fmt.Printf("%s [%s]: ", prompt, defstr)
-
-		reader := bufio.NewReader(os.Stdin)
-		s, err := reader.ReadString('\n')
-		if err != nil {
-			continue
-		}
-		s = strings.Trim(s, " \n")
-		//		fmt.Scanln(&s)
-		if s == "" {
-			s = defstr
-		}
-		if !isRequired || s != "" {
-			return &s
-		}
-		fmt.Printf("%s cannot be empty. Please try again...\n", prompt)
-	}
-}
-
-func getNameAndNamespace(isNameRequired bool) {
-	s := getString("Upstream Name", uparams.Name, isNameRequired)
-	uparams.Name = *s
-	ns := getString("Namespace", gparams.Namespace, false)
-	gparams.Namespace = *ns
-}
-
-func getType() {
+func getUpstreamType() {
 	tt := make([]string, 0, 10)
-	for n, _ := range specs {
+	for n := range specs {
 		//		fmt.Print(n, ",")
 		tt = append(tt, n)
 	}
@@ -75,8 +44,8 @@ func getType() {
 	}
 }
 
-func getSpec() {
-	fmt.Println("DEBUG", uparams.UType, specs[uparams.UType])
+func getUpstreamSpec() {
+	//fmt.Println("DEBUG", uparams.UType, specs[uparams.UType])
 	for n, t := range specs[uparams.UType] {
 		switch t.(type) {
 		case *string:

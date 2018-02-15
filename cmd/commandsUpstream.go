@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/solo-io/gluectl/platform/common"
+	common "github.com/solo-io/gluectl/platform/executor"
 	"github.com/spf13/cobra"
 )
 
@@ -12,7 +12,7 @@ var upstreamCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
 		InteractiveModeUpstream("create")
-		common.GetExecutor().RunCreateUpstream(GetGlobalFlags(), GetUpstreamParams())
+		common.GetExecutor("upstream", GetGlobalFlags().Namespace).RunCreate(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -23,7 +23,7 @@ var upstreamDelCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
 		InteractiveModeUpstream("delete")
-		common.GetExecutor().RunDeleteUpstream(GetGlobalFlags(), GetUpstreamParams())
+		common.GetExecutor("upstream", GetGlobalFlags().Namespace).RunDelete(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -34,7 +34,7 @@ var upstreamDescribeCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		InteractiveModeUpstream("describe")
-		common.GetExecutor().RunDescribeUpstream(GetGlobalFlags(), GetUpstreamParams())
+		common.GetExecutor("upstream", GetGlobalFlags().Namespace).RunDescribe(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -45,7 +45,7 @@ var upstreamGetCmd = &cobra.Command{
 
 	Run: func(cmd *cobra.Command, args []string) {
 		InteractiveModeUpstream("get")
-		common.GetExecutor().RunGetUpstream(GetGlobalFlags(), GetUpstreamParams())
+		common.GetExecutor("upstream", GetGlobalFlags().Namespace).RunGet(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 
@@ -56,7 +56,7 @@ var upstreamUpdateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		LoadUpstreamParamsFromFile()
 		InteractiveModeUpstream("update")
-		common.GetExecutor().RunUpdateUpstream(GetGlobalFlags(), GetUpstreamParams())
+		common.GetExecutor("upstream", GetGlobalFlags().Namespace).RunUpdate(GetGlobalFlags(), GetUpstreamParams())
 	},
 }
 

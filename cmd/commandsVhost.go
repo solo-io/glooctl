@@ -1,54 +1,58 @@
 package cmd
 
 import (
-	"fmt"
-
+	common "github.com/solo-io/gluectl/platform/executor"
 	"github.com/spf13/cobra"
 )
 
 // vhostCmd represents the vhost command
 var vhostCmd = &cobra.Command{
 	Use:   "vhost",
-	Short: "virtual host",
-	Long:  `Virtual Host`,
+	Short: "create virtual host",
+	Long:  `Create Virtual Host`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("vhost called")
+		InteractiveModeVhost("create")
+		common.GetExecutor("vhost", GetGlobalFlags().Namespace).RunCreate(GetGlobalFlags(), GetVhostParams())
 	},
 }
 
 var vhostDelCmd = &cobra.Command{
 	Use:   "vhost",
-	Short: "virtual host",
-	Long:  `Virtual Host`,
+	Short: "delete virtual host",
+	Long:  `Delete Virtual Host`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("vhostDel called")
+		InteractiveModeVhost("delete")
+		common.GetExecutor("vhost", GetGlobalFlags().Namespace).RunDelete(GetGlobalFlags(), GetVhostParams())
 	},
 }
 
 var vhostDescribeCmd = &cobra.Command{
 	Use:   "vhost",
-	Short: "virtual host",
-	Long:  `Virtual Host`,
+	Short: "describe virtual host",
+	Long:  `Describe Virtual Host`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("vhostDescribe called")
+		InteractiveModeVhost("describe")
+		common.GetExecutor("vhost", GetGlobalFlags().Namespace).RunDescribe(GetGlobalFlags(), GetVhostParams())
 	},
 }
 
 var vhostGetCmd = &cobra.Command{
 	Use:   "vhost",
-	Short: "virtual host",
-	Long:  `Virtual Host`,
+	Short: "get virtual host",
+	Long:  `Get Virtual Host`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("vhostGet called")
+		InteractiveModeVhost("get")
+		common.GetExecutor("vhost", GetGlobalFlags().Namespace).RunGet(GetGlobalFlags(), GetVhostParams())
 	},
 }
 
 var vhostUpdateCmd = &cobra.Command{
 	Use:   "vhost",
-	Short: "virtual host",
-	Long:  `Virtual Host`,
+	Short: "update virtual host",
+	Long:  `Update Virtual Host`,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("vhostUpdate called")
+		InteractiveModeVhost("update")
+		common.GetExecutor("vhost", GetGlobalFlags().Namespace).RunUpdate(GetGlobalFlags(), GetVhostParams())
 	},
 }
 

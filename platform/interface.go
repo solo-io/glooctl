@@ -12,10 +12,14 @@ type UpstreamParams struct {
 	Spec  map[string]interface{}
 }
 
+type VhostParams struct {
+	Name string
+}
+
 type Executor interface {
-	RunCreateUpstream(gparams *GlobalParams, uparams *UpstreamParams)
-	RunUpdateUpstream(gparams *GlobalParams, uparams *UpstreamParams)
-	RunDeleteUpstream(gparams *GlobalParams, uparams *UpstreamParams)
-	RunGetUpstream(gparams *GlobalParams, uparams *UpstreamParams)
-	RunDescribeUpstream(gparams *GlobalParams, uparams *UpstreamParams)
+	RunCreate(gparams *GlobalParams, sparams interface{})
+	RunUpdate(gparams *GlobalParams, sparams interface{})
+	RunDelete(gparams *GlobalParams, sparams interface{})
+	RunGet(gparams *GlobalParams, sparams interface{})
+	RunDescribe(gparams *GlobalParams, sparams interface{})
 }
