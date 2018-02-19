@@ -1,2 +1,2 @@
-# gluectl
-gluectl - CLI for glue
+# glooctl
+glooctl - CLI for gloo
