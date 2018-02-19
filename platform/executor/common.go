@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/solo-io/gluectl/platform"
+	"github.com/solo-io/glooctl/platform"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )

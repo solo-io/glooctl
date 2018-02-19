@@ -7,16 +7,17 @@ import (
 	"text/tabwriter"
 	"time"
 
-	storage "github.com/solo-io/glue-storage/pkg/storage"
-	gluev1 "github.com/solo-io/glue/pkg/api/types/v1"
-	"github.com/solo-io/gluectl/platform"
+	google_protobuf "github.com/gogo/protobuf/types"
+	gloov1 "github.com/solo-io/gloo-api/pkg/api/types/v1"
+	storage "github.com/solo-io/gloo-storage"
+	"github.com/solo-io/glooctl/platform"
 )
 
 type UpstreamExecutor struct {
-	store storage.Storage
+	store storage.Interface
 }
 
-func NewUpstreamExecutor(store storage.Storage) platform.Executor {
+func NewUpstreamExecutor(store storage.Interface) platform.Executor {
 
 	return &UpstreamExecutor{
 		store: store,
@@ -36,7 +37,7 @@ func (e *UpstreamExecutor) RunDelete(gparams *platform.GlobalParams, params inte
 	if uparams.Name == "" {
 		Fatal("Name of the Upstream must be provided")
 	}
-	err := e.store.Delete(&gluev1.Upstream{Name: uparams.Name})
+	err := e.store.V1().Upstreams().Delete(uparams.Name)
 	if err != nil {
 		Fatal(err)
 	}
@@ -64,7 +65,7 @@ func (e *UpstreamExecutor) RunDescribe(gparams *platform.GlobalParams, params in
 }
 
 func (e *UpstreamExecutor) getUpstreamStatus(name, namespace string, ignoreErr bool) string {
-	_, err := e.store.Get(&gluev1.Upstream{Name: name}, nil)
+	_, err := e.store.V1().Upstreams().Get(name)
 	if err != nil {
 		if ignoreErr {
 			return ""
@@ -95,18 +96,18 @@ func (e *UpstreamExecutor) updateUpstream(gparams *platform.GlobalParams, uparam
 		Fatal("Both Name and Type of the Upstream must be provided")
 	}
 
-	x := &gluev1.Upstream{
+	x := &gloov1.Upstream{
 		Name: uparams.Name,
-		Type: gluev1.UpstreamType(uparams.UType),
-		Spec: uparams.Spec,
+		Type: uparams.UType,
+		Spec: &google_protobuf.Struct{Fields: uparams.Spec},
 	}
 	if isCreate {
-		_, err := e.store.Create(x)
+		_, err := e.store.V1().Upstreams().Create(x)
 		if err != nil {
 			Fatal(err)
 		}
 	} else {
-		_, err := e.store.Update(x)
+		_, err := e.store.V1().Upstreams().Update(x)
 		if err != nil {
 			Fatal(err)
 		}
@@ -139,27 +140,27 @@ func (e *UpstreamExecutor) getUpstream(gparams *platform.GlobalParams, uparams *
 
 	if uparams.Name == "" {
 		// List
-		ll, err := e.store.List(&gluev1.Upstream{}, nil)
+		ll, err := e.store.V1().Upstreams().List()
 		if err != nil {
 			Fatal(err)
 		}
 		for _, o := range ll {
-			e.printUpstream(o.(*gluev1.Upstream), isDescribe, w)
+			e.printUpstream(o, isDescribe, w)
 		}
 	} else {
 		// Single
-		o, err := e.store.Get(&gluev1.Upstream{Name: uparams.Name}, nil)
+		o, err := e.store.V1().Upstreams().Get(uparams.Name)
 		if err != nil {
 			Fatal(err)
 		}
-		e.printUpstream(o.(*gluev1.Upstream), isDescribe, w)
+		e.printUpstream(o, isDescribe, w)
 	}
 	if !isDescribe {
 		w.Flush()
 	}
 }
 
-func (e *UpstreamExecutor) printUpstream(o *gluev1.Upstream, isDescribe bool, w *tabwriter.Writer) {
+func (e *UpstreamExecutor) printUpstream(o *gloov1.Upstream, isDescribe bool, w *tabwriter.Writer) {
 	if isDescribe {
 		x, err := json.MarshalIndent(o, "", "  ")
 		if err != nil {

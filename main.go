@@ -14,7 +14,7 @@
 
 package main
 
-import "github.com/solo-io/gluectl/cmd"
+import "github.com/solo-io/glooctl/cmd"
 
 func main() {
 	cmd.Execute()

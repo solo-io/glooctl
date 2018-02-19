@@ -6,10 +6,10 @@ import (
 	"path"
 	"strings"
 
-	storage "github.com/solo-io/glue-storage/pkg/storage"
-	"github.com/solo-io/glue-storage/pkg/storage/crd"
-	"github.com/solo-io/glue-storage/pkg/storage/file"
-	"github.com/solo-io/gluectl/platform"
+	storage "github.com/solo-io/gloo-storage"
+	"github.com/solo-io/gloo-storage/crd"
+	"github.com/solo-io/gloo-storage/file"
+	"github.com/solo-io/glooctl/platform"
 	"github.com/spf13/viper"
 )
 
@@ -36,7 +36,7 @@ func GetExecutor(objname, namespace string) platform.Executor {
 		fmt.Printf("Invalid storage %s for platform %s\n", stor, plat)
 		os.Exit(1)
 	}
-	var dataStore storage.Storage
+	var dataStore storage.Interface
 	switch plat + "-" + stor {
 	case "kubernetes-crd":
 		kc := viper.GetString("kubeConfig")
@@ -44,7 +44,7 @@ func GetExecutor(objname, namespace string) platform.Executor {
 		if err != nil {
 			Fatal("Cannot create k8s client", err)
 		}
-		dataStore, err = crd.NewCrdStorage(cfg, namespace)
+		dataStore, err = crd.NewStorage(cfg, namespace, 0)
 		if err != nil {
 			Fatal("Cannot create crd storage", err)
 		}
@@ -55,7 +55,7 @@ func GetExecutor(objname, namespace string) platform.Executor {
 			root = path.Join(os.Getenv("HOME"), ".glue")
 		}
 		var err error
-		dataStore, err = file.NewFileStorage(root, namespace)
+		dataStore, err = file.NewStorage(root, 0)
 		if err != nil {
 			Fatal("Cannot create file storage", err)
 		}

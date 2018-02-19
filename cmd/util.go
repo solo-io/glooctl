@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/solo-io/gluectl/platform"
+	"github.com/solo-io/glooctl/platform"
 	"github.com/spf13/cobra"
 )
 

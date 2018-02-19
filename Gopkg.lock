@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "github.com/davecgh/go-spew"
+  packages = ["spew"]
+  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
+  version = "v1.1.0"
+
+[[projects]]
   name = "github.com/fsnotify/fsnotify"
   packages = ["."]
   revision = "c2828203cd70a50dcccfb2761f8b1f8ceef9a8e9"
@@ -15,9 +21,9 @@
 
 [[projects]]
   name = "github.com/gogo/protobuf"
-  packages = ["proto","sortkeys"]
-  revision = "1adfc126b41513cc696b209667c8656ea7aac67c"
-  version = "v1.0.0"
+  packages = ["gogoproto","jsonpb","proto","protoc-gen-gogo/descriptor","sortkeys","types"]
+  revision = "342cbe0a04158f6dcb03ca0079991a51a4248c02"
+  version = "v0.5"
 
 [[projects]]
   branch = "master"
@@ -57,6 +63,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/golang-lru"
+  packages = [".","simplelru"]
+  revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/hcl"
   packages = [".","hcl/ast","hcl/parser","hcl/scanner","hcl/strconv","hcl/token","json/parser","json/scanner","json/token"]
   revision = "23c074d0eceb2b8a5bfdbb271ab780cde70f05a8"
@@ -92,10 +104,28 @@
   version = "1.0.1"
 
 [[projects]]
+  name = "github.com/k0kubun/pp"
+  packages = ["."]
+  revision = "027a6d1765d673d337e687394dbe780dd64e2a1e"
+  version = "v2.3.0"
+
+[[projects]]
   name = "github.com/magiconair/properties"
   packages = ["."]
   revision = "a8e9fa9ffe534206df1daaa7e9d5e82ca23db7e0"
   version = "v1.7.5"
+
+[[projects]]
+  name = "github.com/mattn/go-colorable"
+  packages = ["."]
+  revision = "167de6bfdfba052fa6b2d3664c8f5272e23c9072"
+  version = "v0.0.9"
+
+[[projects]]
+  name = "github.com/mattn/go-isatty"
+  packages = ["."]
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
 
 [[projects]]
   branch = "master"
@@ -128,16 +158,34 @@
   version = "v2.0.1"
 
 [[projects]]
-  branch = "crds"
-  name = "github.com/solo-io/glue"
-  packages = ["pkg/api/types/v1","pkg/platform/kube/crd/client/clientset/versioned","pkg/platform/kube/crd/client/clientset/versioned/scheme","pkg/platform/kube/crd/client/clientset/versioned/typed/solo.io/v1","pkg/platform/kube/crd/solo.io/v1"]
-  revision = "b4b9de55d5667ce266fa42651f86ccd80ab61e4c"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
+  name = "github.com/radovskyb/watcher"
+  packages = ["."]
+  revision = "6145e1439b9de93806925353403f91d2abbad8a5"
+  version = "v1.0.2"
 
 [[projects]]
   branch = "master"
-  name = "github.com/solo-io/glue-storage"
-  packages = ["pkg/storage","pkg/storage/common","pkg/storage/crd","pkg/storage/file"]
-  revision = "5bb7f025203102a01d733090bce4c5a8532faa8d"
+  name = "github.com/solo-io/gloo"
+  packages = ["pkg/log","pkg/protoutil"]
+  revision = "942db8b753b15c5c905aa2e51b5136158061244c"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/solo-io/gloo-api"
+  packages = ["pkg/api/types/v1"]
+  revision = "59c0d893fe51b54bf030d7e87fe9f2a4a4f357e5"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/solo-io/gloo-storage"
+  packages = [".","crd","crd/client/clientset/versioned","crd/client/clientset/versioned/scheme","crd/client/clientset/versioned/typed/solo.io/v1","crd/solo.io/v1","file","internal/crud"]
+  revision = "03ed3126f23c100acf1afa3dc226c15e7386f24c"
 
 [[projects]]
   name = "github.com/spf13/afero"
@@ -184,7 +232,7 @@
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
-  packages = ["http2","http2/hpack","idna","lex/httplex"]
+  packages = ["context","http2","http2/hpack","idna","lex/httplex"]
   revision = "f5dfe339be1d06f81b22525fe34671ee7d2c8904"
 
 [[projects]]
@@ -226,18 +274,18 @@
 [[projects]]
   branch = "master"
   name = "k8s.io/apimachinery"
-  packages = ["pkg/api/errors","pkg/api/meta","pkg/api/resource","pkg/apis/meta/v1","pkg/apis/meta/v1/unstructured","pkg/apis/meta/v1beta1","pkg/conversion","pkg/conversion/queryparams","pkg/fields","pkg/labels","pkg/runtime","pkg/runtime/schema","pkg/runtime/serializer","pkg/runtime/serializer/json","pkg/runtime/serializer/protobuf","pkg/runtime/serializer/recognizer","pkg/runtime/serializer/streaming","pkg/runtime/serializer/versioning","pkg/selection","pkg/types","pkg/util/clock","pkg/util/errors","pkg/util/framer","pkg/util/intstr","pkg/util/json","pkg/util/net","pkg/util/runtime","pkg/util/sets","pkg/util/validation","pkg/util/validation/field","pkg/util/wait","pkg/util/yaml","pkg/version","pkg/watch","third_party/forked/golang/reflect"]
+  packages = ["pkg/api/errors","pkg/api/meta","pkg/api/resource","pkg/apis/meta/internalversion","pkg/apis/meta/v1","pkg/apis/meta/v1/unstructured","pkg/apis/meta/v1beta1","pkg/conversion","pkg/conversion/queryparams","pkg/fields","pkg/labels","pkg/runtime","pkg/runtime/schema","pkg/runtime/serializer","pkg/runtime/serializer/json","pkg/runtime/serializer/protobuf","pkg/runtime/serializer/recognizer","pkg/runtime/serializer/streaming","pkg/runtime/serializer/versioning","pkg/selection","pkg/types","pkg/util/cache","pkg/util/clock","pkg/util/diff","pkg/util/errors","pkg/util/framer","pkg/util/intstr","pkg/util/json","pkg/util/net","pkg/util/runtime","pkg/util/sets","pkg/util/validation","pkg/util/validation/field","pkg/util/wait","pkg/util/yaml","pkg/version","pkg/watch","third_party/forked/golang/reflect"]
   revision = "da3b134bab57ebf23dedfec7e0004614dd4b5a24"
 
 [[projects]]
   name = "k8s.io/client-go"
-  packages = ["discovery","kubernetes/scheme","pkg/version","rest","rest/watch","tools/auth","tools/clientcmd","tools/clientcmd/api","tools/clientcmd/api/latest","tools/clientcmd/api/v1","tools/metrics","transport","util/cert","util/flowcontrol","util/homedir","util/integer"]
+  packages = ["discovery","kubernetes","kubernetes/scheme","kubernetes/typed/admissionregistration/v1alpha1","kubernetes/typed/admissionregistration/v1beta1","kubernetes/typed/apps/v1","kubernetes/typed/apps/v1beta1","kubernetes/typed/apps/v1beta2","kubernetes/typed/authentication/v1","kubernetes/typed/authentication/v1beta1","kubernetes/typed/authorization/v1","kubernetes/typed/authorization/v1beta1","kubernetes/typed/autoscaling/v1","kubernetes/typed/autoscaling/v2beta1","kubernetes/typed/batch/v1","kubernetes/typed/batch/v1beta1","kubernetes/typed/batch/v2alpha1","kubernetes/typed/certificates/v1beta1","kubernetes/typed/core/v1","kubernetes/typed/events/v1beta1","kubernetes/typed/extensions/v1beta1","kubernetes/typed/networking/v1","kubernetes/typed/policy/v1beta1","kubernetes/typed/rbac/v1","kubernetes/typed/rbac/v1alpha1","kubernetes/typed/rbac/v1beta1","kubernetes/typed/scheduling/v1alpha1","kubernetes/typed/settings/v1alpha1","kubernetes/typed/storage/v1","kubernetes/typed/storage/v1alpha1","kubernetes/typed/storage/v1beta1","pkg/version","rest","rest/watch","tools/auth","tools/cache","tools/clientcmd","tools/clientcmd/api","tools/clientcmd/api/latest","tools/clientcmd/api/v1","tools/metrics","tools/pager","tools/reference","transport","util/buffer","util/cert","util/flowcontrol","util/homedir","util/integer"]
   revision = "78700dec6369ba22221b72770783300f143df150"
   version = "v6.0.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "4385b5817ef4c2572491681f04f482b0a59a1ddce6a7a6032c937bbc87b8aff9"
+  inputs-digest = "770a5eef53805497e33c79b099043e1926985a3fc78cb97085daa67f764a6c75"
   solver-name = "gps-cdcl"
   solver-version = 1

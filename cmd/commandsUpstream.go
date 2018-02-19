@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	common "github.com/solo-io/gluectl/platform/executor"
+	common "github.com/solo-io/glooctl/platform/executor"
 	"github.com/spf13/cobra"
 )
 

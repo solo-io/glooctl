@@ -7,16 +7,16 @@ import (
 	"text/tabwriter"
 	"time"
 
-	storage "github.com/solo-io/glue-storage/pkg/storage"
-	gluev1 "github.com/solo-io/glue/pkg/api/types/v1"
-	"github.com/solo-io/gluectl/platform"
+	gloov1 "github.com/solo-io/gloo-api/pkg/api/types/v1"
+	storage "github.com/solo-io/gloo-storage"
+	"github.com/solo-io/glooctl/platform"
 )
 
 type VhostExecutor struct {
-	store storage.Storage
+	store storage.Interface
 }
 
-func NewVhostExecutor(store storage.Storage) platform.Executor {
+func NewVhostExecutor(store storage.Interface) platform.Executor {
 
 	return &VhostExecutor{
 		store: store,
@@ -36,7 +36,7 @@ func (e *VhostExecutor) RunDelete(gparams *platform.GlobalParams, params interfa
 	if vparams.Name == "" {
 		Fatal("Name of the Vhost must be provided")
 	}
-	err := e.store.Delete(&gluev1.VirtualHost{Name: vparams.Name})
+	err := e.store.V1().VirtualHosts().Delete(vparams.Name)
 	if err != nil {
 		Fatal(err)
 	}
@@ -64,7 +64,7 @@ func (e *VhostExecutor) RunDescribe(gparams *platform.GlobalParams, params inter
 }
 
 func (e *VhostExecutor) getVhostStatus(name, namespace string, ignoreErr bool) string {
-	_, err := e.store.Get(&gluev1.VirtualHost{Name: name}, nil)
+	_, err := e.store.V1().VirtualHosts().Get(name)
 	if err != nil {
 		if ignoreErr {
 			return ""
@@ -95,16 +95,16 @@ func (e *VhostExecutor) updateVhost(gparams *platform.GlobalParams, uparams *pla
 		Fatal("Name of the Vhost must be provided")
 	}
 
-	x := &gluev1.VirtualHost{
+	x := &gloov1.VirtualHost{
 		Name: uparams.Name,
 	}
 	if isCreate {
-		_, err := e.store.Create(x)
+		_, err := e.store.V1().VirtualHosts().Create(x)
 		if err != nil {
 			Fatal(err)
 		}
 	} else {
-		_, err := e.store.Update(x)
+		_, err := e.store.V1().VirtualHosts().Update(x)
 		if err != nil {
 			Fatal(err)
 		}
@@ -137,27 +137,27 @@ func (e *VhostExecutor) getVhost(gparams *platform.GlobalParams, uparams *platfo
 
 	if uparams.Name == "" {
 		// List
-		ll, err := e.store.List(&gluev1.VirtualHost{}, nil)
+		ll, err := e.store.V1().VirtualHosts().List()
 		if err != nil {
 			Fatal(err)
 		}
 		for _, o := range ll {
-			e.printVhost(o.(*gluev1.VirtualHost), isDescribe, w)
+			e.printVhost(o, isDescribe, w)
 		}
 	} else {
 		// Single
-		o, err := e.store.Get(&gluev1.VirtualHost{Name: uparams.Name}, nil)
+		o, err := e.store.V1().VirtualHosts().Get(uparams.Name)
 		if err != nil {
 			Fatal(err)
 		}
-		e.printVhost(o.(*gluev1.VirtualHost), isDescribe, w)
+		e.printVhost(o, isDescribe, w)
 	}
 	if !isDescribe {
 		w.Flush()
 	}
 }
 
-func (e *VhostExecutor) printVhost(o *gluev1.VirtualHost, isDescribe bool, w *tabwriter.Writer) {
+func (e *VhostExecutor) printVhost(o *gloov1.VirtualHost, isDescribe bool, w *tabwriter.Writer) {
 	if isDescribe {
 		x, err := json.MarshalIndent(o, "", "  ")
 		if err != nil {

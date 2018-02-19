@@ -5,8 +5,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/solo-io/glue/pkg/api/types/v1"
-	"github.com/solo-io/gluectl/platform"
+	"github.com/solo-io/gloo-api/pkg/api/types/v1"
+	"github.com/solo-io/glooctl/platform"
 	"github.com/spf13/cobra"
 	yaml "gopkg.in/yaml.v2"
 )
