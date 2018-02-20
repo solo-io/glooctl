@@ -28,9 +28,10 @@ func getString(prompt, defstr string, isRequired bool) *string {
 	}
 }
 
-func getNameAndNamespace(isNameRequired bool) {
+func getNameAndNamespace(isNameRequired bool) (string, string) {
 	s := getString("Name", uparams.Name, isNameRequired)
 	uparams.Name = *s
 	ns := getString("Namespace", gparams.Namespace, false)
 	gparams.Namespace = *ns
+	return *s, *ns
 }
