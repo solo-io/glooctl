@@ -130,12 +130,12 @@ func getMatcher(vh *VHost) *v1.Matcher {
 }
 
 func getWeightedDestinations(vh *VHost) []*v1.WeightedDestination {
-
+	return nil
 }
 
 func getSingleDestination(vh *VHost) *v1.Destination {
 	des := &v1.Destination{}
-	answ := *getString("Select destination type - Function (1) or Upstream (2)", "1", true)
+	//	answ := *getString("Select destination type - Function (1) or Upstream (2)", "1", true)
 
 	return des
 }
