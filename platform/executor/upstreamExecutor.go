@@ -90,24 +90,49 @@ func (e *UpstreamExecutor) wait(w int, cb func(e *UpstreamExecutor) bool) error 
 	return fmt.Errorf("Wait timeout")
 }
 
+func convertToSpec(ss *google_protobuf.Struct, spec *map[string]interface{}) error {
+	for n, s := range *spec {
+		switch s.(type) {
+		case *string:
+			ss.Fields[n] = &google_protobuf.Value{Kind: &google_protobuf.Value_StringValue{StringValue: *s.(*string)}}
+		case *int:
+			ss.Fields[n] = &google_protobuf.Value{Kind: &google_protobuf.Value_NumberValue{NumberValue: float64(*s.(*int))}}
+		case *bool:
+			ss.Fields[n] = &google_protobuf.Value{Kind: &google_protobuf.Value_BoolValue{BoolValue: *s.(*bool)}}
+		default:
+			return fmt.Errorf("Unknown value type: %t", s)
+		}
+	}
+	return nil
+}
+
 func (e *UpstreamExecutor) updateUpstream(gparams *platform.GlobalParams, uparams *platform.UpstreamParams, isCreate bool) {
 
 	if uparams.Name == "" || uparams.UType == "" {
 		Fatal("Both Name and Type of the Upstream must be provided")
 	}
 
-	x := &gloov1.Upstream{
-		Name: uparams.Name,
-		Type: uparams.UType,
-		Spec: &google_protobuf.Struct{Fields: uparams.Spec},
-	}
+	spec := google_protobuf.Struct{Fields: make(map[string]*google_protobuf.Value)}
+	convertToSpec(&spec, &uparams.Spec)
+
 	if isCreate {
+		x := &gloov1.Upstream{
+			Name: uparams.Name,
+			Type: uparams.UType,
+			Spec: &spec,
+		}
 		_, err := e.store.V1().Upstreams().Create(x)
 		if err != nil {
 			Fatal(err)
 		}
 	} else {
-		_, err := e.store.V1().Upstreams().Update(x)
+		x, err := e.store.V1().Upstreams().Get(uparams.Name)
+		if err != nil {
+			Fatal(err)
+		}
+		x.Type = uparams.UType
+		x.Spec = &spec
+		_, err = e.store.V1().Upstreams().Update(x)
 		if err != nil {
 			Fatal(err)
 		}

@@ -52,7 +52,7 @@ func GetExecutor(objname, namespace string) platform.Executor {
 	case "kubernetes-file":
 		root := viper.GetString("root")
 		if root == "" {
-			root = path.Join(os.Getenv("HOME"), ".glue")
+			root = path.Join(os.Getenv("HOME"), ".gloo")
 		}
 		var err error
 		dataStore, err = file.NewStorage(root, 0)

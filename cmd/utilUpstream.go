@@ -144,9 +144,11 @@ func LoadUpstreamParamsFromFile() {
 				fmt.Printf("Unknown parameter type: %t\n", v)
 			}
 			if eq {
-				if config.Spec[n] != nil {
-					specs[uparams.UType][n] = config.Spec[n]
+
+				if config.Spec != nil {
+					specs[uparams.UType][n] = config.Spec
 				}
+
 			}
 		}
 	}

@@ -30,10 +30,10 @@ var (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "gluectl",
-	Short: "gluectl configures upstreams and virtual hosts to be used by Glue server",
-	Long: `gluectl configures upstreams and virtual hosts to be used by Glue server
-	Find more information at https://github.com/solo-io/glue`,
+	Use:   "glooctl",
+	Short: "glooctl configures upstreams and virtual hosts to be used by Gloo server",
+	Long: `glooctl configures upstreams and virtual hosts to be used by Gloo server
+	Find more information at https://github.com/solo-io/gloo`,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -54,7 +54,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.gluectl.yaml)")
+	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.glooctl.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&interactive, "interactive", "i", false, "run in interactive mode")
 }
 
@@ -71,9 +71,9 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".gluectl" (without extension).
+		// Search config in home directory with name ".glooctl" (without extension).
 		viper.AddConfigPath(home)
-		viper.SetConfigName(".gluectl")
+		viper.SetConfigName(".glooctl")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
