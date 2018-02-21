@@ -39,9 +39,5 @@ func runDelete(sc storage.Interface, name string) error {
 		return fmt.Errorf("missing name of upstream to delete")
 	}
 
-	err := sc.V1().Upstreams().Delete(name)
-	if err != nil {
-		return err
-	}
-	return nil
+	return sc.V1().Upstreams().Delete(name)
 }

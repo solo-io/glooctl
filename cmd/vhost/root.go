@@ -7,6 +7,9 @@ func VHostCmd() *cobra.Command {
 		Use:   "vhost",
 		Short: "manage virtual hosts",
 	}
+	pflags := cmd.PersistentFlags()
+	var output string
+	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
 	cmd.AddCommand(createCmd(), deleteCmd(), getCmd(), updateCmd())
 	return cmd
 }

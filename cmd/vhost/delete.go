@@ -11,27 +11,29 @@ import (
 func deleteCmd() *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
-		Use:   "delete",
+		Use:   "delete [name]",
 		Short: "delete virtual host",
+		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, errj := util.GetStorageClient(c)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			err = runDelete(sc, filename)
-			if err != nil {
-				fmt.Printf("Unable to delete virtual host %q\n", err)
+			name := args[0]
+			if err := runDelete(sc, name); err != nil {
+				fmt.Printf("Unable to delete virtual host %s: %q\n", name, err)
 				return
 			}
-			fmt.Println("Virtual host deleted")
+			fmt.Printf("Virtual host %s deleted\n", name)
 		},
 	}
-
-	cmd.Flags().StringVar(&filename, "filename", "f", "file to use to delete virtual host")
 	return cmd
 }
 
-func runDelete(sc storage.Interface, filename string) error {
-	return fmt.Errorf("not implemented")
+func runDelete(sc storage.Interface, name string) error {
+	if name == "" {
+		return fmt.Errorf("missing name of virtual host to delete")
+	}
+	return sc.V1().VirtualHosts().Delete(name)
 }

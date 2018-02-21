@@ -3,6 +3,8 @@ package vhost
 import (
 	"fmt"
 
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo-storage"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
@@ -19,12 +21,19 @@ func createCmd() *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			err = runCreate(sc, filename)
+			vh, err := runCreate(sc, filename)
 			if err != nil {
 				fmt.Printf("Unable to create virtual host %q\n", err)
 				return
 			}
 			fmt.Println("Virtual host created")
+			output, _ := c.InheritedFlags().GetString("output")
+			if output == "yaml" {
+				printYAML(vh)
+			}
+			if output == "json" {
+				printJSON(vh)
+			}
 		},
 	}
 
@@ -32,6 +41,10 @@ func createCmd() *cobra.Command {
 	return cmd
 }
 
-func runCreate(sc storage.Interface, filename string) error {
-	return fmt.Errorf("not implemented")
+func runCreate(sc storage.Interface, filename string) (*v1.VirtualHost, error) {
+	vh, err := parseFile(filename)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to load virtual host from %s", filename)
+	}
+	return sc.V1().VirtualHosts().Create(vh)
 }
