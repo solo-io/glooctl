@@ -9,13 +9,12 @@ import (
 )
 
 func deleteCmd() *cobra.Command {
-	var filename string
 	cmd := &cobra.Command{
 		Use:   "delete [name]",
 		Short: "delete virtual host",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			sc, errj := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(c)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
