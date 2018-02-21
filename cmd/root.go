@@ -19,24 +19,27 @@ import (
 	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/solo-io/glooctl/cmd/config"
+	"github.com/solo-io/glooctl/cmd/upstream"
+	"github.com/solo-io/glooctl/cmd/vhost"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	cfgFile     string
-	interactive bool
+	cfgFile    string
+	glooFolder string
+	kubeConfig string
+	namespace  string
+	syncPeriod int
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "glooctl",
-	Short: "glooctl configures upstreams and virtual hosts to be used by Gloo server",
+	Short: "manage resources in the Gloo Universe",
 	Long: `glooctl configures upstreams and virtual hosts to be used by Gloo server
 	Find more information at https://github.com/solo-io/gloo`,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -49,13 +52,22 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	// TODO(ashish) Enable Viper
+	//cobra.OnInitialize(initConfig)
 
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.glooctl.yaml)")
-	rootCmd.PersistentFlags().BoolVarP(&interactive, "interactive", "i", false, "run in interactive mode")
+	// global flags
+	flags := rootCmd.PersistentFlags()
+	//flags.StringVar(&cfgFile, "glooconfig", "", "config file (default is $HOME/.glooctl.yaml)")
+	flags.StringVar(&glooFolder, "gloo-folder", "", "storage folder")
+	flags.StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
+	flags.StringVarP(&namespace, "namespace", "n", "", "namespace for resources")
+	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
+
+	rootCmd.AddCommand(
+		upstream.UpstreamCmd(),
+		vhost.VHostCmd(),
+		config.ConfigCmd(),
+		registerCmd())
 }
 
 // initConfig reads in config file and ENV variables if set.
@@ -76,10 +88,12 @@ func initConfig() {
 		viper.SetConfigName(".glooctl")
 	}
 
+	viper.SetEnvPrefix("gloo")
 	viper.AutomaticEnv() // read in environment variables that match
 
 	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	if err := viper.ReadInConfig(); err != nil {
+		fmt.Println("Unable to read config: ", err)
+		os.Exit(1)
 	}
 }

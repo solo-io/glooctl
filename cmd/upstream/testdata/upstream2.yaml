@@ -1,0 +1,5 @@
+name: testupstream
+type: aws
+spec:
+  region: "us-east-2"
+  credential: "aws-secret"
