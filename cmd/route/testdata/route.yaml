@@ -1,0 +1,8 @@
+requestMatcher:
+  pathPrefix: /foo/bar
+  verbs:
+  - GET
+  - POST
+single_destination:
+    upstream:
+      name: upstream2

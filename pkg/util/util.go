@@ -1,7 +1,8 @@
 package util
 
 import (
-	"fmt"
+	"os"
+	"path/filepath"
 	"time"
 
 	storage "github.com/solo-io/gloo-storage"
@@ -13,20 +14,29 @@ import (
 
 func GetStorageClient(c *cobra.Command) (storage.Interface, error) {
 	flags := c.InheritedFlags()
-	kubeConfig, _ := flags.GetString("kubeconfig")
-	namespace, _ := flags.GetString("namespace")
 	period, _ := flags.GetInt("sync-period")
 	syncPeriod := time.Duration(period) * time.Second
-	if kubeConfig != "" {
-		kubeClient, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
-		if err != nil {
-			return nil, err
-		}
-		return crd.NewStorage(kubeClient, namespace, syncPeriod)
-	}
+
 	glooFolder, _ := flags.GetString("gloo-folder")
 	if glooFolder != "" {
 		return file.NewStorage(glooFolder, syncPeriod)
 	}
-	return nil, fmt.Errorf("unable to create storage client")
+
+	kubeConfig, _ := flags.GetString("kubeconfig")
+	namespace, _ := flags.GetString("namespace")
+	if kubeConfig == "" && homeDir() != "" {
+		kubeConfig = filepath.Join(homeDir(), ".kube", "config")
+	}
+	kubeClient, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return crd.NewStorage(kubeClient, namespace, syncPeriod)
+}
+
+func homeDir() string {
+	if h := os.Getenv("HOME"); h != "" {
+		return h
+	}
+	return os.Getenv("USERPROFILE") // windows
 }

@@ -37,7 +37,9 @@ func createCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVar(&filename, "filename", "f", "file to use to create virtual host")
+	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to use to create virtual host")
+	cmd.MarkFlagFilename("filename")
+	cmd.MarkFlagRequired("filename")
 	return cmd
 }
 

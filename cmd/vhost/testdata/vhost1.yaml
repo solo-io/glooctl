@@ -1,0 +1,46 @@
+name: vhost1
+routes:
+- extensions:
+    auth:
+      credentials:
+        Password: bob
+        Username: alice
+      token: my-12345
+  request_matcher:
+    path_exact: /bar
+    verbs:
+    - GET
+    - POST
+  single_destination:
+    upstream:
+      name: my-upstream
+- extensions:
+    auth:
+      credentials:
+        Password: bob
+        Username: alice
+      token: my-12345
+  request_matcher:
+    headers:
+      x-foo-bar: ""
+    path_prefix: /foo
+    verbs:
+    - GET
+    - POST
+  single_destination:
+    function:
+      function_name: foo
+      upstream_name: aws
+- event_matcher:
+    event_type: /apple
+  extensions:
+    auth:
+      credentials:
+        Password: bob
+        Username: alice
+      token: my-12345
+  single_destination:
+    function:
+      function_name: foo
+      upstream_name: aws
+

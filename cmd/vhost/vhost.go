@@ -1,12 +1,12 @@
 package vhost
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-storage/file"
+	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 func parseFile(filename string) (*v1.VirtualHost, error) {
@@ -19,7 +19,7 @@ func parseFile(filename string) (*v1.VirtualHost, error) {
 }
 
 func printJSON(v *v1.VirtualHost) {
-	b, err := json.MarshalIndent(v, "", "  ")
+	b, err := protoutil.Marshal(v)
 	if err != nil {
 		fmt.Println("unable to convert to JSON ", err)
 		return
@@ -28,7 +28,12 @@ func printJSON(v *v1.VirtualHost) {
 }
 
 func printYAML(v *v1.VirtualHost) {
-	b, err := yaml.Marshal(v)
+	jsn, err := protoutil.Marshal(v)
+	if err != nil {
+		fmt.Println("uanble to marshal ", err)
+		return
+	}
+	b, err := yaml.JSONToYAML(jsn)
 	if err != nil {
 		fmt.Println("unable to convert to YAML", err)
 		return
@@ -36,22 +41,16 @@ func printYAML(v *v1.VirtualHost) {
 	fmt.Println(string(b))
 }
 
-func printJSONList(v []*v1.VirtualHost) {
-	b, err := json.MarshalIndent(v, "", "  ")
-	if err != nil {
-		fmt.Println("unable to convert to JSON ", err)
-		return
+func printJSONList(vhosts []*v1.VirtualHost) {
+	for _, v := range vhosts {
+		printJSON(v)
 	}
-	fmt.Println(string(b))
 }
 
-func printYAMLList(v []*v1.VirtualHost) {
-	b, err := yaml.Marshal(v)
-	if err != nil {
-		fmt.Println("unable to convert to YAML ", err)
-		return
+func printYAMLList(vhosts []*v1.VirtualHost) {
+	for _, v := range vhosts {
+		printYAML(v)
 	}
-	fmt.Println(string(b))
 }
 
 func printSummaryList(v []*v1.VirtualHost) {

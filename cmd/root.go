@@ -20,6 +20,7 @@ import (
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/solo-io/glooctl/cmd/config"
+	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
 	"github.com/spf13/cobra"
@@ -63,9 +64,11 @@ func init() {
 	flags.StringVarP(&namespace, "namespace", "n", "", "namespace for resources")
 	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
 
+	rootCmd.SuggestionsMinimumDistance = 1
 	rootCmd.AddCommand(
 		upstream.UpstreamCmd(),
 		vhost.VHostCmd(),
+		route.RouteCmd(),
 		config.ConfigCmd(),
 		registerCmd())
 }

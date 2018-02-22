@@ -50,6 +50,7 @@ func runGet(sc storage.Interface, output, name string) error {
 		default:
 			printSummaryList(v)
 		}
+		return nil
 	}
 
 	v, err := sc.V1().VirtualHosts().Get(name)

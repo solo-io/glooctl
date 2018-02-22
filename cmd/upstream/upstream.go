@@ -1,12 +1,12 @@
 package upstream
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-storage/file"
+	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
 func parseFile(filename string) (*v1.Upstream, error) {
@@ -19,7 +19,7 @@ func parseFile(filename string) (*v1.Upstream, error) {
 }
 
 func printJSON(u *v1.Upstream) {
-	b, err := json.MarshalIndent(u, "", "  ")
+	b, err := protoutil.Marshal(u)
 	if err != nil {
 		fmt.Println("unable to convert to JSON ", err)
 		return
@@ -28,7 +28,12 @@ func printJSON(u *v1.Upstream) {
 }
 
 func printYAML(u *v1.Upstream) {
-	b, err := yaml.Marshal(u)
+	jsn, err := protoutil.Marshal(u)
+	if err != nil {
+		fmt.Println("unable to marshal ", err)
+		return
+	}
+	b, err := yaml.JSONToYAML(jsn)
 	if err != nil {
 		fmt.Println("unable to convert to YAML ", err)
 		return
@@ -37,21 +42,15 @@ func printYAML(u *v1.Upstream) {
 }
 
 func printJSONList(u []*v1.Upstream) {
-	b, err := json.MarshalIndent(u, "", "  ")
-	if err != nil {
-		fmt.Println("unable to convert to JSON ", err)
-		return
+	for _, entry := range u {
+		printJSON(entry)
 	}
-	fmt.Println(string(b))
 }
 
 func printYAMLList(u []*v1.Upstream) {
-	b, err := yaml.Marshal(u)
-	if err != nil {
-		fmt.Println("unable to convert to YAML ", err)
-		return
+	for _, entry := range u {
+		printYAML(entry)
 	}
-	fmt.Println(string(b))
 }
 
 func printSummaryList(u []*v1.Upstream) {

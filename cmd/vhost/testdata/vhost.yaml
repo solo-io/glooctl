@@ -1,0 +1,10 @@
+name: vhost1
+routes:
+- requestMatcher:
+    pathExact: /bar
+    verbs:
+    - GET
+    - POST
+  single_destination:
+    upstream:
+      name: my-upstream
