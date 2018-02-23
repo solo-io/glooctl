@@ -18,13 +18,10 @@ import (
 	"fmt"
 	"os"
 
-	homedir "github.com/mitchellh/go-homedir"
-	"github.com/solo-io/glooctl/cmd/config"
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
 
 var (
@@ -53,13 +50,8 @@ func Execute() {
 }
 
 func init() {
-	// TODO(ashish) Enable Viper
-	//cobra.OnInitialize(initConfig)
-
 	// global flags
 	flags := rootCmd.PersistentFlags()
-	//flags.StringVar(&cfgFile, "glooconfig", "", "config file (default is $HOME/.glooctl.yaml)")
-	flags.StringVar(&glooFolder, "gloo-folder", "", "storage folder")
 	flags.StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
 	flags.StringVarP(&namespace, "namespace", "n", "", "namespace for resources")
 	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
@@ -69,34 +61,5 @@ func init() {
 		upstream.UpstreamCmd(),
 		vhost.VHostCmd(),
 		route.RouteCmd(),
-		config.ConfigCmd(),
 		registerCmd())
-}
-
-// initConfig reads in config file and ENV variables if set.
-func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
-	} else {
-		// Find home directory.
-		home, err := homedir.Dir()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-
-		// Search config in home directory with name ".glooctl" (without extension).
-		viper.AddConfigPath(home)
-		viper.SetConfigName(".glooctl")
-	}
-
-	viper.SetEnvPrefix("gloo")
-	viper.AutomaticEnv() // read in environment variables that match
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Unable to read config: ", err)
-		os.Exit(1)
-	}
 }

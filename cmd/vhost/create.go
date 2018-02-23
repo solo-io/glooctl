@@ -26,7 +26,7 @@ func createCmd() *cobra.Command {
 				fmt.Printf("Unable to create virtual host %q\n", err)
 				return
 			}
-			fmt.Println("Virtual host created")
+			fmt.Println("Virtual host created ", vh.Name)
 			output, _ := c.InheritedFlags().GetString("output")
 			if output == "yaml" {
 				printYAML(vh)

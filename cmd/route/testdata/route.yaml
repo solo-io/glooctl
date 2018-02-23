@@ -1,5 +1,5 @@
-requestMatcher:
-  pathPrefix: /foo/bar
+request_matcher:
+  path_prefix: /foo/bar
   verbs:
   - GET
   - POST

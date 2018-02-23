@@ -10,7 +10,7 @@ import (
 func registerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register",
-		Short: "regiter Gloo CRDs",
+		Short: "register Gloo CRDs",
 		Run: func(c *cobra.Command, args []string) {
 			storageClient, err := util.GetStorageClient(c)
 			if err != nil {

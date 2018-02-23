@@ -1,7 +1,7 @@
 name: vhost1
 routes:
-- requestMatcher:
-    pathExact: /bar
+- request_matcher:
+    path_exact: /bar
     verbs:
     - GET
     - POST
