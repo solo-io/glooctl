@@ -15,6 +15,6 @@ func RouteCmd() *cobra.Command {
 	var vhost string
 	pflags.StringVarP(&vhost, "vhost", "V", "", "name of the virtual host")
 	cmd.MarkPersistentFlagRequired("vhost")
-	cmd.AddCommand(appendCmd(), sortCmd(), getCmd())
+	cmd.AddCommand(appendCmd(), sortCmd(), getCmd(), deleteCmd())
 	return cmd
 }

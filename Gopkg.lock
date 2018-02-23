@@ -127,8 +127,8 @@
 [[projects]]
   name = "github.com/json-iterator/go"
   packages = ["."]
-  revision = "e7c7f3b33712573affdcc7a107218e7926b9a05b"
-  version = "1.0.6"
+  revision = "be70f29b04dea7efb4d82a8989c33aee989b74d1"
+  version = "1.1.0"
 
 [[projects]]
   name = "github.com/juju/ratelimit"
@@ -209,13 +209,13 @@
     "pkg/log",
     "pkg/protoutil"
   ]
-  revision = "1253b633485ac876beb56afa2bfa586e74b4ae1e"
+  revision = "bbd9fff65cdd00b64c55ecb9344518f3cb256fb3"
 
 [[projects]]
   branch = "master"
   name = "github.com/solo-io/gloo-api"
   packages = ["pkg/api/types/v1"]
-  revision = "d4a2acba50c037ce1a0637c1a7563ada46004470"
+  revision = "adfafb38b670925fecc64342f1bba7ed6bf9d052"
 
 [[projects]]
   branch = "master"
@@ -230,7 +230,7 @@
     "file",
     "internal/crud"
   ]
-  revision = "b66a02e9662255271a59d21e15a6257010cd2d2e"
+  revision = "9884fc33dc177200df7e662329e871fbc8a6f1a6"
 
 [[projects]]
   name = "github.com/spf13/afero"
@@ -272,10 +272,19 @@
   version = "v1.0.0"
 
 [[projects]]
+  name = "github.com/v2pro/plz"
+  packages = [
+    "concurrent",
+    "reflect2"
+  ]
+  revision = "571356917fca907b069b7b47a14cd32ba0b340d4"
+  version = "0.9.0"
+
+[[projects]]
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "432090b8f568c018896cd8a0fb0345872bbac6ce"
+  revision = "49796115aa4b964c318aad4f3084fdb41e9aa067"
 
 [[projects]]
   branch = "master"
@@ -296,7 +305,7 @@
     "unix",
     "windows"
   ]
-  revision = "37707fdb30a5b38865cfb95e5aab41707daec7fd"
+  revision = "c1138c84af3a9927aee1a1b8b7ce06c9b7ea52bc"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -482,6 +491,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "03b112e00278ea5abef2444ea1aeb2595bce99dde22717819a02e8911bfa1a62"
+  inputs-digest = "bcc0edd837c9ecf30e246e0f0603f93eda4b8b3d2ca229b4a240ac3732c5483f"
   solver-name = "gps-cdcl"
   solver-version = 1

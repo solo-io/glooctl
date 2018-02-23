@@ -13,7 +13,7 @@ func appendCmd() *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
 		Use:   "append",
-		Short: "append a route to on a virtual host's routes",
+		Short: "append a route on a virtual host's routes",
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := util.GetStorageClient(c)
 			if err != nil {
