@@ -48,5 +48,8 @@ func runCreate(sc storage.Interface, filename string) (*v1.VirtualHost, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to load virtual host from %s", filename)
 	}
+	if err := defaultVHostValidation(vh); err != nil {
+		return nil, err
+	}
 	return sc.V1().VirtualHosts().Create(vh)
 }

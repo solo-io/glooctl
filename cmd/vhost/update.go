@@ -48,6 +48,9 @@ func runUpdate(sc storage.Interface, filename string) (*v1.VirtualHost, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to load virtual host from %s", filename)
 	}
+	if err := defaultVHostValidation(vh); err != nil {
+		return nil, err
+	}
 	existing, err := sc.V1().VirtualHosts().Get(vh.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to find existing virtual host %s", vh.Name)

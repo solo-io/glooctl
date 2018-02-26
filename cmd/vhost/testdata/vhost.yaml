@@ -1,4 +1,4 @@
-name: vhost1
+name: default
 routes:
 - request_matcher:
     path_exact: /bar

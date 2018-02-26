@@ -81,7 +81,7 @@ var (
 	}
 
 	vhost1 = &v1.VirtualHost{
-		Name:   "vhost1",
+		Name:   "default",
 		Routes: []*v1.Route{route1, route2, route3},
 	}
 )
