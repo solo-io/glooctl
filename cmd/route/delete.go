@@ -9,16 +9,16 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func unmapCmd() *cobra.Command {
+func deleteCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "unmap",
-		Short: "unmap a route",
+		Use:   "delete",
+		Short: "delete a route",
 		Long: `
-Unmap a route based on either the definition in the YAML file
+Delete a route based on either the definition in the YAML file
 or based on the route matcher and destintation provided in the CLI.
 
-glooctl matches routes based on matcher and destintation only. It
-doesn't include extensions.`,
+While selecting routes to delete, glooctl matches routes based on 
+matcher and destintation only. It doesn't include extensions.`,
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := util.GetStorageClient(c)
 			if err != nil {
@@ -33,7 +33,7 @@ doesn't include extensions.`,
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runUnmap(sc, vhost, route)
+			routes, err := runDelete(sc, vhost, route)
 			if err != nil {
 				fmt.Printf("Unable to get route for %s: %q\n", vhost, err)
 				return
@@ -45,7 +45,7 @@ doesn't include extensions.`,
 	return cmd
 }
 
-func runUnmap(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
+func runDelete(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
 	v, err := virtualHost(sc, vhost)
 	if err != nil {
 		return nil, err

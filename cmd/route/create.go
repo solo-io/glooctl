@@ -9,12 +9,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func mapCmd() *cobra.Command {
+func createCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "map",
-		Short: "map a route to a destination",
+		Use:   "create",
+		Short: "create a route to a destination",
 		Long: `
-Map a rout. The route, with its matcher and destination, can be provided
+Create a route. The route, with its matcher and destination, can be provided
 using a file or by specifying one of the matcher and a destintation using
 the flags.`,
 		Run: func(c *cobra.Command, args []string) {
@@ -30,7 +30,7 @@ the flags.`,
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runMap(sc, vhost, route)
+			routes, err := runCreate(sc, vhost, route)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", vhost, err)
 				return
@@ -42,7 +42,7 @@ the flags.`,
 	return cmd
 }
 
-func runMap(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
+func runCreate(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
 	v, err := virtualHost(sc, vhost)
 	if err != nil {
 		return nil, err

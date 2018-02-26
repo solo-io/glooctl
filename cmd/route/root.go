@@ -21,7 +21,7 @@ func RouteCmd() *cobra.Command {
 	var file string
 	pflags.StringVarP(&file, "filename", "f", "", "file with route defintion")
 	cmd.MarkFlagFilename("filename")
-	cmd.AddCommand(getCmd(), mapCmd(), unmapCmd(), sortCmd())
+	cmd.AddCommand(getCmd(), createCmd(), deleteCmd(), sortCmd())
 	return cmd
 }
 
