@@ -1,6 +1,9 @@
 package route
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
 
 // RouteCmd returns command related to managing routes on a virtual host
 func RouteCmd() *cobra.Command {
@@ -10,11 +13,26 @@ func RouteCmd() *cobra.Command {
 	}
 
 	pflags := cmd.PersistentFlags()
+	setupRouteParams(pflags)
 	var output string
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
 	var vhost string
-	pflags.StringVarP(&vhost, "vhost", "V", "", "name of the virtual host")
-	cmd.MarkPersistentFlagRequired("vhost")
-	cmd.AddCommand(appendCmd(), sortCmd(), getCmd(), deleteCmd())
+	pflags.StringVarP(&vhost, "vhost", "V", "default", "name of the virtual host")
+	var file string
+	pflags.StringVarP(&file, "filename", "f", "", "file with route defintion")
+	cmd.MarkFlagFilename("filename")
+	cmd.AddCommand(getCmd(), mapCmd(), unmapCmd(), sortCmd())
 	return cmd
+}
+
+func setupRouteParams(flags *pflag.FlagSet) {
+	r := routeDetail{}
+	flags.StringVarP(&r.event, "event", "e", "", "event type to match")
+	flags.StringVar(&r.pathExact, "path-exact", "", "exact path to match")
+	flags.StringVar(&r.pathRegex, "path-regex", "", "path regex to match")
+	flags.StringVar(&r.pathPrefix, "path-prefix", "", "path prefix to match")
+	flags.StringVar(&r.verb, "http-method", "", "HTTP method to match")
+	flags.StringVar(&r.headers, "header", "", "header to match")
+	flags.StringVar(&r.upstream, "upstream", "", "desitnation upstream")
+	flags.StringVar(&r.function, "function", "", "destination function")
 }

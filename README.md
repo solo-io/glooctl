@@ -29,7 +29,11 @@ they default to `~/.kube/config` and `gloo-system` respectively.
 ```
 glooctl route map --path-prefix /calculator --function aws_lambda:calc
 ```
+Uses default virtual host (named 'default'?)
+should use -V to specify virtual host or can we use --host hhh to find the virtual host or should?
+should we create a virtual host if not present?
 
+will create route even if function doesn't exist
 
 ## Managing Routes on a Virtual Host
 The `route` command allows you to manage the routes on a specific

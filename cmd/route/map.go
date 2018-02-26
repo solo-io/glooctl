@@ -9,42 +9,45 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func appendCmd() *cobra.Command {
-	var filename string
+func mapCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "append",
-		Short: "append a route on a virtual host's routes",
+		Use:   "map",
+		Short: "map a route to a destination",
+		Long: `
+Map a rout. The route, with its matcher and destination, can be provided
+using a file or by specifying one of the matcher and a destintation using
+the flags.`,
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := util.GetStorageClient(c)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			vhost, _ := c.InheritedFlags().GetString("vhost")
-			routes, err := runUpdate(sc, vhost, filename)
+			flags := c.InheritedFlags()
+			vhost, _ := flags.GetString("vhost")
+			route, err := route(flags)
+			if err != nil {
+				fmt.Printf("Unable to get route %q\n", err)
+				return
+			}
+			routes, err := runMap(sc, vhost, route)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", vhost, err)
 				return
 			}
-			output, _ := c.InheritedFlags().GetString("output")
+			output, _ := flags.GetString("output")
 			printRoutes(routes, output)
 		},
 	}
-	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to route to append")
-	cmd.MarkFlagFilename("filename")
-	cmd.MarkFlagRequired("filename")
 	return cmd
 }
 
-func runUpdate(sc storage.Interface, vhost, filename string) ([]*v1.Route, error) {
-	route, err := parseFile(filename)
+func runMap(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
+	v, err := virtualHost(sc, vhost)
 	if err != nil {
 		return nil, err
 	}
-	v, err := sc.V1().VirtualHosts().Get(vhost)
-	if err != nil {
-		return nil, err
-	}
+	fmt.Println("Using virtual host: ", vhost)
 	v.Routes = append(v.GetRoutes(), route)
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {

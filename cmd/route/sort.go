@@ -34,10 +34,11 @@ func sortCmd() *cobra.Command {
 }
 
 func runSort(sc storage.Interface, vhost string) ([]*v1.Route, error) {
-	v, err := sc.V1().VirtualHosts().Get(vhost)
+	v, err := virtualHost(sc, vhost)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Using virtual host: ", vhost)
 	sortRoutes(v.Routes)
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {

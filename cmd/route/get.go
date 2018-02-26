@@ -34,9 +34,10 @@ func getCmd() *cobra.Command {
 }
 
 func runGet(sc storage.Interface, vhost string) ([]*v1.Route, error) {
-	v, err := sc.V1().VirtualHosts().Get(vhost)
+	v, err := virtualHost(sc, vhost)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Println("Using virtual host: ", vhost)
 	return v.GetRoutes(), nil
 }
