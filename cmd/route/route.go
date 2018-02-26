@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/pkg/errors"
 	storage "github.com/solo-io/gloo-storage"
 	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/spf13/pflag"
@@ -294,11 +295,57 @@ func createDefaultVHost(sc storage.Interface) error {
 	return nil
 }
 
-func virtualHost(sc storage.Interface, name string) (*v1.VirtualHost, error) {
+func virtualHost(sc storage.Interface, domain string, create bool) (*v1.VirtualHost, bool, error) {
 	// make sure default virtual host exists
 	if err := createDefaultVHost(sc); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
-	return sc.V1().VirtualHosts().Get(name)
+	if domain == "" {
+		vh, err := sc.V1().VirtualHosts().Get(defaultVHost)
+		if err != nil {
+			return nil, false, err
+		}
+		return vh, false, nil
+	}
+
+	// we are looking for specific vhost
+	vhosts, err := sc.V1().VirtualHosts().List()
+	if err != nil {
+		return nil, false, errors.Wrap(err, "unable to get list of existing virtual hosts")
+	}
+	var validOnes []*v1.VirtualHost
+	for _, v := range vhosts {
+		if contains(v, domain) {
+			validOnes = append(validOnes, v)
+		}
+	}
+	switch len(validOnes) {
+	case 0:
+		if !create {
+			return nil, false, fmt.Errorf("didn't find any virtual host for domain %s", domain)
+		}
+		created, err := sc.V1().VirtualHosts().Create(&v1.VirtualHost{
+			Name:    domain,
+			Domains: []string{domain},
+		})
+		if err != nil {
+			return nil, false, err
+		}
+		return created, true, nil
+
+	case 1:
+		return validOnes[0], false, nil
+	default:
+		return nil, false, fmt.Errorf("the domain %s matched %d virtual hosts", domain, len(validOnes))
+	}
+}
+
+func contains(vh *v1.VirtualHost, d string) bool {
+	for _, e := range vh.Domains {
+		if e == d {
+			return true
+		}
+	}
+	return false
 }

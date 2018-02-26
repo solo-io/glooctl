@@ -19,11 +19,11 @@ func getCmd() *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			vhost, _ := c.InheritedFlags().GetString("vhost")
+			domain, _ := c.InheritedFlags().GetString("domain")
 
-			routes, err := runGet(sc, vhost)
+			routes, err := runGet(sc, domain)
 			if err != nil {
-				fmt.Printf("Unable to get routes for %s: %q\n", vhost, err)
+				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
 				return
 			}
 			output, _ := c.InheritedFlags().GetString("output")
@@ -33,11 +33,15 @@ func getCmd() *cobra.Command {
 	return cmd
 }
 
-func runGet(sc storage.Interface, vhost string) ([]*v1.Route, error) {
-	v, err := virtualHost(sc, vhost)
+func runGet(sc storage.Interface, domain string) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Using virtual host: ", vhost)
+	if created {
+		fmt.Println("Using newly created virtual host:", v.Name)
+	} else {
+		fmt.Println("Using virtual host:", v.Name)
+	}
 	return v.GetRoutes(), nil
 }

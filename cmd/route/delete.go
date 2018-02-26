@@ -27,15 +27,15 @@ matcher and destintation only. It doesn't include extensions.`,
 			}
 
 			flags := c.InheritedFlags()
-			vhost, _ := flags.GetString("vhost")
+			domain, _ := flags.GetString("domain")
 			route, err := route(flags)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runDelete(sc, vhost, route)
+			routes, err := runDelete(sc, domain, route)
 			if err != nil {
-				fmt.Printf("Unable to get route for %s: %q\n", vhost, err)
+				fmt.Printf("Unable to get route for %s: %q\n", domain, err)
 				return
 			}
 			output, _ := flags.GetString("output")
@@ -45,12 +45,16 @@ matcher and destintation only. It doesn't include extensions.`,
 	return cmd
 }
 
-func runDelete(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
-	v, err := virtualHost(sc, vhost)
+func runDelete(sc storage.Interface, domain string, route *v1.Route) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Using virtual host: ", vhost)
+	if created {
+		fmt.Println("Using newly created virtual host:", v.Name)
+	} else {
+		fmt.Println("Using virtual host:", v.Name)
+	}
 	v.Routes = remove(v.GetRoutes(), route)
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {
@@ -63,7 +67,6 @@ func remove(routes []*v1.Route, route *v1.Route) []*v1.Route {
 	var updated []*v1.Route
 	for _, r := range routes {
 		if !match(route, r) {
-			fmt.Println("didint' match")
 			updated = append(updated, r)
 		}
 	}
@@ -71,15 +74,11 @@ func remove(routes []*v1.Route, route *v1.Route) []*v1.Route {
 }
 
 func match(left, right *v1.Route) bool {
-	fmt.Println("right: ")
-	printYAML(right)
 	if !left.Matcher.Equal(right.Matcher) {
-		fmt.Println("matcher didn't match")
 		return false
 	}
 
 	if left.GetSingleDestination() != nil && right.GetSingleDestination() != nil {
-		fmt.Println("comparing single destination")
 		return left.GetSingleDestination().Equal(right.GetSingleDestination())
 	}
 

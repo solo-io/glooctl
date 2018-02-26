@@ -24,15 +24,15 @@ the flags.`,
 				return
 			}
 			flags := c.InheritedFlags()
-			vhost, _ := flags.GetString("vhost")
+			domain, _ := flags.GetString("domain")
 			route, err := route(flags)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runCreate(sc, vhost, route)
+			routes, err := runCreate(sc, domain, route)
 			if err != nil {
-				fmt.Printf("Unable to get routes for %s: %q\n", vhost, err)
+				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
 				return
 			}
 			output, _ := flags.GetString("output")
@@ -42,12 +42,16 @@ the flags.`,
 	return cmd
 }
 
-func runCreate(sc storage.Interface, vhost string, route *v1.Route) ([]*v1.Route, error) {
-	v, err := virtualHost(sc, vhost)
+func runCreate(sc storage.Interface, domain string, route *v1.Route) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, domain, true)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Using virtual host: ", vhost)
+	if created {
+		fmt.Println("Using newly virtual host: ", v.Name)
+	} else {
+		fmt.Println("Using virtual host: ", v.Name)
+	}
 	v.Routes = append(v.GetRoutes(), route)
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {

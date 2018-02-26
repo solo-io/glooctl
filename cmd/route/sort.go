@@ -20,9 +20,9 @@ func sortCmd() *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			vhost, _ := c.InheritedFlags().GetString("vhost")
+			domain, _ := c.InheritedFlags().GetString("domain")
 
-			routes, err := runSort(sc, vhost)
+			routes, err := runSort(sc, domain)
 			if err != nil {
 
 			}
@@ -33,12 +33,17 @@ func sortCmd() *cobra.Command {
 	return cmd
 }
 
-func runSort(sc storage.Interface, vhost string) ([]*v1.Route, error) {
-	v, err := virtualHost(sc, vhost)
+func runSort(sc storage.Interface, domain string) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Using virtual host: ", vhost)
+	if created {
+		fmt.Println("Using newly created virtual host:", v.Name)
+	} else {
+		fmt.Println("Using virtual host:", v.Name)
+	}
+
 	sortRoutes(v.Routes)
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {
