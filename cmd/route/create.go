@@ -24,8 +24,8 @@ the flags.`,
 				return
 			}
 			flags := c.InheritedFlags()
-			domain, _ := flags.GetString("domain")
-			route, err := route(flags)
+			domain, _ := flags.GetString(flagDomain)
+			route, err := route(flags, sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
@@ -39,6 +39,11 @@ the flags.`,
 			printRoutes(routes, output)
 		},
 	}
+	kube := kubeUpstream{}
+	flags := cmd.Flags()
+	flags.StringVar(&kube.name, flagKubeName, "", "kubernetes service name")
+	flags.StringVar(&kube.namespace, flagKubeNamespace, "", "kubernetes service namespace")
+	flags.IntVar(&kube.port, flagKubePort, 0, "kubernetes service port")
 	return cmd
 }
 

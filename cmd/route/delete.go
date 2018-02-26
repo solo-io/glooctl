@@ -28,7 +28,7 @@ matcher and destintation only. It doesn't include extensions.`,
 
 			flags := c.InheritedFlags()
 			domain, _ := flags.GetString("domain")
-			route, err := route(flags)
+			route, err := route(flags, sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return

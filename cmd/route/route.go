@@ -3,6 +3,7 @@ package route
 import (
 	"bytes"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,50 @@ import (
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-storage/file"
 )
+
+const (
+	flagDomain   = "domain"
+	flagFilename = "filename"
+
+	flagEvent      = "event"
+	flagPathExact  = "path-exact"
+	flagPathRegex  = "path-regex"
+	flagPathPrefix = "path-prefix"
+	flagMethod     = "http-method"
+	flagHeaders    = "header"
+	flagUpstream   = "upstream"
+	flagFunction   = "function"
+
+	flagKubeName      = "kube-upstream"
+	flagKubeNamespace = "kube-namespace"
+	flagKubePort      = "kube-port"
+
+	defaultVHost = "default"
+
+	upstreamTypeKubernetes = "kubernetes"
+	kubeSpecName           = "service_name"
+	kubeSpecNamespace      = "service_namespace"
+	kubeSpecPort           = "service_port"
+)
+
+type kubeUpstream struct {
+	name      string
+	namespace string
+	port      int
+}
+
+type routeDetail struct {
+	event      string
+	pathExact  string
+	pathRegex  string
+	pathPrefix string
+	verb       string
+	headers    string
+	upstream   string
+	function   string
+
+	kube kubeUpstream
+}
 
 func parseFile(filename string) (*v1.Route, error) {
 	var r v1.Route
@@ -160,24 +205,20 @@ func upstreamToString(u *v1.UpstreamDestination, f *v1.FunctionDestination) stri
 	return "<no destintation specified>"
 }
 
-type routeDetail struct {
-	event      string
-	pathExact  string
-	pathRegex  string
-	pathPrefix string
-	verb       string
-	headers    string
-	upstream   string
-	function   string
-}
-
-func route(flags *pflag.FlagSet) (*v1.Route, error) {
-	filename, _ := flags.GetString("filename")
+func route(flags *pflag.FlagSet, sc storage.Interface) (*v1.Route, error) {
+	filename, _ := flags.GetString(flagFilename)
 	if filename != "" {
 		return parseFile(filename)
 	}
 
 	rd := routeDetails(flags)
+	if rd.kube.name != "" {
+		upstream, err := upstream(rd.kube, sc)
+		if err != nil {
+			return nil, err
+		}
+		rd.upstream = upstream.Name
+	}
 	return fromRouteDetail(rd)
 }
 
@@ -186,15 +227,27 @@ func routeDetails(flags *pflag.FlagSet) *routeDetail {
 		v, _ := flags.GetString(key)
 		return v
 	}
+
+	port, err := flags.GetInt(flagKubePort)
+	if err != nil {
+		port = 0
+	}
+
 	return &routeDetail{
-		event:      get("event"),
-		pathExact:  get("path-exact"),
-		pathRegex:  get("path-regex"),
-		pathPrefix: get("path-prefix"),
-		verb:       get("http-method"),
-		headers:    get("header"),
-		upstream:   get("upstream"),
-		function:   get("function"),
+		event:      get(flagEvent),
+		pathExact:  get(flagPathExact),
+		pathRegex:  get(flagPathRegex),
+		pathPrefix: get(flagPathPrefix),
+		verb:       get(flagMethod),
+		headers:    get(flagHeaders),
+		upstream:   get(flagUpstream),
+		function:   get(flagFunction),
+
+		kube: kubeUpstream{
+			name:      get(flagKubeName),
+			namespace: get(flagKubeNamespace),
+			port:      port,
+		},
 	}
 }
 
@@ -282,8 +335,46 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 	return route, nil
 }
 
-const defaultVHost = "default"
+func upstream(kube kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
+	upstreams, err := sc.V1().Upstreams().List()
+	if err != nil {
+		return nil, err
+	}
+	for _, u := range upstreams {
+		if u.Type != upstreamTypeKubernetes {
+			continue
+		}
+		s, _ := protoutil.MarshalMap(u.Spec)
+		n, exists := s[kubeSpecName].(string)
+		if !exists {
+			continue
+		}
+		if n != kube.name {
+			continue
+		}
+		if kube.namespace != "" {
+			ns, exists := s[kubeSpecNamespace].(string)
+			if !exists {
+				continue
+			}
+			if ns != kube.namespace {
+				continue
+			}
+		}
 
+		if kube.port != 0 {
+			p, exists := s[kubeSpecPort].(string)
+			if !exists {
+				continue
+			}
+			if p != strconv.Itoa(kube.port) {
+				continue
+			}
+		}
+		return u, nil
+	}
+	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.namespace, kube.name)
+}
 func createDefaultVHost(sc storage.Interface) error {
 	vhost := &v1.VirtualHost{
 		Name: defaultVHost,

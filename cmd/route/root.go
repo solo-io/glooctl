@@ -17,22 +17,22 @@ func RouteCmd() *cobra.Command {
 	var output string
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
 	var domain string
-	pflags.StringVarP(&domain, "domain", "d", "", "domain for virtual host; empty defaults to default virtual host")
+	pflags.StringVarP(&domain, flagDomain, "d", "", "domain for virtual host; empty defaults to default virtual host")
 	var file string
-	pflags.StringVarP(&file, "filename", "f", "", "file with route defintion")
-	cmd.MarkFlagFilename("filename")
+	pflags.StringVarP(&file, flagFilename, "f", "", "file with route defintion")
+	cmd.MarkFlagFilename(flagFilename)
 	cmd.AddCommand(getCmd(), createCmd(), deleteCmd(), sortCmd())
 	return cmd
 }
 
 func setupRouteParams(flags *pflag.FlagSet) {
 	r := routeDetail{}
-	flags.StringVarP(&r.event, "event", "e", "", "event type to match")
-	flags.StringVar(&r.pathExact, "path-exact", "", "exact path to match")
-	flags.StringVar(&r.pathRegex, "path-regex", "", "path regex to match")
-	flags.StringVar(&r.pathPrefix, "path-prefix", "", "path prefix to match")
-	flags.StringVar(&r.verb, "http-method", "", "HTTP method to match")
-	flags.StringVar(&r.headers, "header", "", "header to match")
-	flags.StringVar(&r.upstream, "upstream", "", "desitnation upstream")
-	flags.StringVar(&r.function, "function", "", "destination function")
+	flags.StringVarP(&r.event, flagEvent, "e", "", "event type to match")
+	flags.StringVar(&r.pathExact, flagPathExact, "", "exact path to match")
+	flags.StringVar(&r.pathRegex, flagPathRegex, "", "path regex to match")
+	flags.StringVar(&r.pathPrefix, flagPathPrefix, "", "path prefix to match")
+	flags.StringVar(&r.verb, flagMethod, "", "HTTP method to match")
+	flags.StringVar(&r.headers, flagHeaders, "", "header to match")
+	flags.StringVar(&r.upstream, flagUpstream, "", "desitnation upstream")
+	flags.StringVar(&r.function, flagFunction, "", "destination function")
 }
