@@ -25,11 +25,11 @@ import (
 )
 
 var (
-	cfgFile    string
-	glooFolder string
-	kubeConfig string
-	namespace  string
-	syncPeriod int
+	cfgFile        string
+	resourceFolder string
+	kubeConfig     string
+	namespace      string
+	syncPeriod     int
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -54,6 +54,7 @@ func init() {
 	flags := rootCmd.PersistentFlags()
 	flags.StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
 	flags.StringVarP(&namespace, "namespace", "n", "", "namespace for resources")
+	flags.StringVar(&resourceFolder, "resource-folder", "", "folder for storing resources when using file based store")
 	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
 
 	rootCmd.SuggestionsMinimumDistance = 1
