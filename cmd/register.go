@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo-storage"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -10,7 +11,7 @@ import (
 func registerCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register",
-		Short: "register Gloo CRDs",
+		Short: "register gloo resources",
 		Run: func(c *cobra.Command, args []string) {
 			storageClient, err := util.GetStorageClient(c)
 			if err != nil {
@@ -18,7 +19,7 @@ func registerCmd() *cobra.Command {
 				return
 			}
 			err = storageClient.V1().Register()
-			if err != nil {
+			if err != nil && !storage.IsAlreadyExists(err) {
 				fmt.Printf("Unable to register resource definitions %q\n", err)
 				return
 			}
