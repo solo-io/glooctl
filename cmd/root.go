@@ -53,7 +53,7 @@ func init() {
 	// global flags
 	flags := rootCmd.PersistentFlags()
 	flags.StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
-	flags.StringVarP(&namespace, "namespace", "n", "", "namespace for resources")
+	flags.StringVarP(&namespace, "namespace", "n", "gloo-system", "namespace for resources")
 	flags.StringVar(&resourceFolder, "resource-folder", "", "folder for storing resources when using file based store")
 	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
 

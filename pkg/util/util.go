@@ -19,7 +19,7 @@ func GetStorageClient(c *cobra.Command) (storage.Interface, error) {
 
 	resourceFolder, _ := flags.GetString("resource-folder")
 	if resourceFolder != "" {
-		return file.NewStorage(resourceFolder, syncPeriod)
+		return file.NewStorage(filepath.Join(resourceFolder, "config"), syncPeriod)
 	}
 
 	kubeConfig, _ := flags.GetString("kubeconfig")
