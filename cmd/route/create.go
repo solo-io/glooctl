@@ -10,6 +10,7 @@ import (
 )
 
 func createCmd() *cobra.Command {
+	var sort bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create a route to a destination",
@@ -30,7 +31,7 @@ the flags.`,
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runCreate(sc, domain, route)
+			routes, err := runCreate(sc, domain, route, sort)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
 				return
@@ -44,10 +45,11 @@ the flags.`,
 	flags.StringVar(&kube.name, flagKubeName, "", "kubernetes service name")
 	flags.StringVar(&kube.namespace, flagKubeNamespace, "", "kubernetes service namespace")
 	flags.IntVar(&kube.port, flagKubePort, 0, "kubernetes service port")
+	flags.BoolVar(&sort, "sort", false, "sort the routes after appending the new route")
 	return cmd
 }
 
-func runCreate(sc storage.Interface, domain string, route *v1.Route) ([]*v1.Route, error) {
+func runCreate(sc storage.Interface, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
 	v, created, err := virtualHost(sc, domain, true)
 	if err != nil {
 		return nil, err
@@ -58,6 +60,9 @@ func runCreate(sc storage.Interface, domain string, route *v1.Route) ([]*v1.Rout
 		fmt.Println("Using virtual host: ", v.Name)
 	}
 	v.Routes = append(v.GetRoutes(), route)
+	if sort {
+		sortRoutes(v.Routes)
+	}
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {
 		return nil, err
