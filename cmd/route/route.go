@@ -17,8 +17,9 @@ import (
 )
 
 const (
-	flagDomain   = "domain"
-	flagFilename = "filename"
+	flagDomain      = "domain"
+	flagVirtualHost = "virtual-host"
+	flagFilename    = "filename"
 
 	flagEvent      = "event"
 	flagPathExact  = "path-exact"
@@ -386,10 +387,18 @@ func createDefaultVHost(sc storage.Interface) error {
 	return nil
 }
 
-func virtualHost(sc storage.Interface, domain string, create bool) (*v1.VirtualHost, bool, error) {
+func virtualHost(sc storage.Interface, vhostname, domain string, create bool) (*v1.VirtualHost, bool, error) {
 	// make sure default virtual host exists
 	if err := createDefaultVHost(sc); err != nil {
 		return nil, false, err
+	}
+
+	if vhostname != "" {
+		vh, err := sc.V1().VirtualHosts().Get(vhostname)
+		if err != nil {
+			return nil, false, err
+		}
+		return vh, false, nil
 	}
 
 	if domain == "" {

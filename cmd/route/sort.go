@@ -21,8 +21,9 @@ func sortCmd() *cobra.Command {
 				return
 			}
 			domain, _ := c.InheritedFlags().GetString("domain")
+			vhostname, _ := c.InheritedFlags().GetString(flagVirtualHost)
 
-			routes, err := runSort(sc, domain)
+			routes, err := runSort(sc, vhostname, domain)
 			if err != nil {
 
 			}
@@ -33,8 +34,8 @@ func sortCmd() *cobra.Command {
 	return cmd
 }
 
-func runSort(sc storage.Interface, domain string) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, domain, false)
+func runSort(sc storage.Interface, vhostname, domain string) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}

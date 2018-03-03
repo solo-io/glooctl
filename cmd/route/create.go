@@ -26,12 +26,13 @@ the flags.`,
 			}
 			flags := c.InheritedFlags()
 			domain, _ := flags.GetString(flagDomain)
+			vhostname, _ := flags.GetString(flagVirtualHost)
 			route, err := route(flags, sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runCreate(sc, domain, route, sort)
+			routes, err := runCreate(sc, vhostname, domain, route, sort)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
 				return
@@ -49,8 +50,8 @@ the flags.`,
 	return cmd
 }
 
-func runCreate(sc storage.Interface, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, domain, true)
+func runCreate(sc storage.Interface, vhostname, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, vhostname, domain, true)
 	if err != nil {
 		return nil, err
 	}

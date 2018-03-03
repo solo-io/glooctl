@@ -28,12 +28,13 @@ matcher and destintation only. It doesn't include extensions.`,
 
 			flags := c.InheritedFlags()
 			domain, _ := flags.GetString("domain")
+			vhostname, _ := flags.GetString(flagVirtualHost)
 			route, err := route(flags, sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runDelete(sc, domain, route)
+			routes, err := runDelete(sc, vhostname, domain, route)
 			if err != nil {
 				fmt.Printf("Unable to get route for %s: %q\n", domain, err)
 				return
@@ -45,8 +46,8 @@ matcher and destintation only. It doesn't include extensions.`,
 	return cmd
 }
 
-func runDelete(sc storage.Interface, domain string, route *v1.Route) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, domain, false)
+func runDelete(sc storage.Interface, vhostname, domain string, route *v1.Route) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}

@@ -20,8 +20,8 @@ func getCmd() *cobra.Command {
 				return
 			}
 			domain, _ := c.InheritedFlags().GetString("domain")
-
-			routes, err := runGet(sc, domain)
+			vhostname, _ := c.InheritedFlags().GetString(flagVirtualHost)
+			routes, err := runGet(sc, vhostname, domain)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
 				return
@@ -33,8 +33,8 @@ func getCmd() *cobra.Command {
 	return cmd
 }
 
-func runGet(sc storage.Interface, domain string) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, domain, false)
+func runGet(sc storage.Interface, vhostname, domain string) ([]*v1.Route, error) {
+	v, created, err := virtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}

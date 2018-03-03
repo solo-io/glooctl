@@ -18,6 +18,8 @@ func RouteCmd() *cobra.Command {
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
 	var domain string
 	pflags.StringVarP(&domain, flagDomain, "d", "", "domain for virtual host; empty defaults to default virtual host")
+	var vhost string
+	pflags.StringVarP(&vhost, flagVirtualHost, "v", "", "specify virtual host by name; empty defaults to default virtual host")
 	var file string
 	pflags.StringVarP(&file, flagFilename, "f", "", "file with route defintion")
 	cmd.MarkFlagFilename(flagFilename)
