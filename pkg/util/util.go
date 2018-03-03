@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"log"
+
 	storage "github.com/solo-io/gloo-storage"
 	"github.com/solo-io/gloo-storage/crd"
 	"github.com/solo-io/gloo-storage/file"
@@ -17,10 +19,12 @@ func GetStorageClient(c *cobra.Command) (storage.Interface, error) {
 	period, _ := flags.GetInt("sync-period")
 	syncPeriod := time.Duration(period) * time.Second
 
-	resourceFolder, _ := flags.GetString("resource-folder")
+	resourceFolder, _ := flags.GetString("gloo-config-dir")
 	if resourceFolder != "" {
-		return file.NewStorage(filepath.Join(resourceFolder, "config"), syncPeriod)
+		log.Printf("Using file-based storage for gloo. Gloo must be configured to use file storage with config dir %v", resourceFolder)
+		return file.NewStorage(resourceFolder, syncPeriod)
 	}
+	log.Printf("Using kubernetes crd-based storage for gloo. Gloo must be configured to use kubernetes storage")
 
 	kubeConfig, _ := flags.GetString("kubeconfig")
 	namespace, _ := flags.GetString("namespace")
