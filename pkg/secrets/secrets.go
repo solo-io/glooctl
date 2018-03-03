@@ -4,10 +4,10 @@ package secrets
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/typed/core/v1"
@@ -23,8 +23,8 @@ func GetSecretClient(c *cobra.Command) (v1.SecretInterface, error) {
 	}
 
 	kubeConfig, _ := flags.GetString("kubeconfig")
-	if kubeConfig == "" && homeDir() != "" {
-		kubeConfig = filepath.Join(homeDir(), ".kube", "config")
+	if kubeConfig == "" && util.HomeDir() != "" {
+		kubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
 	}
 	kubeClient, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
@@ -36,11 +36,4 @@ func GetSecretClient(c *cobra.Command) (v1.SecretInterface, error) {
 		return nil, errors.Wrap(err, "unable to get kubernetes client")
 	}
 	return cs.CoreV1().Secrets(namespace), nil
-}
-
-func homeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
-	}
-	return os.Getenv("USERPROFILE") // windows
 }

@@ -24,8 +24,6 @@ const (
 	annotationKey = "gloo.solo.io/google_secret_ref"
 	// expected map identifiers for secrets
 	serviceAccountJsonKeyFile = "json_key_file"
-
-	statusAccepted = "ACCEPTED"
 )
 
 func createCmd() *cobra.Command {

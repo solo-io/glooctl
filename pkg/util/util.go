@@ -24,8 +24,8 @@ func GetStorageClient(c *cobra.Command) (storage.Interface, error) {
 
 	kubeConfig, _ := flags.GetString("kubeconfig")
 	namespace, _ := flags.GetString("namespace")
-	if kubeConfig == "" && homeDir() != "" {
-		kubeConfig = filepath.Join(homeDir(), ".kube", "config")
+	if kubeConfig == "" && HomeDir() != "" {
+		kubeConfig = filepath.Join(HomeDir(), ".kube", "config")
 	}
 	kubeClient, err := clientcmd.BuildConfigFromFlags("", kubeConfig)
 	if err != nil {
@@ -34,7 +34,7 @@ func GetStorageClient(c *cobra.Command) (storage.Interface, error) {
 	return crd.NewStorage(kubeClient, namespace, syncPeriod)
 }
 
-func homeDir() string {
+func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
 	}

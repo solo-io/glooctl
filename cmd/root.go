@@ -19,6 +19,7 @@ import (
 	"os"
 
 	"github.com/solo-io/glooctl/cmd/route"
+	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
 	"github.com/spf13/cobra"
@@ -62,5 +63,6 @@ func init() {
 		upstream.UpstreamCmd(),
 		vhost.VHostCmd(),
 		route.RouteCmd(),
+		secret.SecretCmd(),
 		registerCmd())
 }
