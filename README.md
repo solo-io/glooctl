@@ -32,7 +32,7 @@ First, we need to store the credentials necessary to access AWS Lambda in a secr
 glooctl secret create aws --name aws-secret
 ```
 
-This command creates a secret named `aws-secret` using the credentials stored in `~/.aws/credentials` file. If you want to use a different file you can pass it using `--filename` flag. Alternatively, you can use the standard AWS environment variables to create the by using the `--env` flag.
+This command creates a secret named `aws-secret` using the credentials stored in `~/.aws/credentials` file. If we want to use a different file we can pass it using `--filename` flag. Alternatively, we can use the standard AWS environment variables to create the by using the `--env` flag.
 
 Next, we represent the AWS Lambda using an upstream. We can create the upstream with the command:
 
@@ -69,7 +69,7 @@ upstream `aws_lambda`.
 
 
 ## Managing Routes on a Virtual Host
-The `route` command allows you to manage the routes on a specific
+The `route` command allows us to manage the routes on a specific
 virtual host. It uses the default virtual host if we don't specify any virtual host. We can override this by using the `virtual-host` or `v` flag on route commands.
 
 We can also use the `domain` or `d` command to specify the virtual host to use. It selects the virtual host containing that domain.
@@ -85,7 +85,7 @@ request path prefix: /foo
 event matcher: /apple
 ```
 
-By default, `get` returns a summary list. You can pass the `output`
+By default, `get` returns a summary list. We can pass the `output`
 flag to see response in YAML or JSON to get details of the routes.
 
 ```
@@ -200,7 +200,7 @@ service that can create or delete upstreams automatically. It also provides func
 discovery service to manage the functions in an Upstream.
 
 ### Creating Upstream
-The CLI allows you to create an upstream from a YAML file. 
+The CLI allows us to create an upstream from a YAML file. 
 
 Let's look at an upstream definition in `upstream.yaml`
 
@@ -212,7 +212,7 @@ spec:
   secret_ref: "aws-secret"
 ```
 
-If you want to see the newly created upstream, you can pass `output` flag.
+If we want to see the newly created upstream, we can pass `output` flag.
 
 ```
 glooctl upstream create -f upstream.yaml --output yaml
@@ -237,7 +237,7 @@ glooctl upstream get
 aws_lambda
 ```
 
-You can pass it the `output` flag to return it as JSON or YAML.
+We can pass it the `output` flag to return it as JSON or YAML.
 
 ```
 glooctl upstream get -o json
@@ -245,9 +245,9 @@ glooctl upstream get -o json
 {"name":"aws_lambda","type":"aws","spec":{"secret_ref":"aws-secret","region":"us-east-2"},"metadata":{"resource_version":"224352","namespace":"gloo-system"}}
 ```
 
-If you want to get details of a specific Upstream, you can use
+If we want to get details of a specific Upstream, we can use
 `get` command with the name of the upstream. It returns
-the result as YAML, but you can use `output` flag to get JSON.
+the result as YAML, but we can use `output` flag to get JSON.
 
 ```
 glooctl upstream get aws_lambda
@@ -282,7 +282,7 @@ type: aws
 ```
 
 ### Deleting Upstream
-You can delete an existing upstream by giving the name of the
+We can delete an existing upstream by giving the name of the
 upstream to be deleted to `delete` command.
 
 ```
@@ -292,11 +292,10 @@ Upstream aws_lambda deleted
 ```
 
 ## Managing Virtual Hosts
-`glooctl` provides a manual method of managing Virtual Hosts. Gloo provides auto discovery 
-service that can create or delete virtual hosts automatically. 
+`glooctl` provides a manual method of managing Virtual Hosts. 
 
 ### Creating Virtual Host
-The CLI allows you to create a virtual from a YAML file. 
+The CLI allows us to create a virtual from a YAML file. 
 
 Let's look at a virtual host definition in `vhost.yaml`
 
@@ -313,7 +312,7 @@ routes:
       name: my-upstream
 ```
 
-If you want to see the newly created virtual, you can pass `output` flag.
+If we want to see the newly created virtual, we can pass `output` flag.
 
 ```
 glooctl virtualhost create -f vhost.yaml --output yaml
@@ -343,7 +342,7 @@ glooctl virtualhost get
 vhost1
 ```
 
-You can pass it the `output` flag to return it as JSON or YAML.
+We can pass it the `output` flag to return it as JSON or YAML.
 
 ```
 glooctl virtualhost get -o json
@@ -351,9 +350,9 @@ glooctl virtualhost get -o json
 {"name":"vhost1","routes":[{"request_matcher":{"path_exact":"/bar","verbs":["GET","POST"]},"single_destination":{"upstream":{"name":"my-upstream"}}}],"metadata":{"resource_version":"226902","namespace":"gloo-system"}}
 ```
 
-If you want to get details of a specific Virtual Host, you can use
+If we want to get details of a specific Virtual Host, we can use
 `get` command with the name of the virtual host. It returns
-the result as YAML, but you can use `output` flag to get JSON.
+the result as YAML, but we can use `output` flag to get JSON.
 
 ```
 glooctl virtualhost get vhost1
@@ -398,7 +397,7 @@ routes:
 ```
 
 ### Deleting Virtual Host
-You can delete an existing virtual by giving the name of the
+We can delete an existing virtual by giving the name of the
 virtual host to be deleted to `delete` command.
 
 ```
