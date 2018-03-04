@@ -2,10 +2,9 @@
 <h1 align="center">
     <img src="Glooctl-01.png" alt="glooctl" width="250" height="222">
   <br>
+  Gloo Command Line Interface
 </h1>
 
-
-<h4 align="center">Gloo Command Line Interface</h4>
 <BR>
 
 Gloo’s command line was designed with ease of user experience for the powerful Gloo config language
