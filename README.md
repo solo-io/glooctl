@@ -2,7 +2,6 @@
 <h1 align="center">
     <img src="Glooctl-01.png" alt="glooctl" width="250" height="222">
   <br>
-  Gloo Command Line Interface
 </h1>
 
 <BR>
