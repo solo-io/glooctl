@@ -1,6 +1,6 @@
 
 <h1 align="center">
-    <img src="Glooctl-01.png" alt="squash" width="200" height="140">
+    <img src="Glooctl-01.png" alt="squash" width="200" height="178">
   <br>
 </h1>
 
