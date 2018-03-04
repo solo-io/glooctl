@@ -4,7 +4,7 @@ import "github.com/spf13/cobra"
 
 func VHostCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "vhost",
+		Use:   "virtualhost",
 		Short: "manage virtual hosts",
 	}
 	pflags := cmd.PersistentFlags()
