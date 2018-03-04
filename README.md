@@ -147,8 +147,15 @@ request exact path: /bar
 event matcher: /apple
 ```
 ### Adding a new Route
+In getting started, we saw an example of how to create a route.
+
+
+Beside using command line flags, we can use a file to define a route that we want to create and pass it to `glooctl` This allows us to specify some of the options that aren't available via CLI flags.
+
+For example, the route given below is created using the route defined in route.yaml.
 
 ```
+# route.yaml - sample route
 request_matcher:
   path_prefix: /foo/bar
   verbs:
@@ -166,7 +173,18 @@ event matcher: /apple
 request path prefix: /foo/bar
 ```
 
+When the route is successfully created it shows the list of existing routes on the virtual host. The newly created route is appended to the end of the list. If we prefer to sort the routes when creating it, we can pass `--sort` flag. 
+
+We could have created this same route passing the following parameters to `glooctl`
+
+```
+./glooctl route create -v my-virtual-host --path-prefix /foo/bar --http-method GET,POST --upstream upstream2
+```
+
 ### Sorting Routes
+Sorting routes arranges them based on the matcher. Routes matchers that are specific come before other matchers.
+
+Routes are sorted in order of event, exact path, regex path and path prefix.
 
 ```
 glooctl route sort -v my-virtual-host  
