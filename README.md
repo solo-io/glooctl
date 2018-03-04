@@ -1,11 +1,15 @@
-              __                 __  __
-       ____ _/ /___  ____  _____/ /_/ /
-      / __ `/ / __ \/ __ \/ ___/ __/ / 
-     / /_/ / / /_/ / /_/ / /__/ /_/ /  
-     \__, /_/\____/\____/\___/\__/_/   
-    /____/                             
 
-CLI for Gloo
+<h1 align="center">
+    <img src="Glooctl-01.png" alt="squash" width="200" height="140">
+  <br>
+</h1>
+
+
+<h4 align="center">Gloo Command Line Interface</h4>
+<BR>
+
+Gloo’s command line was designed with ease of user experience for the powerful Gloo config language
+
 
 ## Introduction
 `glooctl` is command line tool to manage Gloo resources.
