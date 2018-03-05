@@ -24,7 +24,6 @@ func GetStorageClient(c *cobra.Command) (storage.Interface, error) {
 		log.Printf("Using file-based storage for gloo. Gloo must be configured to use file storage with config dir %v", resourceFolder)
 		return file.NewStorage(resourceFolder, syncPeriod)
 	}
-	log.Printf("Using kubernetes crd-based storage for gloo. Gloo must be configured to use kubernetes storage")
 
 	kubeConfig, _ := flags.GetString("kubeconfig")
 	namespace, _ := flags.GetString("namespace")
