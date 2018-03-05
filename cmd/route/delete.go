@@ -29,7 +29,7 @@ matcher and destintation only. It doesn't include extensions.`,
 			flags := c.InheritedFlags()
 			domain, _ := flags.GetString("domain")
 			vhostname, _ := flags.GetString(flagVirtualHost)
-			route, err := route(flags, sc)
+			route, err := route(c.Flags(), sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return

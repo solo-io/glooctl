@@ -27,7 +27,7 @@ the flags.`,
 			flags := c.InheritedFlags()
 			domain, _ := flags.GetString(flagDomain)
 			vhostname, _ := flags.GetString(flagVirtualHost)
-			route, err := route(flags, sc)
+			route, err := route(c.Flags(), sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return

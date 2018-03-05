@@ -13,7 +13,6 @@ func RouteCmd() *cobra.Command {
 	}
 
 	pflags := cmd.PersistentFlags()
-	setupRouteParams(pflags)
 	var output string
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
 	var domain string
@@ -23,7 +22,13 @@ func RouteCmd() *cobra.Command {
 	var file string
 	pflags.StringVarP(&file, flagFilename, "f", "", "file with route defintion")
 	cmd.MarkFlagFilename(flagFilename)
-	cmd.AddCommand(getCmd(), createCmd(), deleteCmd(), sortCmd())
+
+	create := createCmd()
+	setupRouteParams(create.Flags())
+	delete := deleteCmd()
+	setupRouteParams(delete.Flags())
+	cmd.AddCommand(getCmd(), create, delete, sortCmd())
+
 	return cmd
 }
 
