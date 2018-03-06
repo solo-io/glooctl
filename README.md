@@ -18,7 +18,7 @@ Download the latest release of `glooctl` from https://github.com/solo-io/glooctl
 If you prefer to compile your own binary please use the following command:
 
 ```
-go get github.com/solo-io/glooctl
+go get -u github.com/solo-io/glooctl
 ```
 
 All `glooctl` commands take `kubeconfig` and `namespace` parameters. If these are not provided,
