@@ -2,8 +2,11 @@ package vhost
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-storage/file"
 	"github.com/solo-io/gloo/pkg/protoutil"
@@ -30,17 +33,20 @@ func printJSON(v *v1.VirtualHost) {
 }
 
 func printYAML(v *v1.VirtualHost) {
+	writeYAML(v, os.Stdout)
+}
+
+func writeYAML(v *v1.VirtualHost, w io.Writer) error {
 	jsn, err := protoutil.Marshal(v)
 	if err != nil {
-		fmt.Println("uanble to marshal ", err)
-		return
+		return errors.Wrap(err, "unable to marshal ")
 	}
 	b, err := yaml.JSONToYAML(jsn)
 	if err != nil {
-		fmt.Println("unable to convert to YAML", err)
-		return
+		return errors.Wrap(err, "unable to convert to YAML")
 	}
-	fmt.Println(string(b))
+	_, err = fmt.Fprintln(w, string(b))
+	return err
 }
 
 func printJSONList(vhosts []*v1.VirtualHost) {
