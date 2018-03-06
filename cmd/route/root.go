@@ -42,4 +42,6 @@ func setupRouteParams(flags *pflag.FlagSet) {
 	flags.StringVar(&r.headers, flagHeaders, "", "header to match")
 	flags.StringVar(&r.upstream, flagUpstream, "", "desitnation upstream")
 	flags.StringVar(&r.function, flagFunction, "", "destination function")
+	flags.StringVar(&r.prefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
+		"the path to this value")
 }

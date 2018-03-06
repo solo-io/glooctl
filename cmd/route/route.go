@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	storage "github.com/solo-io/gloo-storage"
+	"github.com/solo-io/gloo-storage"
 	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/spf13/pflag"
 
@@ -21,14 +21,15 @@ const (
 	flagVirtualHost = "virtual-host"
 	flagFilename    = "filename"
 
-	flagEvent      = "event"
-	flagPathExact  = "path-exact"
-	flagPathRegex  = "path-regex"
-	flagPathPrefix = "path-prefix"
-	flagMethod     = "http-method"
-	flagHeaders    = "header"
-	flagUpstream   = "upstream"
-	flagFunction   = "function"
+	flagEvent         = "event"
+	flagPathExact     = "path-exact"
+	flagPathRegex     = "path-regex"
+	flagPathPrefix    = "path-prefix"
+	flagMethod        = "http-method"
+	flagHeaders       = "header"
+	flagUpstream      = "upstream"
+	flagFunction      = "function"
+	flagPrefixRewrite = "prefix-rewrite"
 
 	flagKubeName      = "kube-upstream"
 	flagKubeNamespace = "kube-namespace"
@@ -49,14 +50,15 @@ type kubeUpstream struct {
 }
 
 type routeDetail struct {
-	event      string
-	pathExact  string
-	pathRegex  string
-	pathPrefix string
-	verb       string
-	headers    string
-	upstream   string
-	function   string
+	event         string
+	pathExact     string
+	pathRegex     string
+	pathPrefix    string
+	verb          string
+	headers       string
+	upstream      string
+	function      string
+	prefixRewrite string
 
 	kube kubeUpstream
 }
@@ -235,14 +237,15 @@ func routeDetails(flags *pflag.FlagSet) *routeDetail {
 	}
 
 	return &routeDetail{
-		event:      get(flagEvent),
-		pathExact:  get(flagPathExact),
-		pathRegex:  get(flagPathRegex),
-		pathPrefix: get(flagPathPrefix),
-		verb:       get(flagMethod),
-		headers:    get(flagHeaders),
-		upstream:   get(flagUpstream),
-		function:   get(flagFunction),
+		event:         get(flagEvent),
+		pathExact:     get(flagPathExact),
+		pathRegex:     get(flagPathRegex),
+		pathPrefix:    get(flagPathPrefix),
+		verb:          get(flagMethod),
+		headers:       get(flagHeaders),
+		upstream:      get(flagUpstream),
+		function:      get(flagFunction),
+		prefixRewrite: get(flagPrefixRewrite),
 
 		kube: kubeUpstream{
 			name:      get(flagKubeName),
@@ -308,6 +311,11 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 		} else {
 			return nil, fmt.Errorf("a matcher wasn't specified")
 		}
+	}
+
+	// prefix rewrite
+	if rd.prefixRewrite != "" {
+		route.PrefixRewrite = rd.prefixRewrite
 	}
 
 	// destination
