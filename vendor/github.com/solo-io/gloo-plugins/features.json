@@ -1,0 +1,21 @@
+[
+    {
+        "name": "aws_lambda",
+        "gloo": "aws",
+        "envoy": "aws/envoy"
+    },
+    {
+        "name": "google_functions",
+        "gloo": "google",
+        "envoy": "google/envoy"
+    },
+    {
+        "name": "kubernetes",
+        "gloo": "kubernetes"
+    },
+    {
+        "name": "transformation",
+        "gloo": "transformation",
+        "envoy": "transformation/envoy"
+    }
+]

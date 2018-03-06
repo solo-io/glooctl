@@ -113,7 +113,7 @@
     ".",
     "diskcache"
   ]
-  revision = "2bcd89a1743fd4b373f7370ce8ddc14dfbd18229"
+  revision = "9cad4c3443a7200dd6400aef47183728de563a38"
 
 [[projects]]
   branch = "master"
@@ -193,8 +193,8 @@
 [[projects]]
   name = "github.com/modern-go/concurrent"
   packages = ["."]
-  revision = "938152ca6a933f501bb238954eebd3cbcbf489ff"
-  version = "1.0.2"
+  revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
+  version = "1.0.3"
 
 [[projects]]
   name = "github.com/modern-go/reflect2"
@@ -238,13 +238,13 @@
     "pkg/protoutil",
     "pkg/secretwatcher"
   ]
-  revision = "d918ebb532acadb2ffbaf90a5875d6cbc30ec8c9"
+  revision = "02c6ddc1e51564af1ee59eec62b3dea4082d90f5"
 
 [[projects]]
   branch = "master"
   name = "github.com/solo-io/gloo-api"
   packages = ["pkg/api/types/v1"]
-  revision = "86afd419194c716f4f393e54449f7979da4ccfe7"
+  revision = "41bf97ec13e79eca7517cfbc19d26962c7bac34c"
 
 [[projects]]
   branch = "master"
@@ -253,7 +253,7 @@
     "aws",
     "google"
   ]
-  revision = "85db1723e23d370a5a9e0d94c70cd62412184f34"
+  revision = "bf260ff8a0d110ba9e43463f0a08445f4e858f8b"
 
 [[projects]]
   branch = "master"
@@ -268,7 +268,7 @@
     "file",
     "internal/crud"
   ]
-  revision = "2c9d0ddfcbe4b3dc03fe8dfc26832770f6ebb12a"
+  revision = "c95516809062e060efd172f46201128c7a16d653"
 
 [[projects]]
   name = "github.com/spf13/cobra"
@@ -300,7 +300,7 @@
     "lex/httplex",
     "trace"
   ]
-  revision = "22ae77b79946ea320088417e4d50825671d82d57"
+  revision = "d25186b37f34ebdbbea8f488ef055638dfab272d"
 
 [[projects]]
   branch = "master"
@@ -336,7 +336,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "2c5e7ac708aaa719366570dd82bda44541ca2a63"
+  revision = "df60624c1e9b9d2973e889c7a1cff73155da81c4"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -419,7 +419,7 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "7ebfdc5e7dfac82cc5c53e1259ad579915950e20"
+  revision = "927313aa2f67b6f51d3ea954027cb009efb31941"
 
 [[projects]]
   branch = "master"
@@ -431,7 +431,7 @@
     "pkg/client/clientset/clientset/scheme",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
   ]
-  revision = "5074ed5859b6f523f546971a42e582b7b3d23bde"
+  revision = "c58414b3738eee91a93c1f296f718b3c4ec2390e"
 
 [[projects]]
   branch = "master"

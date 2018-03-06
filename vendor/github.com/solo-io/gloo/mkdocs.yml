@@ -1,0 +1,34 @@
+site_name: gloo
+pages:
+    - Index: index.md
+    - About gloo:
+      - Introduction: introduction/introduction.md
+      - Concepts: introduction/concepts.md
+      - Architecture: introduction/architecture.md
+    - Installation:
+      - Installing on Kubernetes: installation/kubernetes.md
+#      - Installing on Local Docker: installation/docker.md
+    - Getting Started:
+      - Kubernetes:
+        - Part 1 - Basic Routing: getting_started/kubernetes/1.md
+        - Part 2 - Function Routing: getting_started/kubernetes/2.md
+#      - Getting Started on Local Docker: installation/docker.md
+    - Plugins:
+      - AWS Lambda Plugin: plugins/aws.md
+    - Advanced:
+      - Bootstrap Options: advanced/bootstrap_options.md
+    - v1 API reference:
+#      - Overview: v1/overview.md
+      - Upstreams: v1/upstream.md
+      - Virtual Hosts: v1/virtualhost.md
+      - Metadata: v1/metadata.md
+      - Status: v1/status.md
+repo_url: https://github.com/solo-io/gloo/
+site_author: gloo Project Authors
+copyright: © Copyright 2018, solo.io Inc.
+#google_analytics: ['todo']
+theme:
+  name: 'rtd-dropdown'
+extra_css: [extra.css]
+extra:
+    version: 0.1.1
