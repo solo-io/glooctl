@@ -2,8 +2,11 @@ package upstream
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/ghodss/yaml"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-storage/file"
 	"github.com/solo-io/gloo/pkg/protoutil"
@@ -28,17 +31,20 @@ func printJSON(u *v1.Upstream) {
 }
 
 func printYAML(u *v1.Upstream) {
+	writeYAML(u, os.Stdout)
+}
+
+func writeYAML(u *v1.Upstream, w io.Writer) error {
 	jsn, err := protoutil.Marshal(u)
 	if err != nil {
-		fmt.Println("unable to marshal ", err)
-		return
+		return errors.Wrap(err, "unable to marshal")
 	}
 	b, err := yaml.JSONToYAML(jsn)
 	if err != nil {
-		fmt.Println("unable to convert to YAML ", err)
-		return
+		return errors.Wrap(err, "unable to convert to YAML")
 	}
-	fmt.Println(string(b))
+	_, err = fmt.Fprintln(w, string(b))
+	return err
 }
 
 func printJSONList(u []*v1.Upstream) {

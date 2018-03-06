@@ -10,6 +10,6 @@ func UpstreamCmd() *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	var output string
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
-	cmd.AddCommand(createCmd(), deleteCmd(), getCmd(), updateCmd())
+	cmd.AddCommand(createCmd(), deleteCmd(), getCmd(), updateCmd(), editCmd())
 	return cmd
 }
