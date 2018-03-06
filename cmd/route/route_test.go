@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 )
 
 type routeDetailTestCase struct {
@@ -72,8 +72,9 @@ func TestToRoute(t *testing.T) {
 	}
 
 	for i, tc := range cases {
-		flags := &pflag.FlagSet{}
-		setupRouteParams(flags)
+		cmd := &cobra.Command{}
+		setupRouteParams(cmd)
+		flags := cmd.Flags()
 		flags.Parse(tc.args)
 		route, err := fromRouteDetail(routeDetails(flags))
 		if err != nil {

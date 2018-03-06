@@ -14,6 +14,9 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-storage/file"
+
+	_ "github.com/gogo/protobuf/gogoproto"
+	google_protobuf "github.com/gogo/protobuf/types"
 )
 
 const (
@@ -30,6 +33,7 @@ const (
 	flagUpstream      = "upstream"
 	flagFunction      = "function"
 	flagPrefixRewrite = "prefix-rewrite"
+	flagExtension     = "extensions"
 
 	flagKubeName      = "kube-upstream"
 	flagKubeNamespace = "kube-namespace"
@@ -59,6 +63,7 @@ type routeDetail struct {
 	upstream      string
 	function      string
 	prefixRewrite string
+	extensions    string
 
 	kube kubeUpstream
 }
@@ -246,6 +251,7 @@ func routeDetails(flags *pflag.FlagSet) *routeDetail {
 		upstream:      get(flagUpstream),
 		function:      get(flagFunction),
 		prefixRewrite: get(flagPrefixRewrite),
+		extensions:    get(flagExtension),
 
 		kube: kubeUpstream{
 			name:      get(flagKubeName),
@@ -341,6 +347,15 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 		return nil, fmt.Errorf("a destintation wasn't specified")
 	}
 
+	// extensions
+	if rd.extensions != "" {
+		ext := &google_protobuf.Struct{}
+		err := file.ReadFileInto(rd.extensions, ext)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.extensions)
+		}
+		route.Extensions = ext
+	}
 	return route, nil
 }
 

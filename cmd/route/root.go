@@ -2,7 +2,6 @@ package route
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
 )
 
 // RouteCmd returns command related to managing routes on a virtual host
@@ -24,16 +23,17 @@ func RouteCmd() *cobra.Command {
 	cmd.MarkFlagFilename(flagFilename)
 
 	create := createCmd()
-	setupRouteParams(create.Flags())
+	setupRouteParams(create)
 	delete := deleteCmd()
-	setupRouteParams(delete.Flags())
+	setupRouteParams(delete)
 	cmd.AddCommand(getCmd(), create, delete, sortCmd())
 
 	return cmd
 }
 
-func setupRouteParams(flags *pflag.FlagSet) {
+func setupRouteParams(c *cobra.Command) {
 	r := routeDetail{}
+	flags := c.Flags()
 	flags.StringVarP(&r.event, flagEvent, "e", "", "event type to match")
 	flags.StringVar(&r.pathExact, flagPathExact, "", "exact path to match")
 	flags.StringVar(&r.pathRegex, flagPathRegex, "", "path regex to match")
@@ -44,4 +44,6 @@ func setupRouteParams(flags *pflag.FlagSet) {
 	flags.StringVar(&r.function, flagFunction, "", "destination function")
 	flags.StringVar(&r.prefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
 		"the path to this value")
+	flags.StringVar(&r.extensions, flagExtension, "", "yaml file with route extensions")
+	c.MarkFlagFilename(flagExtension)
 }
