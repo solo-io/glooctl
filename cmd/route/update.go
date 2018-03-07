@@ -3,6 +3,7 @@ package route
 import (
 	"fmt"
 
+	google_protobuf "github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo-storage"
 	"github.com/solo-io/glooctl/pkg/util"
@@ -69,13 +70,14 @@ func runUpdate(sc storage.Interface, vhostname, domain string, route *v1.Route, 
 	for i, r := range existing {
 		if match(route, r) {
 			matches = append(matches, r)
+			route.Extensions = mergeExtensions(route, r)
 			updated[i] = route
 			continue
 		}
 		updated[i] = r
 	}
 	if len(matches) > 1 {
-		return nil, fmt.Errorf("The given route parameters matches more than one route.")
+		return nil, fmt.Errorf("the given route parameters matches more than one route.")
 	}
 
 	v.Routes = updated
@@ -88,4 +90,12 @@ func runUpdate(sc storage.Interface, vhostname, domain string, route *v1.Route, 
 		return nil, err
 	}
 	return vh.GetRoutes(), nil
+}
+
+func mergeExtensions(route, old *v1.Route) *google_protobuf.Struct {
+	for k, v := range route.Extensions.Fields {
+		old.Extensions.Fields[k] = v
+	}
+
+	return old.Extensions
 }
