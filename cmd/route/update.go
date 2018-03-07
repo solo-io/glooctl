@@ -93,6 +93,14 @@ func runUpdate(sc storage.Interface, vhostname, domain string, route *v1.Route, 
 }
 
 func mergeExtensions(route, old *v1.Route) *google_protobuf.Struct {
+	if old.Extensions == nil || old.Extensions.Fields == nil {
+		return route.Extensions
+	}
+
+	if route.Extensions == nil || route.Extensions.Fields == nil {
+		return old.Extensions
+	}
+
 	for k, v := range route.Extensions.Fields {
 		old.Extensions.Fields[k] = v
 	}
