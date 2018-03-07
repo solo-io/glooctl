@@ -23,27 +23,29 @@ func RouteCmd() *cobra.Command {
 	cmd.MarkFlagFilename(flagFilename)
 
 	create := createCmd()
-	setupRouteParams(create)
+	update := updateCmd()
 	delete := deleteCmd()
-	setupRouteParams(delete)
-	cmd.AddCommand(getCmd(), create, delete, sortCmd())
+	setupRouteParams(create, update, delete)
+	cmd.AddCommand(getCmd(), create, delete, update, sortCmd())
 
 	return cmd
 }
 
-func setupRouteParams(c *cobra.Command) {
-	r := routeDetail{}
-	flags := c.Flags()
-	flags.StringVarP(&r.event, flagEvent, "e", "", "event type to match")
-	flags.StringVar(&r.pathExact, flagPathExact, "", "exact path to match")
-	flags.StringVar(&r.pathRegex, flagPathRegex, "", "path regex to match")
-	flags.StringVar(&r.pathPrefix, flagPathPrefix, "", "path prefix to match")
-	flags.StringVar(&r.verb, flagMethod, "", "HTTP method to match")
-	flags.StringVar(&r.headers, flagHeaders, "", "header to match")
-	flags.StringVar(&r.upstream, flagUpstream, "", "desitnation upstream")
-	flags.StringVar(&r.function, flagFunction, "", "destination function")
-	flags.StringVar(&r.prefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
-		"the path to this value")
-	flags.StringVar(&r.extensions, flagExtension, "", "yaml file with route extensions")
-	c.MarkFlagFilename(flagExtension)
+func setupRouteParams(cmds ...*cobra.Command) {
+	for _, c := range cmds {
+		r := routeDetail{}
+		flags := c.Flags()
+		flags.StringVarP(&r.event, flagEvent, "e", "", "event type to match")
+		flags.StringVar(&r.pathExact, flagPathExact, "", "exact path to match")
+		flags.StringVar(&r.pathRegex, flagPathRegex, "", "path regex to match")
+		flags.StringVar(&r.pathPrefix, flagPathPrefix, "", "path prefix to match")
+		flags.StringVar(&r.verb, flagMethod, "", "HTTP method to match")
+		flags.StringVar(&r.headers, flagHeaders, "", "header to match")
+		flags.StringVar(&r.upstream, flagUpstream, "", "desitnation upstream")
+		flags.StringVar(&r.function, flagFunction, "", "destination function")
+		flags.StringVar(&r.prefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
+			"the path to this value")
+		flags.StringVar(&r.extensions, flagExtension, "", "yaml file with route extensions")
+		c.MarkFlagFilename(flagExtension)
+	}
 }
