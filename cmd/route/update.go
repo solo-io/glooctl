@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	google_protobuf "github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo-storage"
 	"github.com/solo-io/glooctl/pkg/util"
@@ -38,7 +39,7 @@ matcher and destination only. It doesn't include extensions.`,
 			}
 			routes, err := runUpdate(sc, vhostname, domain, route, sort)
 			if err != nil {
-				fmt.Printf("Unable to get route for %s: %q\n", domain, err)
+				fmt.Printf("Unable to get route for %s: %q\n", vhostname, err)
 			}
 			output, _ := flags.GetString("output")
 			printRoutes(routes, output)
@@ -76,8 +77,11 @@ func runUpdate(sc storage.Interface, vhostname, domain string, route *v1.Route, 
 		}
 		updated[i] = r
 	}
+	if len(matches) == 0 {
+		return nil, errors.New("could not find a route for the specified matcher and destination.")
+	}
 	if len(matches) > 1 {
-		return nil, fmt.Errorf("the given route parameters matches more than one route.")
+		return nil, errors.New("found more than one route for the specified matcher and destination")
 	}
 
 	v.Routes = updated
