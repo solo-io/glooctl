@@ -17,6 +17,7 @@ import (
 
 	_ "github.com/gogo/protobuf/gogoproto"
 	google_protobuf "github.com/gogo/protobuf/types"
+	"github.com/solo-io/glooctl/pkg/util"
 )
 
 const (
@@ -350,11 +351,20 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 	// extensions
 	if rd.extensions != "" {
 		ext := &google_protobuf.Struct{}
-		err := file.ReadFileInto(rd.extensions, ext)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.extensions)
+
+		// special case: reading from stdin
+		if rd.extensions == "-" {
+			if err := util.ReadStdinInto(ext); err != nil {
+				return nil, errors.Wrap(err, "reading extensions from stdin")
+			}
+		} else {
+			err := file.ReadFileInto(rd.extensions, ext)
+			if err != nil {
+				return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.extensions)
+			}
 		}
 		route.Extensions = ext
+
 	}
 	return route, nil
 }
