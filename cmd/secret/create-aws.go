@@ -2,18 +2,14 @@ package secret
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/glooctl/pkg/secrets"
-	"github.com/solo-io/glooctl/pkg/util"
 	apiv1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/cobra"
 )
 
@@ -89,16 +85,6 @@ func runCreateAWS(si corev1.SecretInterface, name, id, key string) error {
 }
 
 func idAndKey(useEnv bool, keyId, secretKey, filename string) (string, string, error) {
-	if useEnv {
-		fmt.Println("Using environment variables")
-		keyId = os.Getenv("AWS_ACCESS_KEY_ID")
-		secretKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
-		if keyId == "" || secretKey == "" {
-			return "", "", fmt.Errorf("Both environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY should be set")
-		}
-		return keyId, secretKey, nil
-	}
-
 	if keyId != "" || secretKey != "" {
 		fmt.Println("Using values passed in CLI")
 		if keyId != "" && secretKey != "" {
@@ -107,35 +93,16 @@ func idAndKey(useEnv bool, keyId, secretKey, filename string) (string, string, e
 		return "", "", fmt.Errorf("both access-key-id and secret-access-key must be provided")
 	}
 
-	if filename == "" {
-		filename = filepath.Join(util.HomeDir(), ".aws", "credentials")
+	var creds *credentials.Credentials
+	if useEnv {
+		creds = credentials.NewEnvCredentials()
+	} else {
+		//TODO: add a flag for profile
+		creds = credentials.NewSharedCredentials(filename, "")
 	}
-	fmt.Println("Using the file", filename)
-	// TODO - use a toml parser? https://github.com/pelletier/go-toml has
-	// errors parsing the file
-	b, err := ioutil.ReadFile(filename)
+	vals, err := creds.Get()
 	if err != nil {
-		return "", "", err
+		return "", "", errors.Wrap(err, "failed to retrieve aws credentials")
 	}
-	lines := strings.Split(string(b), "\n")
-	for i, l := range lines {
-		if strings.TrimSpace(l) == "[default]" {
-			if i+2 >= len(lines) {
-				return "", "", fmt.Errorf("unable to find key in the file")
-			}
-			parts := strings.SplitN(lines[i+1], "=", 2)
-			if len(parts) != 2 || strings.TrimSpace(parts[0]) != "aws_access_key_id" {
-				return "", "", fmt.Errorf("unable to find aws access key id in the file")
-			}
-			id := strings.TrimSpace(parts[1])
-
-			parts = strings.SplitN(lines[i+2], "=", 2)
-			if len(parts) != 2 || strings.TrimSpace(parts[0]) != "aws_secret_access_key" {
-				return "", "", fmt.Errorf("unable to find aws secret access key in the file")
-			}
-			key := strings.TrimSpace(parts[1])
-			return id, key, nil
-		}
-	}
-	return "", "", fmt.Errorf("unable to find the key in the file")
+	return vals.AccessKeyID, vals.SecretAccessKey, nil
 }
