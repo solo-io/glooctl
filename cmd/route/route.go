@@ -409,69 +409,36 @@ func upstream(kube kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 	}
 	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.namespace, kube.name)
 }
-func createDefaultVHost(sc storage.Interface) error {
-	vhost := &v1.VirtualHost{
-		Name: defaultVHost,
-	}
-	_, err := sc.V1().VirtualHosts().Create(vhost)
-	if err != nil && !storage.IsAlreadyExists(err) {
-		return err
-	}
-	return nil
-}
 
-func virtualHost(sc storage.Interface, vhostname, domain string, create bool) (*v1.VirtualHost, bool, error) {
-	// make sure default virtual host exists
-	if err := createDefaultVHost(sc); err != nil {
-		return nil, false, err
-	}
-
+func virtualHost(sc storage.Interface, vhostname, domain string, create bool) (*v1.VirtualHost, error) {
 	if vhostname != "" {
 		vh, err := sc.V1().VirtualHosts().Get(vhostname)
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
-		return vh, false, nil
+		return vh, nil
 	}
 
-	if domain == "" {
-		vh, err := sc.V1().VirtualHosts().Get(defaultVHost)
+	if domain != "" {
+		// find all virtual hosts that can match
+		virtualHosts, err := sc.V1().VirtualHosts().List()
 		if err != nil {
-			return nil, false, err
+			return nil, errors.Wrap(err, "unable to get list of virtual hosts")
 		}
-		return vh, false, nil
+		virtualHosts = virtualHostsForDomain(virtualHosts, domain)
+		switch len(virtualHosts) {
+		case 0:
+			// TODO? if create is true, should we create a new virtual host with the domain?
+			// should we add this domain to default virtual host?
+			return nil, fmt.Errorf("didn't find any virtual host for the domain %s", domain)
+		case 1:
+			return virtualHosts[0], nil
+		default:
+			return nil, fmt.Errorf("the domain %s matched %d virtual hosts", domain, len(virtualHosts))
+		}
 	}
 
-	// we are looking for specific vhost
-	vhosts, err := sc.V1().VirtualHosts().List()
-	if err != nil {
-		return nil, false, errors.Wrap(err, "unable to get list of existing virtual hosts")
-	}
-	var validOnes []*v1.VirtualHost
-	for _, v := range vhosts {
-		if contains(v, domain) {
-			validOnes = append(validOnes, v)
-		}
-	}
-	switch len(validOnes) {
-	case 0:
-		if !create {
-			return nil, false, fmt.Errorf("didn't find any virtual host for domain %s", domain)
-		}
-		created, err := sc.V1().VirtualHosts().Create(&v1.VirtualHost{
-			Name:    domain,
-			Domains: []string{domain},
-		})
-		if err != nil {
-			return nil, false, err
-		}
-		return created, true, nil
-
-	case 1:
-		return validOnes[0], false, nil
-	default:
-		return nil, false, fmt.Errorf("the domain %s matched %d virtual hosts", domain, len(validOnes))
-	}
+	return defaultVirtualHost(sc, create)
 }
 
 func contains(vh *v1.VirtualHost, d string) bool {
@@ -481,4 +448,38 @@ func contains(vh *v1.VirtualHost, d string) bool {
 		}
 	}
 	return false
+}
+
+func virtualHostsForDomain(virtualHosts []*v1.VirtualHost, domain string) []*v1.VirtualHost {
+	var validOnes []*v1.VirtualHost
+	for _, v := range virtualHosts {
+		if contains(v, domain) {
+			validOnes = append(validOnes, v)
+		}
+	}
+	return validOnes
+}
+
+func defaultVirtualHost(sc storage.Interface, create bool) (*v1.VirtualHost, error) {
+	// does one exist?
+	vhosts, err := sc.V1().VirtualHosts().List()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get list of existing virtual hosts")
+	}
+	for _, v := range vhosts {
+		if v.Domains == nil ||
+			len(v.Domains) == 0 ||
+			contains(v, "*") {
+			return v, nil
+		}
+	}
+
+	if !create {
+		return nil, fmt.Errorf("did not find a default virtual host")
+	}
+	fmt.Println("Did not find a default virtual host. Creating...")
+	vhost := &v1.VirtualHost{
+		Name: defaultVHost,
+	}
+	return sc.V1().VirtualHosts().Create(vhost)
 }

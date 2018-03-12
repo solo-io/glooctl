@@ -35,16 +35,11 @@ func sortCmd() *cobra.Command {
 }
 
 func runSort(sc storage.Interface, vhostname, domain string) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, vhostname, domain, false)
+	v, err := virtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	if created {
-		fmt.Println("Using newly created virtual host:", v.Name)
-	} else {
-		fmt.Println("Using virtual host:", v.Name)
-	}
-
+	fmt.Println("Using virtual host:", v.Name)
 	sortRoutes(v.Routes)
 	updated, err := sc.V1().VirtualHosts().Update(v)
 	if err != nil {

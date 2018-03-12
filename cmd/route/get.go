@@ -34,14 +34,10 @@ func getCmd() *cobra.Command {
 }
 
 func runGet(sc storage.Interface, vhostname, domain string) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, vhostname, domain, false)
+	v, err := virtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	if created {
-		fmt.Println("Using newly created virtual host:", v.Name)
-	} else {
-		fmt.Println("Using virtual host:", v.Name)
-	}
+	fmt.Println("Using virtual host:", v.Name)
 	return v.GetRoutes(), nil
 }

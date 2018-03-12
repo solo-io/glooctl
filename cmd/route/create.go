@@ -51,15 +51,11 @@ the flags.`,
 }
 
 func runCreate(sc storage.Interface, vhostname, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, vhostname, domain, true)
+	v, err := virtualHost(sc, vhostname, domain, true)
 	if err != nil {
 		return nil, err
 	}
-	if created {
-		fmt.Println("Using newly virtual host: ", v.Name)
-	} else {
-		fmt.Println("Using virtual host: ", v.Name)
-	}
+	fmt.Println("Using virtual host:", v.Name)
 	v.Routes = append(v.GetRoutes(), route)
 	if sort {
 		sortRoutes(v.Routes)

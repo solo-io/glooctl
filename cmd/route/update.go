@@ -55,15 +55,11 @@ matcher and destination only. It doesn't include extensions.`,
 }
 
 func runUpdate(sc storage.Interface, vhostname, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, created, err := virtualHost(sc, vhostname, domain, false)
+	v, err := virtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	if created {
-		fmt.Println("Using newly created virtual host:", v.Name)
-	} else {
-		fmt.Println("Using virtual host:", v.Name)
-	}
+	fmt.Println("Using virtual host:", v.Name)
 
 	existing := v.GetRoutes()
 	updated := make([]*v1.Route, len(existing))
