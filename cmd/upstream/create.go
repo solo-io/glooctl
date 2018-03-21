@@ -8,12 +8,11 @@ import (
 	"github.com/solo-io/gloo-api/pkg/api/types/v1"
 	"github.com/solo-io/gloo-plugins/aws"
 	"github.com/solo-io/gloo-plugins/google"
+	secret "github.com/solo-io/gloo-secret"
 	storage "github.com/solo-io/gloo-storage"
 	"github.com/solo-io/glooctl/pkg/secrets"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 const (
@@ -64,7 +63,7 @@ func createCmd() *cobra.Command {
 	return cmd
 }
 
-func runCreate(sc storage.Interface, si corev1.SecretInterface, filename string) (*v1.Upstream, error) {
+func runCreate(sc storage.Interface, si secret.SecretInterface, filename string) (*v1.Upstream, error) {
 	upstream, err := parseFile(filename)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to load Upstream from %s", filename)
@@ -81,14 +80,14 @@ func runCreate(sc storage.Interface, si corev1.SecretInterface, filename string)
 	return sc.V1().Upstreams().Create(upstream)
 }
 
-func validate(sc storage.Interface, si corev1.SecretInterface, u *v1.Upstream) (bool, string) {
+func validate(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) (bool, string) {
 	switch u.Type {
 	case aws.UpstreamTypeAws:
 		lambdaSpec, err := aws.DecodeUpstreamSpec(u.Spec)
 		if err != nil {
 			return false, fmt.Sprintf("Unable to decode lambda upstream spec: %q", err)
 		}
-		awsSecrets, err := si.Get(lambdaSpec.SecretRef, metav1.GetOptions{})
+		awsSecrets, err := si.V1().Get(lambdaSpec.SecretRef)
 		if err != nil {
 			// warning
 			return true, fmt.Sprintf("Unable to load referenced secret. Please make sure it exists.")
@@ -110,7 +109,7 @@ func validate(sc storage.Interface, si corev1.SecretInterface, u *v1.Upstream) (
 			return true, fmt.Sprintf("Google Cloud Function Discovery requires annotation wity key %s.", annotationKey)
 		}
 
-		gcfSecret, err := si.Get(secretRef, metav1.GetOptions{})
+		gcfSecret, err := si.V1().Get(secretRef)
 		if err != nil {
 			return true, fmt.Sprintf("Unable to verify referenced secret. Please make sure it exists.")
 		}

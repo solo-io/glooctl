@@ -3,10 +3,9 @@ package secret
 import (
 	"fmt"
 
+	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/glooctl/pkg/secrets"
 	"github.com/spf13/cobra"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 func deleteCmd() *cobra.Command {
@@ -31,10 +30,10 @@ func deleteCmd() *cobra.Command {
 	return cmd
 }
 
-func runDelete(si v1.SecretInterface, name string) error {
+func runDelete(si secret.SecretInterface, name string) error {
 	if name == "" {
 		return fmt.Errorf("missing name of secret to delete")
 	}
 
-	return si.Delete(name, &metav1.DeleteOptions{})
+	return si.V1().Delete(name)
 }

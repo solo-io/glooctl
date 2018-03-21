@@ -273,6 +273,16 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/solo-io/gloo-secret"
+  packages = [
+    ".",
+    "crd",
+    "file"
+  ]
+  revision = "bf4627575ab178fd25a19ea5cd9880eec3ab1d18"
+
+[[projects]]
+  branch = "master"
   name = "github.com/solo-io/gloo-storage"
   packages = [
     ".",
@@ -553,6 +563,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "dd5008a755e21ff1e0427fa8a8f2f6d331549c3865ce53b28b79b7952fa41abb"
+  inputs-digest = "8f067e048cf310f6036a5ad45447b1a2520350220a48d25d22f6325796272eb5"
   solver-name = "gps-cdcl"
   solver-version = 1

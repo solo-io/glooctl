@@ -4,10 +4,8 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
+	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/glooctl/pkg/secrets"
-	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/cobra"
@@ -70,17 +68,15 @@ or provide them directly using --access-key-id and
 	return cmd
 }
 
-func runCreateAWS(si corev1.SecretInterface, name, id, key string) error {
-	s := &apiv1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		StringData: map[string]string{
-			awsAccessKey: id,
-			awsSecretKey: key,
+func runCreateAWS(si secret.SecretInterface, name, id, key string) error {
+	s := &secret.Secret{
+		Name: name,
+		Data: map[string][]byte{
+			awsAccessKey: []byte(id),
+			awsSecretKey: []byte(key),
 		},
 	}
-	_, err := si.Create(s)
+	_, err := si.V1().Create(s)
 	return err
 }
 

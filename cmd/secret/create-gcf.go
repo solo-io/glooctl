@@ -5,11 +5,9 @@ import (
 	"io/ioutil"
 
 	"github.com/pkg/errors"
+	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/glooctl/pkg/secrets"
 	"github.com/spf13/cobra"
-	apiv1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	corev1 "k8s.io/client-go/kubernetes/typed/core/v1"
 )
 
 const (
@@ -47,19 +45,17 @@ func createGCF() *cobra.Command {
 	return cmd
 }
 
-func runCreateGCF(si corev1.SecretInterface, name, filename string) error {
+func runCreateGCF(si secret.SecretInterface, name, filename string) error {
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to read service account key file %s", filename)
 	}
-	s := &apiv1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: name,
-		},
-		StringData: map[string]string{
-			serviceAccountJsonKeyFile: string(b),
+	s := &secret.Secret{
+		Name: name,
+		Data: map[string][]byte{
+			serviceAccountJsonKeyFile: b,
 		},
 	}
-	_, err = si.Create(s)
+	_, err = si.V1().Create(s)
 	return err
 }
