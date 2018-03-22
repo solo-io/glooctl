@@ -22,7 +22,9 @@ func init() {
 	plugin.Register(&Plugin{}, nil)
 }
 
-type Plugin struct{}
+type Plugin struct {
+	isNeeded bool
+}
 
 const (
 	// define Upstream type name
@@ -36,8 +38,8 @@ const (
 	filterMetadataKeyAsync = "async"
 
 	// upstream-specific metadata
-	awsAccessKey = "access_key"
-	awsSecretKey = "secret_key"
+	AwsAccessKey = "access_key"
+	AwsSecretKey = "secret_key"
 	awsRegion    = "region"
 	awsHost      = "host"
 
@@ -64,7 +66,13 @@ func (p *Plugin) GetDependencies(cfg *v1.Config) *plugin.Dependencies {
 }
 
 func (p *Plugin) HttpFilters(params *plugin.FilterPluginParams) []plugin.StagedFilter {
-	return []plugin.StagedFilter{{HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage}}
+
+	defer func() {p.isNeeded = false}()
+
+	if p.isNeeded{
+		return []plugin.StagedFilter{{HttpFilter: &envoyhttp.HttpFilter{Name: filterName}, Stage: pluginStage}}
+	} 
+	return nil
 }
 
 func (p *Plugin) ProcessRoute(_ *plugin.RoutePluginParams, in *v1.Route, out *envoyroute.Route) error {
@@ -92,6 +100,7 @@ func (p *Plugin) ProcessUpstream(params *plugin.UpstreamPluginParams, in *v1.Ups
 	if in.Type != UpstreamTypeAws {
 		return nil
 	}
+	p.isNeeded = true
 
 	out.Type = envoyapi.Cluster_LOGICAL_DNS
 	// need to make sure we use ipv4 only dns
@@ -117,19 +126,19 @@ func (p *Plugin) ProcessUpstream(params *plugin.UpstreamPluginParams, in *v1.Ups
 
 	var secretErrs error
 
-	accessKey, ok := awsSecrets[awsAccessKey]
+	accessKey, ok := awsSecrets[AwsAccessKey]
 	if !ok {
-		secretErrs = multierror.Append(secretErrs, errors.Errorf("key %v missing from provided secret", awsAccessKey))
+		secretErrs = multierror.Append(secretErrs, errors.Errorf("key %v missing from provided secret", AwsAccessKey))
 	}
 	if accessKey != "" && !utf8.Valid([]byte(accessKey)) {
-		secretErrs = multierror.Append(secretErrs, errors.Errorf("%s not a valid string", awsAccessKey))
+		secretErrs = multierror.Append(secretErrs, errors.Errorf("%s not a valid string", AwsAccessKey))
 	}
-	secretKey, ok := awsSecrets[awsSecretKey]
+	secretKey, ok := awsSecrets[AwsSecretKey]
 	if !ok {
-		secretErrs = multierror.Append(secretErrs, errors.Errorf("key %v missing from provided secret", awsSecretKey))
+		secretErrs = multierror.Append(secretErrs, errors.Errorf("key %v missing from provided secret", AwsSecretKey))
 	}
 	if secretKey != "" && !utf8.Valid([]byte(secretKey)) {
-		secretErrs = multierror.Append(secretErrs, errors.Errorf("%s not a valid string", awsSecretKey))
+		secretErrs = multierror.Append(secretErrs, errors.Errorf("%s not a valid string", AwsSecretKey))
 	}
 
 	if out.Metadata == nil {
@@ -138,8 +147,8 @@ func (p *Plugin) ProcessUpstream(params *plugin.UpstreamPluginParams, in *v1.Ups
 	common.InitFilterMetadata(filterName, out.Metadata)
 	out.Metadata.FilterMetadata[filterName] = &types.Struct{
 		Fields: map[string]*types.Value{
-			awsAccessKey: {Kind: &types.Value_StringValue{StringValue: accessKey}},
-			awsSecretKey: {Kind: &types.Value_StringValue{StringValue: secretKey}},
+			AwsAccessKey: {Kind: &types.Value_StringValue{StringValue: accessKey}},
+			AwsSecretKey: {Kind: &types.Value_StringValue{StringValue: secretKey}},
 			awsRegion:    {Kind: &types.Value_StringValue{StringValue: awsUpstream.Region}},
 			awsHost:      {Kind: &types.Value_StringValue{StringValue: awsUpstream.GetLambdaHostname()}},
 		},

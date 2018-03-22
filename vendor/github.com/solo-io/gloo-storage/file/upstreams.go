@@ -64,10 +64,11 @@ func (c *upstreamsClient) Update(item *v1.Upstream) (*v1.Upstream, error) {
 	}
 	// error if exists already
 	for file, existingUps := range upstreamFiles {
-		if existingUps.Name == item.Name {
-			if existingUps.Metadata != nil && lessThan(item.Metadata.ResourceVersion, existingUps.Metadata.ResourceVersion) {
-				return nil, errors.Errorf("resource version outdated for %v", item.Name)
-			}
+		if existingUps.Name != item.Name {
+			continue
+		}
+		if existingUps.Metadata != nil && lessThan(item.Metadata.ResourceVersion, existingUps.Metadata.ResourceVersion) {
+			return nil, errors.Errorf("resource version outdated for %v", item.Name)
 		}
 		upstreamClone, ok := proto.Clone(item).(*v1.Upstream)
 		if !ok {

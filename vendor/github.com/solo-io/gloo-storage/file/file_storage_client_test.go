@@ -46,6 +46,59 @@ var _ = Describe("CrdStorageClient", func() {
 			Expect(upstream).To(Equal(createdUpstream))
 		})
 	})
+	Describe("Create2Update", func() {
+		It("creates and updates", func() {
+			client, err := NewStorage(dir, resync)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Register()
+			Expect(err).NotTo(HaveOccurred())
+			upstream := NewTestUpstream1()
+			upstream, err = client.V1().Upstreams().Create(upstream)
+			upstream2 := NewTestUpstream2()
+			upstream2, err = client.V1().Upstreams().Create(upstream2)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.V1().Upstreams().Update(upstream2)
+			Expect(err).NotTo(HaveOccurred())
+
+			created1, err := client.V1().Upstreams().Get(upstream.Name)
+			Expect(err).NotTo(HaveOccurred())
+			upstream.Metadata = created1.Metadata
+			Expect(created1).To(Equal(upstream))
+
+			created2, err := client.V1().Upstreams().Get(upstream2.Name)
+			Expect(err).NotTo(HaveOccurred())
+			upstream2.Metadata = created2.Metadata
+			Expect(created2).To(Equal(upstream2))
+
+		})
+	})
+	Describe("Create2Update Vhost", func() {
+		It("creates and updates", func() {
+			client, err := NewStorage(dir, resync)
+			Expect(err).NotTo(HaveOccurred())
+			err = client.V1().Register()
+			Expect(err).NotTo(HaveOccurred())
+			vhost := NewTestVirtualHost("v1")
+			vhost, err = client.V1().VirtualHosts().Create(vhost)
+			vhost2 := NewTestVirtualHost("v2")
+			vhost2, err = client.V1().VirtualHosts().Create(vhost2)
+			Expect(err).NotTo(HaveOccurred())
+
+			_, err = client.V1().VirtualHosts().Update(vhost)
+			Expect(err).NotTo(HaveOccurred())
+
+			created1, err := client.V1().VirtualHosts().Get(vhost.Name)
+			Expect(err).NotTo(HaveOccurred())
+			vhost.Metadata = created1.Metadata
+			Expect(created1).To(Equal(vhost))
+
+			created2, err := client.V1().VirtualHosts().Get(vhost2.Name)
+			Expect(err).NotTo(HaveOccurred())
+			vhost2.Metadata = created2.Metadata
+			Expect(created2).To(Equal(vhost2))
+		})
+	})
 	Describe("Get", func() {
 		It("gets a file from the name", func() {
 			client, err := NewStorage(dir, resync)

@@ -1,24 +1,24 @@
 package file
 
 import (
-	"encoding/json"
 	"io/ioutil"
 
+	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 )
 
-func WriteToFile(filename string, s *fileSecret) error {
-	data, err := json.Marshal(s)
+func WriteToFile(filename string, data map[string]string) error {
+	b, err := yaml.Marshal(data)
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, data, 0644)
+	return ioutil.WriteFile(filename, b, 0644)
 }
 
-func ReadFileInto(filename string, s *fileSecret) error {
-	data, err := ioutil.ReadFile(filename)
+func ReadFileInto(filename string, data *map[string]string) error {
+	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return errors.Errorf("error reading file: %v", err)
 	}
-	return json.Unmarshal(data, s)
+	return yaml.Unmarshal(b, data)
 }
