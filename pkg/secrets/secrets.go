@@ -16,7 +16,7 @@ import (
 // FIXME(ashish) pass necessary parameters
 func GetSecretClient(c *cobra.Command) (secret.SecretInterface, error) {
 	flags := c.InheritedFlags()
-	resourceFolder, _ := flags.GetString("resource-folder")
+	resourceFolder, _ := flags.GetString("secret-dir")
 	if resourceFolder != "" {
 		return file.NewClient(resourceFolder)
 	}

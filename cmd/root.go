@@ -28,6 +28,7 @@ import (
 var (
 	cfgFile        string
 	resourceFolder string
+	secretFolder   string
 	kubeConfig     string
 	namespace      string
 	syncPeriod     int
@@ -57,6 +58,7 @@ func init() {
 	flags.StringVarP(&namespace, "namespace", "n", "gloo-system", "namespace for resources")
 	flags.StringVar(&resourceFolder, "gloo-config-dir", "", "if set, glooctl will use file-based storage. use this if gloo is running locally, "+
 		"e.g. using docker with volumes mounted for config storage.")
+	flags.StringVar(&secretFolder, "secret-dir", "", "if set, glooctl will use file-based stroage. use this if gloo is running locally")
 	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
 
 	rootCmd.SuggestionsMinimumDistance = 1
