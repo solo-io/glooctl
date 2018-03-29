@@ -23,8 +23,8 @@
     "aws/credentials",
     "internal/shareddefaults"
   ]
-  revision = "0a302e6abb548c4a4d22cde8eab1693ee498f202"
-  version = "v1.13.18"
+  revision = "bb206ce0d6a50da7807694a823aed5c601c57ce0"
+  version = "v1.13.23"
 
 [[projects]]
   name = "github.com/davecgh/go-spew"
@@ -52,9 +52,11 @@
     "envoy/api/v2/listener",
     "envoy/api/v2/route",
     "envoy/config/filter/accesslog/v2",
-    "envoy/config/filter/network/http_connection_manager/v2"
+    "envoy/config/filter/network/http_connection_manager/v2",
+    "envoy/type"
   ]
-  revision = "c517738a012f46dda2754ccfbc1da2628e0905ca"
+  revision = "89abfa00ef3cae559f2739ce9e1f181ffc7caf92"
+  version = "v0.1"
 
 [[projects]]
   name = "github.com/ghodss/yaml"
@@ -67,6 +69,15 @@
   packages = ["."]
   revision = "6333e38ac20b8949a8dd68baa3650f4dee8f39f0"
   version = "v1.33.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gogo/googleapis"
+  packages = [
+    "google/api",
+    "google/rpc"
+  ]
+  revision = "0cd9801be74a10d5ac39d69626eac8255ffcd502"
 
 [[projects]]
   name = "github.com/gogo/protobuf"
@@ -139,9 +150,21 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-cleanhttp"
+  packages = ["."]
+  revision = "d5fe4b57a186c716b0e00b8c301cbd9b4182694d"
+
+[[projects]]
+  branch = "master"
   name = "github.com/hashicorp/go-multierror"
   packages = ["."]
   revision = "b7773ae218740a7be65057fc60b366a49b538a44"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/go-uuid"
+  packages = ["."]
+  revision = "27454136f0364f2d44b1276c552d69105cf8c498"
 
 [[projects]]
   branch = "master"
@@ -249,18 +272,19 @@
     "pkg/bootstrap",
     "pkg/coreplugins/common",
     "pkg/endpointdiscovery",
+    "pkg/filewatcher",
     "pkg/log",
     "pkg/plugin",
     "pkg/protoutil",
     "pkg/secretwatcher"
   ]
-  revision = "60715b1cfc9f6f8d7f4f7fa4336c465ccd533ac2"
+  revision = "65e531fdd5fdb4a9e4e38efec7c7a82616864c9c"
 
 [[projects]]
   branch = "master"
   name = "github.com/solo-io/gloo-api"
   packages = ["pkg/api/types/v1"]
-  revision = "15ee452ae0a4446bd7eb1bc1beb423dba0cda32f"
+  revision = "0a39c18e5fd9e6da5c8a0ed1ff191040862a25a0"
 
 [[projects]]
   branch = "master"
@@ -269,7 +293,7 @@
     "aws",
     "google"
   ]
-  revision = "d087f06dae1fdf8e35d21bfe54253386dc5728c2"
+  revision = "b134709fa9d27229e506f978117d6583c3c249c9"
 
 [[projects]]
   branch = "master"
@@ -294,13 +318,19 @@
     "file",
     "internal/crud"
   ]
-  revision = "324e1b1c7129e91362c69fa6db2772c60d27ae8b"
+  revision = "961a366778c63bafe9d7f58ed85388b724c1eee2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/solo-io/go-checkpoint"
+  packages = ["."]
+  revision = "69104b1493dcf66693f3832c9641cc38631bc129"
 
 [[projects]]
   name = "github.com/spf13/cobra"
   packages = ["."]
-  revision = "7b2c5ac9fc04fc5efafb60700713d4fa609b777b"
-  version = "v0.0.1"
+  revision = "a1f051bc3eba734da4772d60e2d677f47cf93ef4"
+  version = "v0.0.2"
 
 [[projects]]
   name = "github.com/spf13/pflag"
@@ -312,7 +342,7 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
-  revision = "80db560fac1fb3e6ac81dbc7f8ae4c061f5257bd"
+  revision = "88942b9c40a4c9d203b82b3731787b672d6e809b"
 
 [[projects]]
   branch = "master"
@@ -335,7 +365,7 @@
     "unix",
     "windows"
   ]
-  revision = "1e3c7779a71dac3e6f1a2abb347a6734b72d35e7"
+  revision = "378d26f46672a356c46195c28f61bdb4c0a781dd"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -362,7 +392,7 @@
   branch = "master"
   name = "google.golang.org/genproto"
   packages = ["googleapis/rpc/status"]
-  revision = "f8c8703595236ae70fdf8789ecb656ea0bcdcf46"
+  revision = "ab0870e398d5dd054b868c0db1481ab029b9a9f2"
 
 [[projects]]
   name = "google.golang.org/grpc"
@@ -391,26 +421,20 @@
     "tap",
     "transport"
   ]
-  revision = "8e4536a86ab602859c20df5ebfd0bd4228d08655"
-  version = "v1.10.0"
+  revision = "afc05b9e1d36f289ea16ba294894486a3e458246"
+  version = "v1.11.0"
 
 [[projects]]
   name = "gopkg.in/inf.v0"
   packages = ["."]
-  revision = "3887ee99ecf07df5b447e9b00d9c0b2adaa9f3e4"
-  version = "v0.9.0"
+  revision = "d2d2541c53f18d2a059457998ce2876cc8e67cbf"
+  version = "v0.9.1"
 
 [[projects]]
   name = "gopkg.in/yaml.v2"
   packages = ["."]
-  revision = "7f97868eec74b32b0982dd158a51a446d1da7eb5"
-  version = "v2.1.1"
-
-[[projects]]
-  branch = "master"
-  name = "istio.io/gogo-genproto"
-  packages = ["googleapis/google/api"]
-  revision = "dd2b5b6a8f1400838165245e704a011a30154a44"
+  revision = "5420a8b6744d3b0345ab293f6fcba19c978f1183"
+  version = "v2.2.1"
 
 [[projects]]
   branch = "master"
@@ -445,7 +469,7 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "7e796de92438aede7cb5d6bcf6c10f4fa65db560"
+  revision = "c4ebf33f93081f8c7602d29a59944e4a9f684ac2"
 
 [[projects]]
   branch = "master"
@@ -457,7 +481,7 @@
     "pkg/client/clientset/clientset/scheme",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
   ]
-  revision = "b51ffe9d30135e9a6f2bfe4130eef04139015ef8"
+  revision = "e4d9f6c01342df2d731be47146016a52d1a623ed"
 
 [[projects]]
   branch = "master"
@@ -502,7 +526,7 @@
     "pkg/watch",
     "third_party/forked/golang/reflect"
   ]
-  revision = "b94e5e603d6eb10ccb65a504f538ca1ae4ef92df"
+  revision = "0ed326127d3068118ef128c76673dad6005736ba"
 
 [[projects]]
   name = "k8s.io/client-go"
@@ -563,6 +587,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "7232c5e1b9914f3a09a8d7be2a535198d7fe8c72bdf0db3fcf3d1531daa73901"
+  inputs-digest = "3d22ed623d9d7f7dd15f2412513b00292ddb416fd7d3b79828fdffe4afa31bf1"
   solver-name = "gps-cdcl"
   solver-version = 1

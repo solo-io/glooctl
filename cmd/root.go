@@ -15,9 +15,6 @@
 package cmd
 
 import (
-	"fmt"
-	"os"
-
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
@@ -34,26 +31,16 @@ var (
 	syncPeriod     int
 )
 
-// rootCmd represents the base command when called without any subcommands
-var rootCmd = &cobra.Command{
-	Use:   "glooctl",
-	Short: "manage resources in the Gloo Universe",
-	Long: `glooctl configures upstreams and virtual hosts to be used by Gloo server
-	Find more information at https://github.com/solo-io/gloo`,
-}
-
-// Execute adds all child commands to the root command and sets flags appropriately.
-// This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute() {
-	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+func App(version string) *cobra.Command {
+	app := &cobra.Command{
+		Use:   "glooctl",
+		Short: "manage resources in the Gloo Universe",
+		Long: `glooctl configures resources use by Gloo server.
+	Find more information at https://gloo.solo.io`,
+		Version: version,
 	}
-}
-
-func init() {
 	// global flags
-	flags := rootCmd.PersistentFlags()
+	flags := app.PersistentFlags()
 	flags.StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
 	flags.StringVarP(&namespace, "namespace", "n", "gloo-system", "namespace for resources")
 	flags.StringVar(&resourceFolder, "gloo-config-dir", "", "if set, glooctl will use file-based storage. use this if gloo is running locally, "+
@@ -61,11 +48,13 @@ func init() {
 	flags.StringVar(&secretFolder, "secret-dir", "", "if set, glooctl will use file-based stroage. use this if gloo is running locally")
 	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
 
-	rootCmd.SuggestionsMinimumDistance = 1
-	rootCmd.AddCommand(
+	app.SuggestionsMinimumDistance = 1
+	app.AddCommand(
 		upstream.UpstreamCmd(),
 		vhost.VHostCmd(),
 		route.RouteCmd(),
 		secret.SecretCmd(),
 		registerCmd())
+
+	return app
 }

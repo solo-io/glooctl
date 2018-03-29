@@ -3,14 +3,18 @@ BINARY:=gloo
 VERSION:=$(shell cat version)
 IMAGE_TAG?=v$(VERSION)
 
+build: $(BINARY)
+build-static: $(BINARY)-static
 build-debug: gloo-debug
 
-build: $(BINARY)
 
 $(BINARY): $(SOURCES)
 	CGO_ENABLED=0 GOOS=linux go build -i -v  -o $@ *.go
 
-docker: $(BINARY)
+$(BINARY)-static: $(SOURCES)
+	CGO_ENABLED=0 GOOS=linux go build -v -a -ldflags '-extldflags "-static"' -o $@ *.go
+
+docker: $(BINARY)-static
 	docker build -t soloio/$(BINARY):$(IMAGE_TAG) .
 
 $(BINARY)-debug: $(SOURCES)
@@ -32,7 +36,7 @@ e2e:
 test: e2e unit
 
 clean:
-	rm -f $(BINARY) $(BINARY)-debug
+	rm -f $(BINARY) $(BINARY)-debug $(BINARY)-static
 
 proto:
 	export OUTDIR=$(PWD)/docs && make -C $(GOPATH)/src/github.com/solo-io/gloo-api proto

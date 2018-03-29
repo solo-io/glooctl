@@ -9,11 +9,19 @@ import (
 
 	"io"
 
+	"time"
+
 	"github.com/k0kubun/pp"
 )
 
 var debugMode = os.Getenv("DEBUG") == "1"
 var DefaultOut io.Writer = os.Stdout
+
+func init() {
+	if os.Getenv("DISABLE_COLOR") == "1" {
+		pp.ColoringEnabled = false
+	}
+}
 
 var rxp = regexp.MustCompile(".*/src/")
 
@@ -41,10 +49,11 @@ func Debugf(format string, a ...interface{}) {
 
 func Fatalf(format string, a ...interface{}) {
 	pp.Fprintf(DefaultOut, "%v\t"+format+"\n", append([]interface{}{line()}, a...)...)
+	os.Exit(1)
 }
 
 func line() string {
 	_, file, line, _ := runtime.Caller(2)
 	file = rxp.ReplaceAllString(file, "")
-	return fmt.Sprintf("%v:%v", file, line)
+	return fmt.Sprintf("%v: %v:%v", time.Now().Format(time.RFC1123), file, line)
 }
