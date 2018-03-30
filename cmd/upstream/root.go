@@ -1,8 +1,11 @@
 package upstream
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/spf13/cobra"
+)
 
-func UpstreamCmd() *cobra.Command {
+func UpstreamCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upstream",
 		Short: "manage upstreams",
@@ -10,6 +13,7 @@ func UpstreamCmd() *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	var output string
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
-	cmd.AddCommand(createCmd(), deleteCmd(), getCmd(), updateCmd(), editCmd())
+	cmd.AddCommand(createCmd(opts), deleteCmd(opts), getCmd(opts), updateCmd(opts),
+		editCmd(opts))
 	return cmd
 }

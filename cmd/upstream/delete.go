@@ -8,13 +8,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func deleteCmd() *cobra.Command {
+func deleteCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete [name]",
 		Short: "delete upstream",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

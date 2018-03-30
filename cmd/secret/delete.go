@@ -5,16 +5,17 @@ import (
 
 	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/glooctl/pkg/secrets"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func deleteCmd() *cobra.Command {
+func deleteCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete [name]",
 		Short: "delete secret",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			si, err := secrets.GetSecretClient(c)
+			si, err := secrets.GetSecretClient(opts)
 			if err != nil {
 				fmt.Println("Unable to create secret client:", err)
 				return

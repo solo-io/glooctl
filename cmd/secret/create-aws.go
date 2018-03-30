@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/glooctl/pkg/secrets"
+	"github.com/solo-io/glooctl/pkg/util"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/cobra"
@@ -17,7 +18,7 @@ const (
 	awsSecretKey = "secret_key"
 )
 
-func createAWS() *cobra.Command {
+func createAWS(storageOpts *util.StorageOptions, createOpts *CreateOptions) *cobra.Command {
 	var useEnv bool
 	var filename string
 	var keyId string
@@ -34,12 +35,11 @@ or provide them directly using --access-key-id and
 --secret-access-key flags.
 		`,
 		RunE: func(c *cobra.Command, a []string) error {
-			flags := c.InheritedFlags()
-			name, _ := flags.GetString("name")
+			name := createOpts.Name
 			if name == "" {
 				return fmt.Errorf("name for secret missing")
 			}
-			si, err := secrets.GetSecretClient(c)
+			si, err := secrets.GetSecretClient(storageOpts)
 			if err != nil {
 				fmt.Println("Unable to get secret client:", err)
 				return nil

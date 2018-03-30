@@ -8,12 +8,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func registerCmd() *cobra.Command {
+func registerCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "register gloo resources",
 		Run: func(c *cobra.Command, args []string) {
-			storageClient, err := util.GetStorageClient(c)
+			storageClient, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to register resource defintions %q\n", err)
 				return

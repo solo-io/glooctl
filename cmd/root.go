@@ -19,16 +19,8 @@ import (
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
-)
-
-var (
-	cfgFile        string
-	resourceFolder string
-	secretFolder   string
-	kubeConfig     string
-	namespace      string
-	syncPeriod     int
 )
 
 func App(version string) *cobra.Command {
@@ -39,22 +31,23 @@ func App(version string) *cobra.Command {
 	Find more information at https://gloo.solo.io`,
 		Version: version,
 	}
-	// global flags
+
+	opts := util.StorageOptions{}
 	flags := app.PersistentFlags()
-	flags.StringVar(&kubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
-	flags.StringVarP(&namespace, "namespace", "n", "gloo-system", "namespace for resources")
-	flags.StringVar(&resourceFolder, "gloo-config-dir", "", "if set, glooctl will use file-based storage. use this if gloo is running locally, "+
+	flags.StringVar(&opts.KubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
+	flags.StringVarP(&opts.Namespace, "namespace", "n", "gloo-system", "namespace for resources")
+	flags.StringVar(&opts.GlooConfigDir, "gloo-config-dir", "", "if set, glooctl will use file-based storage. use this if gloo is running locally, "+
 		"e.g. using docker with volumes mounted for config storage.")
-	flags.StringVar(&secretFolder, "secret-dir", "", "if set, glooctl will use file-based stroage. use this if gloo is running locally")
-	flags.IntVarP(&syncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
+	flags.StringVar(&opts.SecretDir, "secret-dir", "", "if set, glooctl will use file-based stroage. use this if gloo is running locally")
+	flags.IntVarP(&opts.SyncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
-		upstream.UpstreamCmd(),
-		vhost.VHostCmd(),
-		route.RouteCmd(),
-		secret.SecretCmd(),
-		registerCmd())
+		upstream.UpstreamCmd(&opts),
+		vhost.VHostCmd(&opts),
+		route.RouteCmd(&opts),
+		secret.SecretCmd(&opts),
+		registerCmd(&opts))
 
 	return app
 }

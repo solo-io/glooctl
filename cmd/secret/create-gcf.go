@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/glooctl/pkg/secrets"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -14,18 +15,17 @@ const (
 	serviceAccountJsonKeyFile = "json_key_file"
 )
 
-func createGCF() *cobra.Command {
+func createGCF(storageOpts *util.StorageOptions, createOpts *CreateOptions) *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
 		Use:   "google",
 		Short: "create secret for upstream type Google (Google Cloud Function)",
 		RunE: func(c *cobra.Command, a []string) error {
-			flags := c.InheritedFlags()
-			name, _ := flags.GetString("name")
+			name := createOpts.Name
 			if name == "" {
 				return fmt.Errorf("name for secret missing")
 			}
-			si, err := secrets.GetSecretClient(c)
+			si, err := secrets.GetSecretClient(storageOpts)
 			if err != nil {
 				fmt.Println("Unable to get secret client:", err)
 				return nil

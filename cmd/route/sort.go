@@ -10,12 +10,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func sortCmd() *cobra.Command {
+func sortCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sort",
 		Short: "sort routes to have the longest route first",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

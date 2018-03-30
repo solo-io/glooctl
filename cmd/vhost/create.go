@@ -10,13 +10,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func createCmd() *cobra.Command {
+func createCmd(opts *util.StorageOptions) *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create virtual host",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

@@ -1,7 +1,5 @@
 package secrets
 
-// FIXME - extract this out to its own repository for secret client repository
-
 import (
 	"path/filepath"
 
@@ -9,19 +7,16 @@ import (
 	"github.com/solo-io/gloo-secret/crd"
 	"github.com/solo-io/gloo-secret/file"
 	"github.com/solo-io/glooctl/pkg/util"
-	"github.com/spf13/cobra"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-// FIXME(ashish) pass necessary parameters
-func GetSecretClient(c *cobra.Command) (secret.SecretInterface, error) {
-	flags := c.InheritedFlags()
-	resourceFolder, _ := flags.GetString("secret-dir")
-	if resourceFolder != "" {
-		return file.NewClient(resourceFolder)
+func GetSecretClient(opts *util.StorageOptions) (secret.SecretInterface, error) {
+	secretDir := opts.SecretDir
+	if secretDir != "" {
+		return file.NewClient(secretDir)
 	}
 
-	kubeConfig, _ := flags.GetString("kubeconfig")
+	kubeConfig := opts.KubeConfig
 	if kubeConfig == "" && util.HomeDir() != "" {
 		kubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
 	}
@@ -29,6 +24,5 @@ func GetSecretClient(c *cobra.Command) (secret.SecretInterface, error) {
 	if err != nil {
 		return nil, err
 	}
-	namespace, _ := flags.GetString("namespace")
-	return crd.NewClient(kubeClient, namespace)
+	return crd.NewClient(kubeClient, opts.Namespace)
 }

@@ -13,13 +13,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func editCmd() *cobra.Command {
+func editCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "edit [name]",
 		Short: "edit a virtual host",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

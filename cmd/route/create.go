@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func createCmd() *cobra.Command {
+func createCmd(opts *util.StorageOptions) *cobra.Command {
 	var sort bool
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -19,7 +19,7 @@ Create a route. The route, with its matcher and destination, can be provided
 using a file or by specifying one of the matcher and a destintation using
 the flags.`,
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

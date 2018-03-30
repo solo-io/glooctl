@@ -1,8 +1,11 @@
 package vhost
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/spf13/cobra"
+)
 
-func VHostCmd() *cobra.Command {
+func VHostCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "virtualhost",
 		Short: "manage virtual hosts",
@@ -10,6 +13,7 @@ func VHostCmd() *cobra.Command {
 	pflags := cmd.PersistentFlags()
 	var output string
 	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
-	cmd.AddCommand(createCmd(), deleteCmd(), getCmd(), updateCmd(), editCmd())
+	cmd.AddCommand(createCmd(opts), deleteCmd(opts), getCmd(opts),
+		updateCmd(opts), editCmd(opts))
 	return cmd
 }

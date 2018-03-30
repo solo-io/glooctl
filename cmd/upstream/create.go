@@ -25,18 +25,18 @@ const (
 	serviceAccountJsonKeyFile = "json_key_file"
 )
 
-func createCmd() *cobra.Command {
+func createCmd(opts *util.StorageOptions) *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create upstreams",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			si, err := secrets.GetSecretClient(c)
+			si, err := secrets.GetSecretClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create secret client %q\n", err)
 				return

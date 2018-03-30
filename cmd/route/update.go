@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func updateCmd() *cobra.Command {
+func updateCmd(opts *util.StorageOptions) *cobra.Command {
 	var sort bool
 	cmd := &cobra.Command{
 		Use:   "update",
@@ -23,7 +23,7 @@ or based on the route matcher and destination provided in the CLI.
 While selecting route to update, glooctl matches routes based on
 matcher and destination only. It doesn't include extensions.`,
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

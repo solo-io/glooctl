@@ -1,11 +1,12 @@
 package route
 
 import (
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
 // RouteCmd returns command related to managing routes on a virtual host
-func RouteCmd() *cobra.Command {
+func RouteCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "route",
 		Short: "manage routes on a virtual host",
@@ -22,11 +23,11 @@ func RouteCmd() *cobra.Command {
 	pflags.StringVarP(&file, flagFilename, "f", "", "file with route defintion")
 	cmd.MarkFlagFilename(flagFilename)
 
-	create := createCmd()
-	update := updateCmd()
-	delete := deleteCmd()
+	create := createCmd(opts)
+	update := updateCmd(opts)
+	delete := deleteCmd(opts)
 	setupRouteParams(create, update, delete)
-	cmd.AddCommand(getCmd(), create, delete, update, sortCmd())
+	cmd.AddCommand(getCmd(opts), create, delete, update, sortCmd(opts))
 
 	return cmd
 }

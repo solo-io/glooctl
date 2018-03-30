@@ -1,18 +1,23 @@
 package secret
 
 import (
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func createCmd() *cobra.Command {
+type CreateOptions struct {
+	Name string
+}
+
+func createCmd(opts *util.StorageOptions) *cobra.Command {
+	createOpts := CreateOptions{}
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create a secret for upstreams",
 	}
 	flags := cmd.PersistentFlags()
-	var name string
-	flags.StringVar(&name, "name", "", "name for secret")
+	flags.StringVar(&createOpts.Name, "name", "", "name for secret")
 	cmd.MarkPersistentFlagRequired("name")
-	cmd.AddCommand(createAWS(), createGCF())
+	cmd.AddCommand(createAWS(opts, &createOpts), createGCF(opts, &createOpts))
 	return cmd
 }

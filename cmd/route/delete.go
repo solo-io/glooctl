@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func deleteCmd() *cobra.Command {
+func deleteCmd(opts *util.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete",
 		Short: "delete a route",
@@ -20,7 +20,7 @@ or based on the route matcher and destintation provided in the CLI.
 While selecting routes to delete, glooctl matches routes based on 
 matcher and destintation only. It doesn't include extensions.`,
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(c)
+			sc, err := util.GetStorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
