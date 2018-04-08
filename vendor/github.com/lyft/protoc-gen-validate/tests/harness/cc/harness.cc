@@ -1,7 +1,5 @@
 #include <iostream>
 
-#include "validate/validate.h"
-
 #include "tests/harness/cases/bool.pb.h"
 #include "tests/harness/cases/bool.pb.validate.h"
 #include "tests/harness/cases/bytes.pb.h"
@@ -33,7 +31,8 @@ namespace {
 
 using tests::harness::TestCase;
 using tests::harness::TestResult;
-using pgv::protobuf_wkt::Any;
+using google::protobuf::Any;
+using google::protobuf::Message;
 
 std::ostream& operator<<(std::ostream& out, const TestResult& result) {
   out << "valid: " << result.valid() << " reason: '" << result.reason() << "'"
@@ -50,14 +49,14 @@ void WriteTestResultAndExit(const TestResult& result) {
   exit(EXIT_SUCCESS);
 }
 
-void ExitIfFailed(bool succeeded, const pgv::ValidationMsg& err_msg) {
+void ExitIfFailed(bool succeeded, const std::string& err_msg) {
   if (succeeded) {
     return;
   }
 
   TestResult result;
   result.set_error(true);
-  result.set_reason(pgv::String(err_msg));
+  result.set_reason(err_msg);
   WriteTestResultAndExit(result);
 }
 
@@ -72,18 +71,18 @@ std::function<TestResult()> GetValidationCheck(const Any& msg) {
 #define TRY_RETURN_VALIDATE_CALLABLE(CLS) \
   if (msg.Is<CLS>()) { \
     return [msg] () {                                      \
-      pgv::ValidationMsg err_msg;                          \
+      std::string err_msg;                                 \
       TestResult result;                                   \
       CLS unpacked;                                        \
       msg.UnpackTo(&unpacked);                             \
       try {                                                \
         result.set_valid(Validate(unpacked, &err_msg));    \
         result.set_reason(std::move(err_msg));             \
-      } catch (pgv::UnimplementedException& e) {           \
+      } catch (std::string& e) {                           \
         /* don't fail for unimplemented validations */     \
         result.set_valid(false);                           \
         result.set_allowfailure(true);                     \
-        result.set_reason(e.what());                       \
+        result.set_reason(e);                              \
       }                                                    \
       return result;                                       \
     };                                                     \

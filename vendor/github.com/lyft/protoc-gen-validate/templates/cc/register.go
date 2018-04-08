@@ -99,8 +99,6 @@ func methodName(name interface{}) string {
 	switch nameStr {
 	case "const":
 		return "const_"
-	case "inline":
-		return "inline_"
 	default:
 		return nameStr
 	}
@@ -410,5 +408,5 @@ func unwrap(ctx shared.RuleContext, name string) (shared.RuleContext, error) {
 }
 
 func failUnimplemented() string {
-	return "throw pgv::UnimplementedException();"
+	return "throw std::string(\"not yet implemented\");"
 }

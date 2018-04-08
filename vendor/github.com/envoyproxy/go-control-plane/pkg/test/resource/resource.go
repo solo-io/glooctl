@@ -33,7 +33,8 @@ import (
 )
 
 const (
-	localhost = "127.0.0.1"
+	localhost     = "127.0.0.1"
+	httpAccessLog = "envoy.http_grpc_access_log"
 
 	// XdsCluster is the cluster name for the control server (used by non-ADS set-up)
 	XdsCluster = "xds_cluster"
@@ -201,7 +202,7 @@ func MakeHTTPListener(mode string, listenerName string, port uint32, route strin
 			Name: util.Router,
 		}},
 		AccessLog: []*alf.AccessLog{{
-			Name:   util.HTTPGRPCAccessLog,
+			Name:   httpAccessLog,
 			Config: alsConfigPbst,
 		}},
 	}

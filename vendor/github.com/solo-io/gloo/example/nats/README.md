@@ -20,9 +20,9 @@ $ docker-compose up --build
 
 Initialize gloo upstreams:
 ```
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/  upstream create  -f nats-upstream.yaml
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/  upstream create  -f website-upstream.yaml
-$ glooctl --gloo-config-dir gloo-config/_gloo_config/  upstream create  -f analytics.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f nats-upstream.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f website-upstream.yaml
+$ glooctl --gloo-config-dir gloo-config/_gloo_config/ --secret-dir gloo-config/_gloo_secrets/ upstream create  -f analytics.yaml
 ```
 
 Initialize gloo virtualhost:
@@ -37,6 +37,8 @@ $ glooctl --gloo-config-dir gloo-config/_gloo_config/  virtualhost get -o yaml
 ```
 
 Once everything is up and running, you can the demo website in your browser, and continue there: http://localhost:8080
+
+You can visit http://localhost:3000 and login with username *admin* and password *admin* to monitor Gloo.
 
 # Cleanup:
 

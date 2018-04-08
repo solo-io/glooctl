@@ -21,10 +21,13 @@ the component architecture
 * [Installing on Kubernetes](docs/installation/kubernetes.md): Installation guide for Kubernetes (recommended) 
 ### Getting Started:
 * [Getting Started on Kubernetes](docs/getting_started/kubernetes/1.md): Getting started with Kubernetes (recommended for first time users)
-* [Part 2 - Function Routing](docs/getting_started/kubernetes/2.md): Introduction to Function Routing with Gloo
+* [Function Routing](docs/getting_started/kubernetes/2.md): Introduction to Function Routing with Gloo
 * [AWS Lambda](docs/getting_started/aws/lambda.md): Basic AWS Lambda with Gloo
 ### Tutorials
 * [Refactoring Monoliths with Gloo](docs/tutorials/refactor_monolith.md): Using Gloo to refactor monolithic apps
+<!--* [Extending microservices with AWS Lambda](docs/tutorials/extend_microservice.md): Using Gloo to refactor monolithic apps-->
+* [Converting webhooks to NATS Messages with Gloo](docs/tutorials/source_events_from_github.md): Using Gloo to convert webhooks to NATS messages for event-driven architectures.
+
 ### Plugins:
 * [AWS Lambda Plugin](docs/plugins/aws.md): Description of the AWS Lambda Plugin and config rules for AWS Lambda Upstreams and Functions 
 * [Kubernetes Plugin](docs/plugins/kubernetes.md): Description of the Kubernetes Plugin and config rules for Kubernetes Upstreams  

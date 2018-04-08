@@ -7,7 +7,7 @@ var natsStreamingRequestsKey = "www.solo.io;nats-streaming-spike";
 
 function loaded() {
     post_analytics();
-    update_analytics();
+    // update_analytics();
     updatetime();
 }
 
@@ -46,7 +46,7 @@ function update_analytics() {
             "class": "my-new-list",
             html: items.join( "" )
         }).appendTo( "#currentstats" );
-        }).always(getagain);
+        }); //.always(getagain);
 }
 
 function getagain() {
