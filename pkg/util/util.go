@@ -7,9 +7,9 @@ import (
 
 	"log"
 
-	storage "github.com/solo-io/gloo-storage"
-	"github.com/solo-io/gloo-storage/crd"
-	"github.com/solo-io/gloo-storage/file"
+	storage "github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/crd"
+	"github.com/solo-io/gloo/pkg/storage/file"
 	"k8s.io/client-go/tools/clientcmd"
 )
 

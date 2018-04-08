@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/solo-io/gloo-api/pkg/api/types/v1"
-	storage "github.com/solo-io/gloo-storage"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )

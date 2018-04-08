@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/solo-io/gloo-storage"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )

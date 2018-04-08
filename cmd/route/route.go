@@ -7,13 +7,13 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo-storage"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/spf13/pflag"
 
 	"github.com/ghodss/yaml"
-	"github.com/solo-io/gloo-api/pkg/api/types/v1"
-	"github.com/solo-io/gloo-storage/file"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/storage/file"
 
 	_ "github.com/gogo/protobuf/gogoproto"
 	google_protobuf "github.com/gogo/protobuf/types"
