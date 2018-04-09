@@ -4,16 +4,16 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
-func registerCmd(opts *util.StorageOptions) *cobra.Command {
+func registerCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "register gloo resources",
 		Run: func(c *cobra.Command, args []string) {
-			storageClient, err := util.GetStorageClient(opts)
+			storageClient, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to register resource defintions %q\n", err)
 				return

@@ -10,8 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/secrets"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -25,18 +24,18 @@ const (
 	serviceAccountJsonKeyFile = "json_key_file"
 )
 
-func createCmd(opts *util.StorageOptions) *cobra.Command {
+func createCmd(opts *client.StorageOptions) *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create upstreams",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(opts)
+			sc, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			si, err := secrets.GetSecretClient(opts)
+			si, err := client.SecretClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create secret client %q\n", err)
 				return

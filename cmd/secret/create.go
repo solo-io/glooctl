@@ -1,7 +1,7 @@
 package secret
 
 import (
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -9,7 +9,7 @@ type CreateOptions struct {
 	Name string
 }
 
-func createCmd(opts *util.StorageOptions) *cobra.Command {
+func createCmd(opts *client.StorageOptions) *cobra.Command {
 	createOpts := CreateOptions{}
 	cmd := &cobra.Command{
 		Use:   "create",

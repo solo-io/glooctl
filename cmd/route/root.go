@@ -1,12 +1,12 @@
 package route
 
 import (
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
 // RouteCmd returns command related to managing routes on a virtual host
-func RouteCmd(opts *util.StorageOptions) *cobra.Command {
+func RouteCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "route",
 		Short: "manage routes on a virtual host",

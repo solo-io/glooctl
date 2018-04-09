@@ -1,11 +1,11 @@
 package vhost
 
 import (
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
-func VHostCmd(opts *util.StorageOptions) *cobra.Command {
+func VHostCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "virtualhost",
 		Short: "manage virtual hosts",

@@ -1,11 +1,11 @@
 package upstream
 
 import (
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
-func UpstreamCmd(opts *util.StorageOptions) *cobra.Command {
+func UpstreamCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upstream",
 		Short: "manage upstreams",
