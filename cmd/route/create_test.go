@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/solo-io/gloo-api/pkg/api/types/v1"
-	storage "github.com/solo-io/gloo-storage"
-	"github.com/solo-io/gloo-storage/file"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	storage "github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/file"
 )
 
 func setupStorage() (storage.Interface, func(), error) {

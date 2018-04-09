@@ -1,3 +1,79 @@
+Release v1.13.30 (2018-04-06)
+===
+
+### Service Client Updates
+* `service/batch`: Updates service API and documentation
+  * Support for Timeout in SubmitJob and RegisterJobDefinition
+
+Release v1.13.29 (2018-04-05)
+===
+
+### Service Client Updates
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/ssm`: Updates service documentation
+
+Release v1.13.28 (2018-04-04)
+===
+
+### Service Client Updates
+* `service/acm`: Updates service API and documentation
+  * AWS Certificate Manager has added support for AWS Certificate Manager Private Certificate Authority (CA). Customers can now request private certificates with the RequestCertificate API, and also export private certificates with the ExportCertificate API.
+* `service/acm-pca`: Adds new service
+* `service/config`: Updates service API and documentation
+* `service/fms`: Adds new service
+* `service/monitoring`: Updates service API and documentation
+  * The new GetMetricData API enables you to collect batch amounts of metric data and optionally perform math expressions on the data. With one GetMetricData call you can retrieve as many as 100 different metrics and a total of 100,800 data points.
+* `service/s3`: Updates service API and documentation
+  * ONEZONE_IA storage class stores object data in only one Availability Zone at a lower price than STANDARD_IA. This SDK release provides API support for this new storage class.
+* `service/sagemaker`: Updates service API and documentation
+  * SageMaker is now supporting many additional instance types in previously supported families for Notebooks, Training Jobs, and Endpoints. Training Jobs and Endpoints now support instances in the m5 family in addition to the previously supported instance families. For specific instance types supported please see the documentation for the SageMaker API.
+* `service/secretsmanager`: Adds new service
+  * AWS Secrets Manager enables you to easily create and manage the secrets that you use in your customer-facing apps.  Instead of embedding credentials into your source code, you can dynamically query Secrets Manager from your app whenever you need credentials.  You can automatically and frequently rotate your secrets without having to deploy updates to your apps.  All secret values are encrypted when they're at rest with AWS KMS, and while they're in transit with HTTPS and TLS.
+* `service/transcribe`: Updates service API, documentation, and paginators
+
+Release v1.13.27 (2018-04-03)
+===
+
+### Service Client Updates
+* `service/devicefarm`: Updates service API and documentation
+  * Added Private Device Management feature. Customers can now manage their private devices efficiently - view their status, set labels and apply profiles on them. Customers can also schedule automated tests and remote access sessions on individual instances in their private device fleet.
+* `service/lambda`: Updates service API and documentation
+  * added nodejs8.10 as a valid runtime
+* `service/translate`: Updates service API and documentation
+
+Release v1.13.26 (2018-04-02)
+===
+
+### Service Client Updates
+* `service/apigateway`: Updates service API and documentation
+  * Amazon API Gateway now supports resource policies for APIs making it easier to set access controls for invoking APIs.
+* `service/cloudfront`: Adds new service
+  * You can now use a new Amazon CloudFront capability called Field-Level Encryption to further enhance the security of sensitive data, such as credit card numbers or personally identifiable information (PII) like social security numbers. CloudFront's field-level encryption further encrypts sensitive data in an HTTPS form using field-specific encryption keys (which you supply) before a POST request is forwarded to your origin. This ensures that sensitive data can only be decrypted and viewed by certain components or services in your application stack. Field-level encryption is easy to setup. Simply configure the fields that have to be further encrypted by CloudFront using the public keys you specify and you can reduce attack surface for your sensitive data.
+* `service/es`: Updates service API and documentation
+  * This adds Amazon Cognito authentication support to Kibana.
+
+Release v1.13.25 (2018-03-30)
+===
+
+### Service Client Updates
+* `service/acm`: Updates service API and documentation
+  * Documentation updates for acm
+* `service/connect`: Adds new service
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+
+Release v1.13.24 (2018-03-29)
+===
+
+### Service Client Updates
+* `service/alexaforbusiness`: Updates service API, documentation, and paginators
+* `service/cloudformation`: Updates service API and documentation
+  * Enabling resource level permission control for StackSets APIs. Adding support for customers to use customized AdministrationRole to create security boundaries between different users.
+* `aws/endpoints`: Updated Regions and Endpoints metadata.
+* `service/greengrass`: Updates service API and documentation
+  * Greengrass APIs now support creating Machine Learning resource types and configuring binary data as the input payload for Greengrass Lambda functions.
+* `service/ssm`: Updates service API
+  * This Patch Manager release supports creating patch baselines for CentOS.
+
 Release v1.13.23 (2018-03-28)
 ===
 
