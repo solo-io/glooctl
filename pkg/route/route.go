@@ -1,11 +1,13 @@
 package route
 
 import (
+	"fmt"
 	"io"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
 
+	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 )
 
@@ -107,13 +109,56 @@ func Extension(r *v1.Route) string {
 	if ext == nil || ext.GetFields() == nil {
 		return ""
 	}
-
-	builder := strings.Builder{}
+	s := make([]string, len(ext.GetFields()))
+	i := 0
 	for k, v := range ext.GetFields() {
-		builder.WriteString(k)
-		builder.WriteString(":")
-		builder.WriteString(v.GoString())
-		builder.WriteString("; ")
+		s[i] = fmt.Sprintf("%s: %s", k, prettyPrint(v))
+		i++
 	}
-	return builder.String()
+	return fmt.Sprintf("{%s}", strings.Join(s, ", "))
+}
+
+func prettyPrint(v *types.Value) string {
+	switch t := v.Kind.(type) {
+	case *types.Value_NullValue:
+		return ""
+	case *types.Value_NumberValue:
+		return fmt.Sprintf("%v", t.NumberValue)
+	case *types.Value_StringValue:
+		return fmt.Sprintf("\"%v\"", t.StringValue)
+	case *types.Value_BoolValue:
+		return fmt.Sprintf("%v", t.BoolValue)
+	case *types.Value_StructValue:
+		return prettyPrintStruct(t)
+	case *types.Value_ListValue:
+		return prettyPrintList(t)
+	default:
+		return "<unknown>"
+	}
+}
+
+func prettyPrintList(lv *types.Value_ListValue) string {
+	if lv == nil || lv.ListValue == nil || lv.ListValue.Values == nil {
+		return ""
+	}
+	s := make([]string, len(lv.ListValue.Values))
+	for i, v := range lv.ListValue.Values {
+		s[i] = prettyPrint(v)
+	}
+	return fmt.Sprintf("[%s]", strings.Join(s, ", "))
+}
+
+func prettyPrintStruct(sv *types.Value_StructValue) string {
+	if sv == nil || sv.StructValue == nil || sv.StructValue.Fields == nil {
+		return ""
+	}
+
+	s := make([]string, len(sv.StructValue.GetFields()))
+	i := 0
+	for k, v := range sv.StructValue.GetFields() {
+		s[i] = fmt.Sprintf("%s: %s", k, prettyPrint(v))
+		i++
+	}
+	return fmt.Sprintf("{%s}", strings.Join(s, ", "))
+
 }
