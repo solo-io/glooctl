@@ -8,8 +8,8 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/storage/file"
 	"github.com/solo-io/gloo/pkg/protoutil"
+	"github.com/solo-io/gloo/pkg/storage/file"
 	"github.com/solo-io/glooctl/pkg/util"
 )
 
@@ -65,12 +65,6 @@ func printJSONList(vhosts []*v1.VirtualHost) {
 func printYAMLList(vhosts []*v1.VirtualHost) {
 	for _, v := range vhosts {
 		printYAML(v)
-	}
-}
-
-func printSummaryList(v []*v1.VirtualHost) {
-	for _, entry := range v {
-		fmt.Println(entry.Name)
 	}
 }
 
