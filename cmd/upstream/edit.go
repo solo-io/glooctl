@@ -8,18 +8,18 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/solo-io/glooctl/pkg/editor"
-	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func editCmd(opts *util.StorageOptions) *cobra.Command {
+func editCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "edit [name]",
 		Short: "edit an upstream",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(opts)
+			sc, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

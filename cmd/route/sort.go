@@ -6,16 +6,16 @@ import (
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
-func sortCmd(opts *util.StorageOptions) *cobra.Command {
+func sortCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "sort",
 		Short: "sort routes to have the longest route first",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(opts)
+			sc, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

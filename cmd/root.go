@@ -19,7 +19,7 @@ import (
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +32,7 @@ func App(version string) *cobra.Command {
 		Version: version,
 	}
 
-	opts := util.StorageOptions{}
+	opts := client.StorageOptions{}
 	flags := app.PersistentFlags()
 	flags.StringVar(&opts.KubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
 	flags.StringVarP(&opts.Namespace, "namespace", "n", "gloo-system", "namespace for resources")

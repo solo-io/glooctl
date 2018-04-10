@@ -7,8 +7,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/protoutil"
+	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/pflag"
 
 	"github.com/ghodss/yaml"
@@ -17,7 +18,6 @@ import (
 
 	_ "github.com/gogo/protobuf/gogoproto"
 	google_protobuf "github.com/gogo/protobuf/types"
-	"github.com/solo-io/glooctl/pkg/util"
 )
 
 const (

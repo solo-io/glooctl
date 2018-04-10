@@ -4,17 +4,17 @@ import (
 	"fmt"
 
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
-func getCmd(opts *util.StorageOptions) *cobra.Command {
+func getCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get [name (optional)]",
 		Short: "get upstream  or upstream list",
 		Args:  cobra.MaximumNArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := util.GetStorageClient(opts)
+			sc, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
