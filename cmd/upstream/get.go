@@ -2,9 +2,12 @@ package upstream
 
 import (
 	"fmt"
+	"os"
 
-	storage "github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/spf13/cobra"
 )
 
@@ -49,20 +52,22 @@ func runGet(sc storage.Interface, output, name string) error {
 		case "json":
 			printJSONList(upstreams)
 		default:
-			printSummaryList(upstreams)
+			upstream.PrintTable(upstreams, os.Stdout)
 		}
 		return nil
 	}
 
-	upstream, err := sc.V1().Upstreams().Get(name)
+	u, err := sc.V1().Upstreams().Get(name)
 	if err != nil {
 		return err
 	}
 	switch output {
 	case "json":
-		printJSON(upstream)
+		printJSON(u)
+	case "yaml":
+		printYAML(u)
 	default:
-		printYAML(upstream)
+		upstream.PrintTable([]*v1.Upstream{u}, os.Stdout)
 	}
 	return nil
 }

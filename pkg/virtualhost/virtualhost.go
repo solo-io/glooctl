@@ -1,0 +1,60 @@
+package virtualhost
+
+import (
+	"io"
+	"strings"
+
+	"github.com/olekukonko/tablewriter"
+
+	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/glooctl/pkg/route"
+)
+
+func PrintTable(list []*v1.VirtualHost, w io.Writer) {
+	table := tablewriter.NewWriter(w)
+	table.SetHeader([]string{"Virtual Host", "Domain", "SSL", "Status", "Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
+
+	for _, v := range list {
+		name := v.GetName()
+		d := domains(v)
+		ssl := sslConfig(v)
+		s := status(v)
+
+		if v.GetRoutes() == nil || len(v.GetRoutes()) == 0 {
+			table.Append([]string{name, d, ssl, s, "", "", "", "", "", "", ""})
+		} else {
+			for _, r := range v.GetRoutes() {
+				matcher, rType, verb, headers := route.Matcher(r)
+				ext := route.Extension(r)
+				for _, dst := range route.Destinations(r) {
+					table.Append([]string{name, d, ssl, s, matcher, rType, verb, headers, dst.Upstream, dst.Function, ext})
+				}
+			}
+		}
+	}
+
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.Render()
+}
+
+func domains(v *v1.VirtualHost) string {
+	if v.GetDomains() == nil || len(v.GetDomains()) == 0 {
+		return ""
+	}
+
+	return strings.Join(v.GetDomains(), ", ")
+}
+
+func sslConfig(v *v1.VirtualHost) string {
+	if v.GetSslConfig() == nil {
+		return ""
+	}
+	return v.GetSslConfig().GetSecretRef()
+}
+
+func status(v *v1.VirtualHost) string {
+	if v.Status == nil {
+		return ""
+	}
+	return v.Status.State.String()
+}

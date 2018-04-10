@@ -1,14 +1,15 @@
 package route
 
 import (
-	"bytes"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/solo-io/gloo/pkg/storage"
+	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/pflag"
 
@@ -89,7 +90,7 @@ func printRoutes(routes []*v1.Route, output string) {
 	case "yaml":
 		printYAMLList(routes)
 	default:
-		printSummaryList(routes)
+		proute.PrintTable(routes, os.Stdout)
 	}
 }
 
@@ -126,92 +127,6 @@ func printYAMLList(routes []*v1.Route) {
 	for _, r := range routes {
 		printYAML(r)
 	}
-}
-
-func printSummaryList(r []*v1.Route) {
-	for _, entry := range r {
-		fmt.Println(toString(entry))
-	}
-}
-
-const (
-	event      = "event       : "
-	pathExact  = "exact path  : "
-	pathRegex  = "regex path  : "
-	pathPrefix = "path prefix : "
-	unknown    = "matcher     : unknown"
-)
-
-func toString(r *v1.Route) string {
-	if r == nil {
-		return ""
-	}
-	return fmt.Sprintf("%s\n -> %s\n",
-		matcherToString(r),
-		destinationToString(r))
-}
-
-func matcherToString(r *v1.Route) string {
-	switch m := r.GetMatcher().(type) {
-	case *v1.Route_EventMatcher:
-		return event + m.EventMatcher.EventType
-	case *v1.Route_RequestMatcher:
-		var path string
-		switch p := m.RequestMatcher.GetPath().(type) {
-		case *v1.RequestMatcher_PathExact:
-			path = pathExact + p.PathExact
-		case *v1.RequestMatcher_PathRegex:
-			path = pathRegex + p.PathRegex
-		case *v1.RequestMatcher_PathPrefix:
-			path = pathPrefix + p.PathPrefix
-		default:
-			path = unknown
-		}
-		verb := ""
-		if m.RequestMatcher.Verbs != nil {
-			verb = fmt.Sprintf("\nmethods     : %v", m.RequestMatcher.Verbs)
-		}
-		headers := ""
-		if m.RequestMatcher.Headers != nil {
-			headers = fmt.Sprintf("\nheaders     : %v", m.RequestMatcher.Headers)
-		}
-		return path + verb + headers
-	default:
-		return unknown
-	}
-}
-
-func destinationToString(r *v1.Route) string {
-	single := r.GetSingleDestination()
-	if single != nil {
-		return upstreamToString(single.GetUpstream(), single.GetFunction())
-	}
-
-	multi := r.GetMultipleDestinations()
-	if multi != nil {
-		b := bytes.Buffer{}
-		b.WriteString("[\n")
-		for _, m := range multi {
-			fmt.Fprintf(&b, "  %3d, %s\n", m.GetWeight(),
-				upstreamToString(m.GetUpstream(), m.GetFunction()))
-		}
-		b.WriteString("]")
-		return b.String()
-	}
-
-	return "unknown"
-}
-
-func upstreamToString(u *v1.UpstreamDestination, f *v1.FunctionDestination) string {
-	if u != nil {
-		return u.Name
-	}
-
-	if f != nil {
-		return fmt.Sprintf("%s/%s", f.UpstreamName, f.FunctionName)
-	}
-
-	return "<no destintation specified>"
 }
 
 func route(flags *pflag.FlagSet, sc storage.Interface) (*v1.Route, error) {

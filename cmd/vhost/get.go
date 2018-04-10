@@ -2,9 +2,12 @@ package vhost
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/virtualhost"
 	"github.com/spf13/cobra"
 )
 
@@ -48,7 +51,7 @@ func runGet(sc storage.Interface, output, name string) error {
 		case "json":
 			printJSONList(v)
 		default:
-			printSummaryList(v)
+			virtualhost.PrintTable(v, os.Stdout)
 		}
 		return nil
 	}
@@ -60,8 +63,10 @@ func runGet(sc storage.Interface, output, name string) error {
 	switch output {
 	case "json":
 		printJSON(v)
-	default:
+	case "yaml":
 		printYAML(v)
+	default:
+		virtualhost.PrintTable([]*v1.VirtualHost{v}, os.Stdout)
 	}
 	return nil
 }
