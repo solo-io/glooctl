@@ -3,12 +3,22 @@ package virtualhost
 import (
 	"io"
 	"strings"
+	"text/template"
 
 	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/glooctl/pkg/route"
 )
+
+func PrintTemplate(list []*v1.VirtualHost, tmpl string, w io.Writer) error {
+	t, err := template.New("output").Parse(tmpl)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse template")
+	}
+	return t.Execute(w, list)
+}
 
 func PrintTable(list []*v1.VirtualHost, w io.Writer) {
 	table := tablewriter.NewWriter(w)
