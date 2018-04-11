@@ -14,6 +14,6 @@ func SecretCmd(opts *client.StorageOptions) *cobra.Command {
 		Use:   "secret",
 		Short: "manage secrets for upstreams in gloo",
 	}
-	cmd.AddCommand(createCmd(opts), deleteCmd(opts))
+	cmd.AddCommand(createCmd(opts), deleteCmd(opts), getCmd(opts))
 	return cmd
 }
