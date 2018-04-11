@@ -22,12 +22,15 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			output, _ := c.InheritedFlags().GetString("output")
+			if output == "template" && tplt == "" {
+				fmt.Println("Must provide template when setting output as template")
+				return
+			}
 			var name string
 			if len(args) > 0 {
 				name = args[0]
 			}
-			if err := runGet(sc, output, name); err != nil {
+			if err := runGet(sc, output, tplt, name); err != nil {
 				fmt.Printf("Unable to get upstream %q\n", err)
 				return
 			}
@@ -36,7 +39,7 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func runGet(sc storage.Interface, output, name string) error {
+func runGet(sc storage.Interface, output, tplt, name string) error {
 	if name == "" {
 		upstreams, err := sc.V1().Upstreams().List()
 		if err != nil {
@@ -51,6 +54,8 @@ func runGet(sc storage.Interface, output, name string) error {
 			printYAMLList(upstreams)
 		case "json":
 			printJSONList(upstreams)
+		case "template":
+			return upstream.PrintTemplate(upstreams, tplt, os.Stdout)
 		default:
 			upstream.PrintTable(upstreams, os.Stdout)
 		}
@@ -66,6 +71,8 @@ func runGet(sc storage.Interface, output, name string) error {
 		printJSON(u)
 	case "yaml":
 		printYAML(u)
+	case "template":
+		upstream.PrintTemplate([]*v1.Upstream{u}, tplt, os.Stdout)
 	default:
 		upstream.PrintTable([]*v1.Upstream{u}, os.Stdout)
 	}

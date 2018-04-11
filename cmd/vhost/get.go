@@ -21,12 +21,15 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			output, _ := c.InheritedFlags().GetString("output")
+			if output == "template" && tplt == "" {
+				fmt.Println("Must provide template when setting output as template")
+				return
+			}
 			var name string
 			if len(args) > 0 {
 				name = args[0]
 			}
-			if err := runGet(sc, output, name); err != nil {
+			if err := runGet(sc, output, tplt, name); err != nil {
 				fmt.Printf("Unable to get virtual host %q\n", err)
 				return
 			}
@@ -35,7 +38,7 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func runGet(sc storage.Interface, output, name string) error {
+func runGet(sc storage.Interface, output, tplt, name string) error {
 	if name == "" {
 		v, err := sc.V1().VirtualHosts().List()
 		if err != nil {
@@ -50,6 +53,8 @@ func runGet(sc storage.Interface, output, name string) error {
 			printYAMLList(v)
 		case "json":
 			printJSONList(v)
+		case "template":
+			return virtualhost.PrintTemplate(v, tplt, os.Stdout)
 		default:
 			virtualhost.PrintTable(v, os.Stdout)
 		}
@@ -65,6 +70,8 @@ func runGet(sc storage.Interface, output, name string) error {
 		printJSON(v)
 	case "yaml":
 		printYAML(v)
+	case "template":
+		return virtualhost.PrintTemplate([]*v1.VirtualHost{v}, tplt, os.Stdout)
 	default:
 		virtualhost.PrintTable([]*v1.VirtualHost{v}, os.Stdout)
 	}

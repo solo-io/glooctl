@@ -44,6 +44,7 @@ func App(version string) *cobra.Command {
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
 		upstream.UpstreamCmd(&opts),
+		functionCmd(&opts),
 		vhost.VHostCmd(&opts),
 		route.RouteCmd(&opts),
 		secret.SecretCmd(&opts),

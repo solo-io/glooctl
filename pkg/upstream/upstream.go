@@ -1,9 +1,12 @@
 package upstream
 
 import (
-	"github.com/olekukonko/tablewriter"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"io"
+	"text/template"
+
+	"github.com/olekukonko/tablewriter"
+	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 )
 
 func PrintTable(list []*v1.Upstream, w io.Writer) {
@@ -31,4 +34,12 @@ func PrintTable(list []*v1.Upstream, w io.Writer) {
 	}
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
+}
+
+func PrintTemplate(list []*v1.Upstream, tmpl string, w io.Writer) error {
+	t, err := template.New("output").Parse(tmpl)
+	if err != nil {
+		return errors.Wrap(err, "unable to parse template")
+	}
+	return t.Execute(w, list)
 }
