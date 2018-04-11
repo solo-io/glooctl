@@ -17,7 +17,7 @@ const (
 
 func PrintTableWithUsage(list []*secret.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualHost) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Name", "Type", "Use"})
+	table.SetHeader([]string{"Name", "Type", "In Use By"})
 
 	usageMap := usage(list, u, v)
 	for _, s := range list {
