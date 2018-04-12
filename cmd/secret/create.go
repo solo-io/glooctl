@@ -117,8 +117,8 @@ func createCertificate(storageOpts *client.StorageOptions) *cobra.Command {
 	cmd.MarkFlagFilename("ca-chain")
 	cmd.MarkFlagRequired("ca-chain")
 	flags.StringVarP(&opts.PrivateKey, "private-key", "p", "", "private key file")
-	cmd.MarkFlagFilename("ca-chain")
-	cmd.MarkFlagRequired("ca-chain")
+	cmd.MarkFlagFilename("private-key")
+	cmd.MarkFlagRequired("private-key")
 
 	return cmd
 }

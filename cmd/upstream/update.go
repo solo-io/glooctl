@@ -37,7 +37,7 @@ func updateCmd(opts *client.StorageOptions) *cobra.Command {
 		},
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to use to create upstream")
-	cmd.MarkFlagFilename("filename")
+	cmd.MarkFlagFilename("filename", "yaml", "yml")
 	cmd.MarkFlagRequired("filename")
 	return cmd
 }

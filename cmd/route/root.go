@@ -3,6 +3,7 @@ package route
 import (
 	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 // RouteCmd returns command related to managing routes on a virtual host
@@ -21,7 +22,7 @@ func RouteCmd(opts *client.StorageOptions) *cobra.Command {
 	pflags.StringVarP(&vhost, flagVirtualHost, "v", "", "specify virtual host by name; empty defaults to default virtual host")
 	var file string
 	pflags.StringVarP(&file, flagFilename, "f", "", "file with route defintion")
-	cmd.MarkFlagFilename(flagFilename)
+	cmd.MarkFlagFilename(flagFilename, "yaml", "yml")
 
 	create := createCmd(opts)
 	update := updateCmd(opts)
@@ -29,6 +30,7 @@ func RouteCmd(opts *client.StorageOptions) *cobra.Command {
 	setupRouteParams(create, update, delete)
 	cmd.AddCommand(getCmd(opts), create, delete, update, sortCmd(opts))
 
+	annotate(cmd.Flag(flagVirtualHost), "__glooctl_get_virtualhosts")
 	return cmd
 }
 
@@ -47,6 +49,18 @@ func setupRouteParams(cmds ...*cobra.Command) {
 		flags.StringVar(&r.prefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
 			"the path to this value")
 		flags.StringVar(&r.extensions, flagExtension, "", "yaml file with route extensions")
-		c.MarkFlagFilename(flagExtension)
+		c.MarkFlagFilename(flagExtension, "yaml", "yml")
+
+		// auto complete
+		annotate(c.Flag(flagMethod), "__glooctl_route_http_methods")
+		annotate(c.Flag(flagUpstream), "__glooctl_get_upstreams")
+		annotate(c.Flag(flagFunction), "__glooctl_get_functions")
 	}
+}
+
+func annotate(f *pflag.Flag, completion string) {
+	if f.Annotations == nil {
+		f.Annotations = map[string][]string{}
+	}
+	f.Annotations[cobra.BashCompCustom] = append(f.Annotations[cobra.BashCompCustom], completion)
 }
