@@ -51,13 +51,9 @@ func runUpdate(sc storage.Interface, filename string) (*v1.Upstream, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to find existing Upstream %s", upstream.Name)
 	}
-	// need to copy new into existing so that we get resource revision number
-	copy(upstream, existing)
-	return sc.V1().Upstreams().Update(existing)
-}
-
-func copy(src *v1.Upstream, dst *v1.Upstream) {
-	dst.Type = src.Type
-	dst.Spec = src.Spec
-	dst.Functions = src.Functions
+	if upstream.Metadata == nil {
+		upstream.Metadata = &v1.Metadata{}
+	}
+	upstream.Metadata.ResourceVersion = existing.Metadata.GetResourceVersion()
+	return sc.V1().Upstreams().Update(upstream)
 }
