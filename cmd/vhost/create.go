@@ -38,7 +38,7 @@ func createCmd(opts *client.StorageOptions) *cobra.Command {
 	}
 
 	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to use to create virtual host")
-	cmd.MarkFlagFilename("filename")
+	cmd.MarkFlagFilename("filename", "yaml", "yml")
 	cmd.MarkFlagRequired("filename")
 	return cmd
 }
