@@ -2,11 +2,15 @@ package upstream
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/upstream"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -21,19 +25,18 @@ func updateCmd(opts *client.StorageOptions) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			upstream, err := runUpdate(sc, filename)
+			u, err := runUpdate(sc, filename)
 			if err != nil {
 				fmt.Printf("Unable to create upstream %q\n", err)
 				return
 			}
 			fmt.Println("Upstream updated")
 			output, _ := c.InheritedFlags().GetString("output")
-			if output == "yaml" {
-				printYAML(upstream)
-			}
-			if output == "json" {
-				printJSON(upstream)
-			}
+			util.Print(output, "", u,
+				func(data interface{}, w io.Writer) error {
+					upstream.PrintTable([]*v1.Upstream{data.(*v1.Upstream)}, w)
+					return nil
+				}, os.Stdout)
 		},
 	}
 	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to use to create upstream")

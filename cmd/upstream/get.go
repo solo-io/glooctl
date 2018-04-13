@@ -2,12 +2,14 @@ package upstream
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/solo-io/glooctl/pkg/upstream"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -45,36 +47,20 @@ func runGet(sc storage.Interface, output, tplt, name string) error {
 		if err != nil {
 			return err
 		}
-		if len(upstreams) == 0 {
-			fmt.Println("No upstreams found.")
-			return nil
-		}
-		switch output {
-		case "yaml":
-			printYAMLList(upstreams)
-		case "json":
-			printJSONList(upstreams)
-		case "template":
-			return upstream.PrintTemplate(upstreams, tplt, os.Stdout)
-		default:
-			upstream.PrintTable(upstreams, os.Stdout)
-		}
-		return nil
+		return util.PrintList(output, tplt, upstreams,
+			func(data interface{}, w io.Writer) error {
+				upstream.PrintTable(data.([]*v1.Upstream), w)
+				return nil
+			}, os.Stdout)
 	}
 
 	u, err := sc.V1().Upstreams().Get(name)
 	if err != nil {
 		return err
 	}
-	switch output {
-	case "json":
-		printJSON(u)
-	case "yaml":
-		printYAML(u)
-	case "template":
-		upstream.PrintTemplate([]*v1.Upstream{u}, tplt, os.Stdout)
-	default:
-		upstream.PrintTable([]*v1.Upstream{u}, os.Stdout)
-	}
-	return nil
+	return util.Print(output, tplt, u,
+		func(data interface{}, w io.Writer) error {
+			upstream.PrintTable([]*v1.Upstream{data.(*v1.Upstream)}, w)
+			return nil
+		}, os.Stdout)
 }

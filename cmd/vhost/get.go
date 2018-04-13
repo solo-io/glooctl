@@ -2,11 +2,13 @@ package vhost
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/solo-io/glooctl/pkg/virtualhost"
 	"github.com/spf13/cobra"
 )
@@ -44,36 +46,19 @@ func runGet(sc storage.Interface, output, tplt, name string) error {
 		if err != nil {
 			return err
 		}
-		if len(v) == 0 {
-			fmt.Println("No virtual hosts found.")
-			return nil
-		}
-		switch output {
-		case "yaml":
-			printYAMLList(v)
-		case "json":
-			printJSONList(v)
-		case "template":
-			return virtualhost.PrintTemplate(v, tplt, os.Stdout)
-		default:
-			virtualhost.PrintTable(v, os.Stdout)
-		}
-		return nil
+		return util.PrintList(output, tplt, v,
+			func(data interface{}, w io.Writer) error {
+				virtualhost.PrintTable(data.([]*v1.VirtualHost), w)
+				return nil
+			}, os.Stdout)
 	}
 
 	v, err := sc.V1().VirtualHosts().Get(name)
 	if err != nil {
 		return err
 	}
-	switch output {
-	case "json":
-		printJSON(v)
-	case "yaml":
-		printYAML(v)
-	case "template":
-		return virtualhost.PrintTemplate([]*v1.VirtualHost{v}, tplt, os.Stdout)
-	default:
-		virtualhost.PrintTable([]*v1.VirtualHost{v}, os.Stdout)
-	}
-	return nil
+	return util.Print(output, tplt, v, func(v interface{}, w io.Writer) error {
+		virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
+		return nil
+	}, os.Stdout)
 }

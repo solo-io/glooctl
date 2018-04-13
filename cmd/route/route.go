@@ -2,18 +2,15 @@ package route
 
 import (
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/solo-io/gloo/pkg/storage"
-	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/pflag"
 
-	"github.com/ghodss/yaml"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage/file"
 
@@ -77,56 +74,6 @@ func parseFile(filename string) (*v1.Route, error) {
 		return nil, err
 	}
 	return &r, nil
-}
-
-func printRoutes(routes []*v1.Route, output string) {
-	if len(routes) == 0 {
-		fmt.Println("No routes defined")
-		return
-	}
-	switch output {
-	case "json":
-		printJSONList(routes)
-	case "yaml":
-		printYAMLList(routes)
-	default:
-		proute.PrintTable(routes, os.Stdout)
-	}
-}
-
-func printJSON(r *v1.Route) {
-	b, err := protoutil.Marshal(r)
-	if err != nil {
-		fmt.Println("unable to convert to JSON ", err)
-		return
-	}
-	fmt.Println(string(b))
-}
-
-func printYAML(r *v1.Route) {
-	jsn, err := protoutil.Marshal(r)
-	if err != nil {
-		fmt.Println("unable to marshal ", err)
-		return
-	}
-	b, err := yaml.JSONToYAML(jsn)
-	if err != nil {
-		fmt.Println("unable to convert to YAML ", err)
-		return
-	}
-	fmt.Println(string(b))
-}
-
-func printJSONList(routes []*v1.Route) {
-	for _, r := range routes {
-		printJSON(r)
-	}
-}
-
-func printYAMLList(routes []*v1.Route) {
-	for _, r := range routes {
-		printYAML(r)
-	}
 }
 
 func route(flags *pflag.FlagSet, sc storage.Interface) (*v1.Route, error) {

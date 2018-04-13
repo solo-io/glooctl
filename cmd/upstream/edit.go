@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -10,6 +11,8 @@ import (
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/solo-io/glooctl/pkg/editor"
+	"github.com/solo-io/glooctl/pkg/upstream"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -33,12 +36,11 @@ func editCmd(opts *client.StorageOptions) *cobra.Command {
 			fmt.Printf("Upstream %s updated\n", args[0])
 
 			output, _ := c.InheritedFlags().GetString("output")
-			if output == "yaml" {
-				printYAML(u)
-			}
-			if output == "json" {
-				printJSON(u)
-			}
+			util.Print(output, tplt, u,
+				func(data interface{}, w io.Writer) error {
+					upstream.PrintTable([]*v1.Upstream{data.(*v1.Upstream)}, w)
+					return nil
+				}, os.Stdout)
 		},
 	}
 	return cmd
@@ -59,7 +61,7 @@ func runEdit(sc storage.Interface, name string) (*v1.Upstream, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create temporary file")
 	}
-	if err := writeYAML(u, f); err != nil {
+	if err := util.PrintYAML(u, f); err != nil {
 		return nil, errors.Wrap(err, "unable to write out upstream for editting")
 	}
 	defer os.Remove(f.Name())
