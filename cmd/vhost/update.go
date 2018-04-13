@@ -57,13 +57,9 @@ func runUpdate(sc storage.Interface, filename string) (*v1.VirtualHost, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to find existing virtual host %s", vh.Name)
 	}
-	// need to copy new into existing so that we get resource revision number
-	copy(vh, existing)
-	return sc.V1().VirtualHosts().Update(existing)
-}
-
-func copy(src *v1.VirtualHost, dst *v1.VirtualHost) {
-	dst.Domains = src.Domains
-	dst.Routes = src.Routes
-	dst.SslConfig = src.SslConfig
+	if vh.Metadata == nil {
+		vh.Metadata = &v1.Metadata{}
+	}
+	vh.Metadata.ResourceVersion = existing.Metadata.GetResourceVersion()
+	return sc.V1().VirtualHosts().Update(vh)
 }
