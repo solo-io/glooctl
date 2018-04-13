@@ -2,11 +2,15 @@ package vhost
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/virtualhost"
 	"github.com/spf13/cobra"
 )
 
@@ -28,12 +32,10 @@ func updateCmd(opts *client.StorageOptions) *cobra.Command {
 			}
 			fmt.Println("Virtual host updated")
 			output, _ := c.InheritedFlags().GetString("output")
-			if output == "yaml" {
-				printYAML(vh)
-			}
-			if output == "json" {
-				printJSON(vh)
-			}
+			util.Print(output, "", vh, func(v interface{}, w io.Writer) error {
+				virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
+				return nil
+			}, os.Stdout)
 		},
 	}
 

@@ -2,6 +2,7 @@ package vhost
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 
@@ -10,6 +11,8 @@ import (
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/solo-io/glooctl/pkg/editor"
+	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/virtualhost"
 	"github.com/spf13/cobra"
 )
 
@@ -33,12 +36,10 @@ func editCmd(opts *client.StorageOptions) *cobra.Command {
 			fmt.Printf("Virtual host %s updated\n", args[0])
 
 			output, _ := c.InheritedFlags().GetString("output")
-			if output == "yaml" {
-				printYAML(v)
-			}
-			if output == "json" {
-				printJSON(v)
-			}
+			util.Print(output, "", v, func(v interface{}, w io.Writer) error {
+				virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
+				return nil
+			}, os.Stdout)
 		},
 	}
 	return cmd
@@ -59,7 +60,7 @@ func runEdit(sc storage.Interface, name string) (*v1.VirtualHost, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create temporary file")
 	}
-	if err := writeYAML(v, f); err != nil {
+	if err := util.PrintYAML(v, f); err != nil {
 		return nil, errors.Wrap(err, "unable to write out virtualhost for editting")
 	}
 	defer os.Remove(f.Name())

@@ -2,10 +2,14 @@ package route
 
 import (
 	"fmt"
+	"io"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	proute "github.com/solo-io/glooctl/pkg/route"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -38,7 +42,11 @@ the flags.`,
 				return
 			}
 			output, _ := flags.GetString("output")
-			printRoutes(routes, output)
+			util.PrintList(output, "", routes,
+				func(data interface{}, w io.Writer) error {
+					proute.PrintTable(data.([]*v1.Route), w)
+					return nil
+				}, os.Stdout)
 		},
 	}
 	kube := kubeUpstream{}

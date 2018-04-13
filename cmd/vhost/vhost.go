@@ -2,13 +2,8 @@ package vhost
 
 import (
 	"fmt"
-	"io"
-	"os"
 
-	"github.com/ghodss/yaml"
-	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/solo-io/gloo/pkg/storage/file"
 	"github.com/solo-io/glooctl/pkg/util"
 )
@@ -28,44 +23,6 @@ func parseFile(filename string) (*v1.VirtualHost, error) {
 		return nil, err
 	}
 	return &v, nil
-}
-
-func printJSON(v *v1.VirtualHost) {
-	b, err := protoutil.Marshal(v)
-	if err != nil {
-		fmt.Println("unable to convert to JSON ", err)
-		return
-	}
-	fmt.Println(string(b))
-}
-
-func printYAML(v *v1.VirtualHost) {
-	writeYAML(v, os.Stdout)
-}
-
-func writeYAML(v *v1.VirtualHost, w io.Writer) error {
-	jsn, err := protoutil.Marshal(v)
-	if err != nil {
-		return errors.Wrap(err, "unable to marshal ")
-	}
-	b, err := yaml.JSONToYAML(jsn)
-	if err != nil {
-		return errors.Wrap(err, "unable to convert to YAML")
-	}
-	_, err = fmt.Fprintln(w, string(b))
-	return err
-}
-
-func printJSONList(vhosts []*v1.VirtualHost) {
-	for _, v := range vhosts {
-		printJSON(v)
-	}
-}
-
-func printYAMLList(vhosts []*v1.VirtualHost) {
-	for _, v := range vhosts {
-		printYAML(v)
-	}
 }
 
 func defaultVHostValidation(v *v1.VirtualHost) error {
