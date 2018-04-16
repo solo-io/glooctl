@@ -35,17 +35,14 @@ type Options struct {
 	// these 3 get copied around. fun, i know
 	KubeOptions          KubeOptions
 	ConsulOptions        ConsulOptions
-	ConfigWatcherOptions WatcherOptions
-	SecretWatcherOptions WatcherOptions
-	FileWatcherOptions   WatcherOptions
+	ConfigStorageOptions StorageOptions
+	SecretStorageOptions StorageOptions
+	FileStorageOptions   StorageOptions
 	FileOptions          FileOptions
 	VaultOptions         VaultOptions
-	XdsOptions           XdsOptions
-	// may be needed by plugins
-	Extra map[string]string
 }
 
-type WatcherOptions struct {
+type StorageOptions struct {
 	Type          string
 	SyncFrequency time.Duration
 }
@@ -107,9 +104,11 @@ func (o ConsulOptions) ToConsulConfig() *api.Config {
 }
 
 type VaultOptions struct {
-	VaultAddr string
-	AuthToken string
-	Retries   int
+	VaultAddr      string
+	VaultToken     string
+	VaultTokenFile string
+	Retries        int
+	RootPath       string
 }
 
 type FileOptions struct {

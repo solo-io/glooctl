@@ -7,30 +7,23 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/grpc"
-	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
+	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
+	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/swagger"
 	"github.com/solo-io/gloo/internal/function-discovery/updater"
 	"github.com/solo-io/gloo/internal/function-discovery/upstreamwatcher"
-	"github.com/solo-io/gloo/internal/function-discovery/resolver"
-	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/consul"
-	"github.com/solo-io/gloo/pkg/storage/crd"
-	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	consulfiles "github.com/solo-io/gloo/pkg/storage/dependencies/consul"
-	filestorage "github.com/solo-io/gloo/pkg/storage/dependencies/file"
-	"github.com/solo-io/gloo/pkg/storage/dependencies/kube"
-	"github.com/solo-io/gloo/pkg/storage/file"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
+	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
-	filesecrets "github.com/solo-io/gloo/pkg/secretwatcher/file"
-	kubesecrets "github.com/solo-io/gloo/pkg/secretwatcher/kube"
-	"github.com/solo-io/gloo/pkg/secretwatcher/vault"
 )
 
 const (
@@ -43,7 +36,7 @@ type workItem struct {
 }
 
 func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-chan struct{}, errs chan error) error {
-	store, err := createStorageClient(opts)
+	store, err := configstorage.Bootstrap(opts)
 	if err != nil {
 		return errors.Wrap(err, "failed to create config store client")
 	}
@@ -53,10 +46,17 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		return errors.Wrap(err, "failed to start monitoring upstreams")
 	}
 
-	secretWatcher, err := setupSecretWatcher(opts, stop)
+	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
 	if err != nil {
 		return errors.Wrap(err, "failed to set up secret watcher")
 	}
+
+	secretStore, err := secretstorage.Bootstrap(opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to set up secret storage client")
+	}
+
+	go secretWatcher.Run(stop)
 
 	resolve := createResolver(opts)
 
@@ -74,7 +74,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		detectors = append(detectors, swagger.NewSwaggerDetector(discoveryOpts.SwaggerUrisToTry))
 	}
 	if discoveryOpts.AutoDiscoverGRPC {
-		files, err := createFileStorageClient(opts)
+		files, err := artifactstorage.Bootstrap(opts)
 		if err != nil {
 			return errors.Wrap(err, "creating file storage client")
 		}
@@ -95,7 +95,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		if err := updater.UpdateServiceInfo(store, us.Name, marker); err != nil {
 			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
 		}
-		if err := updater.UpdateFunctions(resolve, store, us.Name, secrets); err != nil {
+		if err := updater.UpdateFunctions(resolve, store, secretStore, us.Name, secrets); err != nil {
 			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
 		}
 	}
@@ -149,7 +149,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		}
 	}
 
-	ticker := time.NewTicker(opts.ConfigWatcherOptions.SyncFrequency)
+	ticker := time.NewTicker(opts.ConfigStorageOptions.SyncFrequency)
 	defer ticker.Stop()
 	for {
 		select {
@@ -165,72 +165,6 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 			return nil
 		}
 	}
-}
-
-func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
-	switch opts.ConfigWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		dir := opts.FileOptions.ConfigDir
-		if dir == "" {
-			return nil, errors.New("must provide directory for file config watcher")
-		}
-		client, err := file.NewStorage(dir, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file config watcher for directory %v", dir)
-		}
-		return client, nil
-	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "building kube restclient")
-		}
-		client, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube config watcher with config %#v", opts.KubeOptions)
-		}
-		return client, nil
-	case bootstrap.WatcherTypeConsul:
-		cfg := opts.ConsulOptions.ToConsulConfig()
-		client, err := consul.NewStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start consul config watcher with config %#v", opts.ConsulOptions)
-		}
-		return client, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigWatcherOptions.Type)
-}
-
-func createFileStorageClient(opts bootstrap.Options) (dependencies.FileStorage, error) {
-	switch opts.FileWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		dir := opts.FileOptions.FilesDir
-		if dir == "" {
-			return nil, errors.New("must provide directory for file file storage client")
-		}
-		store, err := filestorage.NewFileStorage(dir, opts.FileWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file based file storage client for directory %v", dir)
-		}
-		return store, nil
-	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "building kube restclient")
-		}
-		store, err := kube.NewFileStorage(cfg, opts.KubeOptions.Namespace, opts.FileWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube file storage client with config %#v", opts.KubeOptions)
-		}
-		return store, nil
-	case bootstrap.WatcherTypeConsul:
-		cfg := opts.ConsulOptions.ToConsulConfig()
-		store, err := consulfiles.NewFileStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start consul KV-based file storage client with config %#v", opts.ConsulOptions)
-		}
-		return store, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified file storage client type: %v", opts.FileWatcherOptions.Type)
 }
 
 func createResolver(opts bootstrap.Options) resolver.Resolver {
@@ -249,28 +183,4 @@ func createResolver(opts bootstrap.Options) resolver.Resolver {
 		log.Warnf("create kube client failed: %v. swagger services running in kubernetes will not be discovered by function discovery")
 	}
 	return resolver.NewResolver(kube)
-}
-
-func setupSecretWatcher(opts bootstrap.Options, stop <-chan struct{}) (secretwatcher.Interface, error) {
-	switch opts.SecretWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		secretWatcher, err := filesecrets.NewSecretWatcher(opts.FileOptions.SecretDir, opts.SecretWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeKube:
-		secretWatcher, err := kubesecrets.NewSecretWatcher(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig, opts.SecretWatcherOptions.SyncFrequency, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeVault:
-		secretWatcher, err := vault.NewVaultSecretWatcher(opts.SecretWatcherOptions.SyncFrequency, opts.VaultOptions.Retries, opts.VaultOptions.VaultAddr, opts.VaultOptions.AuthToken, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start vault secret watcher with config %#v", opts.VaultOptions)
-		}
-		return secretWatcher, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified secret watcher type: %v", opts.SecretWatcherOptions.Type)
 }

@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -12,12 +10,12 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 
 	"github.com/solo-io/gloo/internal/kube-ingress-controller/ingress"
-	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/crd"
-	"github.com/solo-io/gloo/pkg/storage/file"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/signals"
+	"github.com/solo-io/gloo/pkg/storage"
 )
 
 func main() {
@@ -36,7 +34,7 @@ var rootCmd = &cobra.Command{
 	Use:   "kube-ingress-controller",
 	Short: "Enables gloo to function as a kubernetes ingress controller",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		store, err := createStorageClient(opts)
+		store, err := configstorage.Bootstrap(opts)
 		if err != nil {
 			return errors.Wrap(err, "failed to create config store client")
 		}
@@ -55,57 +53,27 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	// choose storage options for configs
+	flags.AddConfigStorageOptionFlags(rootCmd, &opts)
+
+	// config storage backends
+	flags.AddFileFlags(rootCmd, &opts)
+	flags.AddKubernetesFlags(rootCmd, &opts)
+	flags.AddConsulFlags(rootCmd, &opts)
+
 	// ingress-specific
 	rootCmd.PersistentFlags().BoolVar(&globalIngress, "global", true, "use gloo as the cluster-wide kubernetes ingress")
 	rootCmd.PersistentFlags().StringVar(&ingressServiceName, "service", "", "The name of the proxy service (envoy) if running in-cluster. If --service is set, the ingress controller will update ingress objects with the load balancer endpoints")
-	rootCmd.PersistentFlags().DurationVar(&opts.ConfigWatcherOptions.SyncFrequency, "syncperiod", time.Minute*30, "sync period for watching ingress rules")
-
-	// config writer
-	rootCmd.PersistentFlags().StringVar(&opts.ConfigWatcherOptions.Type, "storage.type", bootstrap.WatcherTypeFile, fmt.Sprintf("storage backend for gloo config objects. supported: [%s]", strings.Join(bootstrap.SupportedCwTypes, " | ")))
-
-	// file
-	rootCmd.PersistentFlags().StringVar(&opts.FileOptions.ConfigDir, "file.config.dir", "_gloo_config", "root directory to use for storing gloo config files")
-
-	// kube
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.MasterURL, "master", "", "url of the kubernetes apiserver. not needed if running in-cluster")
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.KubeConfig, "kubeconfig", "", "path to kubeconfig file. not needed if running in-cluster")
-	rootCmd.PersistentFlags().StringVar(&opts.KubeOptions.Namespace, "kube.namespace", crd.GlooDefaultNamespace, "namespace to read/write gloo storage objects")
-}
-
-func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
-	switch opts.ConfigWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		dir := opts.FileOptions.ConfigDir
-		if dir == "" {
-			return nil, errors.New("must provide directory for file config watcher")
-		}
-		client, err := file.NewStorage(dir, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file config watcher for directory %v", dir)
-		}
-		return client, nil
-	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "building kube restclient")
-		}
-		cfgWatcher, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube config watcher with config %#v", opts.KubeOptions)
-		}
-		return cfgWatcher, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigWatcherOptions.Type)
 }
 
 func runIngressController(cfg *rest.Config, store storage.Interface, stop <-chan struct{}) error {
-	ingressCtl, err := ingress.NewIngressController(cfg, store, opts.ConfigWatcherOptions.SyncFrequency, globalIngress)
+	ingressCtl, err := ingress.NewIngressController(cfg, store, opts.ConfigStorageOptions.SyncFrequency, globalIngress)
 	if err != nil {
 		return errors.Wrap(err, "failed to create ingress controller")
 	}
 
 	if ingressServiceName != "" {
-		ingressSync, err := ingress.NewIngressSyncer(cfg, opts.ConfigWatcherOptions.SyncFrequency, stop, globalIngress, ingressServiceName)
+		ingressSync, err := ingress.NewIngressSyncer(cfg, opts.ConfigStorageOptions.SyncFrequency, stop, globalIngress, ingressServiceName)
 		if err != nil {
 			return errors.Wrap(err, "failed to start load balancer status syncer")
 		}
