@@ -171,7 +171,7 @@ func requestMatcher() (*request, error) {
 
 func prefixRewrite(r *v1.Route) error {
 	var prefix string
-	if err := survey.AskOne(&survey.Input{Message: "Please enter the rewrite prefix (leave empty if you don't want rewrite):"}, &prefix, survey.Required); err != nil {
+	if err := survey.AskOne(&survey.Input{Message: "Please enter the rewrite prefix (leave empty if you don't want rewrite):"}, &prefix, nil); err != nil {
 		return err
 	}
 	r.PrefixRewrite = prefix
