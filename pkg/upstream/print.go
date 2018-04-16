@@ -25,8 +25,12 @@ func PrintTable(list []*v1.Upstream, w io.Writer) {
 		}
 
 		if u.Functions != nil && len(u.Functions) > 0 {
-			for _, f := range u.Functions {
-				table.Append([]string{u.Name, u.Type, status, f.Name})
+			for i, f := range u.Functions {
+				if i == 0 {
+					table.Append([]string{u.Name, u.Type, status, f.Name})
+				} else {
+					table.Append([]string{"", "", "", f.Name})
+				}
 			}
 		} else {
 			table.Append([]string{name, uType, status, ""})
