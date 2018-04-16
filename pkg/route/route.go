@@ -1,6 +1,7 @@
 package route
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"strings"
@@ -66,7 +67,7 @@ func Matcher(r *v1.Route) (string, string, string, string) {
 		}
 		headers := ""
 		if m.RequestMatcher.Headers != nil {
-			builder := strings.Builder{}
+			builder := bytes.Buffer{}
 			for k, v := range m.RequestMatcher.Headers {
 				builder.WriteString(k)
 				builder.WriteString(":")
