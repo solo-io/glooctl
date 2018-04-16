@@ -16,6 +16,13 @@ type Destination struct {
 	Function string
 }
 
+func (d *Destination) String() string {
+	if d.Function != "" {
+		return fmt.Sprintf("%s:%s", d.Upstream, d.Function)
+	}
+	return d.Upstream
+}
+
 func PrintTable(list []*v1.Route, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
@@ -115,7 +122,7 @@ func Extension(r *v1.Route) string {
 		s[i] = fmt.Sprintf("%s: %s", k, prettyPrint(v))
 		i++
 	}
-	return fmt.Sprintf("{%s}", strings.Join(s, ", "))
+	return fmt.Sprintf("{%s}", strings.Join(s, ",\n"))
 }
 
 func prettyPrint(v *types.Value) string {

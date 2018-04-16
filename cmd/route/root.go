@@ -6,6 +6,10 @@ import (
 	"github.com/spf13/pflag"
 )
 
+var (
+	routeOpt = &routeOption{route: &routeDetail{kube: &kubeUpstream{}}}
+)
+
 // RouteCmd returns command related to managing routes on a virtual host
 func RouteCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
@@ -14,14 +18,10 @@ func RouteCmd(opts *client.StorageOptions) *cobra.Command {
 	}
 
 	pflags := cmd.PersistentFlags()
-	var output string
-	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json")
-	var domain string
-	pflags.StringVarP(&domain, flagDomain, "d", "", "domain for virtual host; empty defaults to default virtual host")
-	var vhost string
-	pflags.StringVarP(&vhost, flagVirtualHost, "v", "", "specify virtual host by name; empty defaults to default virtual host")
-	var file string
-	pflags.StringVarP(&file, flagFilename, "f", "", "file with route defintion")
+	pflags.StringVarP(&routeOpt.output, "output", "o", "", "output format yaml|json")
+	pflags.StringVarP(&routeOpt.domain, flagDomain, "d", "", "domain for virtual host; empty defaults to default virtual host")
+	pflags.StringVarP(&routeOpt.virtualhost, flagVirtualHost, "v", "", "specify virtual host by name; empty defaults to default virtual host")
+	pflags.StringVarP(&routeOpt.filename, flagFilename, "f", "", "file with route defintion")
 	cmd.MarkFlagFilename(flagFilename, "yaml", "yml")
 
 	create := createCmd(opts)
@@ -35,8 +35,8 @@ func RouteCmd(opts *client.StorageOptions) *cobra.Command {
 }
 
 func setupRouteParams(cmds ...*cobra.Command) {
+	r := routeOpt.route
 	for _, c := range cmds {
-		r := routeDetail{}
 		flags := c.Flags()
 		flags.StringVarP(&r.event, flagEvent, "e", "", "event type to match")
 		flags.StringVar(&r.pathExact, flagPathExact, "", "exact path to match")

@@ -16,7 +16,6 @@ import (
 )
 
 func updateCmd(opts *client.StorageOptions) *cobra.Command {
-	var sort bool
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "update a route",
@@ -33,32 +32,28 @@ matcher and destination only. It doesn't include extensions.`,
 				return
 			}
 
-			flags := c.InheritedFlags()
-			domain, _ := flags.GetString("domain")
-			vhostname, _ := flags.GetString(flagVirtualHost)
-			route, err := route(c.Flags(), sc)
+			route, err := route(routeOpt, sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runUpdate(sc, vhostname, domain, route, sort)
+			routes, err := runUpdate(sc, routeOpt.virtualhost, routeOpt.domain, route, routeOpt.sort)
 			if err != nil {
-				fmt.Printf("Unable to get route for %s: %q\n", vhostname, err)
+				fmt.Printf("Unable to get route for %s: %q\n", routeOpt.virtualhost, err)
 			}
-			output, _ := flags.GetString("output")
-			util.PrintList(output, "", routes,
+			util.PrintList(routeOpt.output, "", routes,
 				func(data interface{}, w io.Writer) error {
 					proute.PrintTable(data.([]*v1.Route), w)
 					return nil
 				}, os.Stdout)
 		},
 	}
-	kube := kubeUpstream{}
+	kube := routeOpt.route.kube
 	flags := cmd.Flags()
 	flags.StringVar(&kube.name, flagKubeName, "", "kubernetes service name")
 	flags.StringVar(&kube.namespace, flagKubeNamespace, "", "kubernetes service namespace")
 	flags.IntVar(&kube.port, flagKubePort, 0, "kubernetes service port")
-	flags.BoolVar(&sort, "sort", false, "sort the routes after appending the new route")
+	flags.BoolVar(&routeOpt.sort, "sort", false, "sort the routes after appending the new route")
 	return cmd
 }
 

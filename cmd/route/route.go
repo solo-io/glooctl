@@ -9,7 +9,6 @@ import (
 	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/util"
-	"github.com/spf13/pflag"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage/file"
@@ -46,6 +45,16 @@ const (
 	kubeSpecPort           = "service_port"
 )
 
+type routeOption struct {
+	route       *routeDetail
+	virtualhost string
+	domain      string
+	filename    string
+	output      string
+	sort        bool
+	interactive bool
+}
+
 type kubeUpstream struct {
 	name      string
 	namespace string
@@ -64,7 +73,7 @@ type routeDetail struct {
 	prefixRewrite string
 	extensions    string
 
-	kube kubeUpstream
+	kube *kubeUpstream
 }
 
 func parseFile(filename string) (*v1.Route, error) {
@@ -76,13 +85,12 @@ func parseFile(filename string) (*v1.Route, error) {
 	return &r, nil
 }
 
-func route(flags *pflag.FlagSet, sc storage.Interface) (*v1.Route, error) {
-	filename, _ := flags.GetString(flagFilename)
-	if filename != "" {
-		return parseFile(filename)
+func route(opts *routeOption, sc storage.Interface) (*v1.Route, error) {
+	if opts.filename != "" {
+		return parseFile(opts.filename)
 	}
 
-	rd := routeDetails(flags)
+	rd := opts.route
 	if rd.kube.name != "" {
 		upstream, err := upstream(rd.kube, sc)
 		if err != nil {
@@ -91,37 +99,6 @@ func route(flags *pflag.FlagSet, sc storage.Interface) (*v1.Route, error) {
 		rd.upstream = upstream.Name
 	}
 	return fromRouteDetail(rd)
-}
-
-func routeDetails(flags *pflag.FlagSet) *routeDetail {
-	get := func(key string) string {
-		v, _ := flags.GetString(key)
-		return v
-	}
-
-	port, err := flags.GetInt(flagKubePort)
-	if err != nil {
-		port = 0
-	}
-
-	return &routeDetail{
-		event:         get(flagEvent),
-		pathExact:     get(flagPathExact),
-		pathRegex:     get(flagPathRegex),
-		pathPrefix:    get(flagPathPrefix),
-		verb:          get(flagMethod),
-		headers:       get(flagHeaders),
-		upstream:      get(flagUpstream),
-		function:      get(flagFunction),
-		prefixRewrite: get(flagPrefixRewrite),
-		extensions:    get(flagExtension),
-
-		kube: kubeUpstream{
-			name:      get(flagKubeName),
-			namespace: get(flagKubeNamespace),
-			port:      port,
-		},
-	}
 }
 
 func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
@@ -231,7 +208,7 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 	return route, nil
 }
 
-func upstream(kube kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
+func upstream(kube *kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 	upstreams, err := sc.V1().Upstreams().List()
 	if err != nil {
 		return nil, err
