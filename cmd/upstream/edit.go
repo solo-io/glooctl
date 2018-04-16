@@ -34,9 +34,7 @@ func editCmd(opts *client.StorageOptions) *cobra.Command {
 				return
 			}
 			fmt.Printf("Upstream %s updated\n", args[0])
-
-			output, _ := c.InheritedFlags().GetString("output")
-			util.Print(output, tplt, u,
+			util.Print(cliOpts.Output, cliOpts.Template, u,
 				func(data interface{}, w io.Writer) error {
 					upstream.PrintTable([]*v1.Upstream{data.(*v1.Upstream)}, w)
 					return nil

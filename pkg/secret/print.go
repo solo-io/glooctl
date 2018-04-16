@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	googleAnnotationKey = "gloo.solo.io/google_secret_ref"
+	GoogleAnnotationKey = "gloo.solo.io/google_secret_ref"
 )
 
 func PrintTableWithUsage(list []*secret.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualHost) {
@@ -70,7 +70,7 @@ func usage(list []*secret.Secret, upstreams []*v1.Upstream, virtualhosts []*v1.V
 				if u.Metadata == nil || u.Metadata.Annotations == nil {
 					continue
 				}
-				ref, ok := u.Metadata.Annotations[googleAnnotationKey]
+				ref, ok := u.Metadata.Annotations[GoogleAnnotationKey]
 				if !ok {
 					continue
 				}
@@ -89,12 +89,12 @@ func secretType(s *secret.Secret) string {
 	if s.Data == nil {
 		return "Unknown"
 	}
-	if _, ok := s.Data[serviceAccountJsonKeyFile]; ok {
+	if _, ok := s.Data[ServiceAccountJsonKeyFile]; ok {
 		return "Google"
 	}
 
-	_, first := s.Data[awsAccessKey]
-	_, second := s.Data[awsSecretKey]
+	_, first := s.Data[aws.AwsAccessKey]
+	_, second := s.Data[aws.AwsSecretKey]
 	if first && second {
 		return "AWS"
 	}

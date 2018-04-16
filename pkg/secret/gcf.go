@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	serviceAccountJsonKeyFile = "json_key_file"
+	ServiceAccountJsonKeyFile = "json_key_file"
 )
 
 type GoogleOptions struct {
@@ -24,7 +24,7 @@ func CreateGoogle(si secret.SecretInterface, opts *GoogleOptions) error {
 	s := &secret.Secret{
 		Name: opts.Name,
 		Data: map[string][]byte{
-			serviceAccountJsonKeyFile: b,
+			ServiceAccountJsonKeyFile: b,
 		},
 	}
 	_, err = si.V1().Create(s)
