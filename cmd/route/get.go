@@ -23,15 +23,12 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			domain, _ := c.InheritedFlags().GetString("domain")
-			vhostname, _ := c.InheritedFlags().GetString(flagVirtualHost)
-			routes, err := runGet(sc, vhostname, domain)
+			routes, err := runGet(sc, routeOpt.virtualhost, routeOpt.domain)
 			if err != nil {
-				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
+				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.domain, err)
 				return
 			}
-			output, _ := c.InheritedFlags().GetString("output")
-			util.PrintList(output, "", routes,
+			util.PrintList(routeOpt.output, "", routes,
 				func(data interface{}, w io.Writer) error {
 					proute.PrintTable(data.([]*v1.Route), w)
 					return nil
@@ -42,7 +39,7 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 }
 
 func runGet(sc storage.Interface, vhostname, domain string) ([]*v1.Route, error) {
-	v, err := virtualHost(sc, vhostname, domain, false)
+	v, err := proute.VirtualHost(sc, vhostname, domain, false)
 	if err != nil {
 		return nil, err
 	}

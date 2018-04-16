@@ -61,7 +61,7 @@ the flags.`,
 }
 
 func runCreate(sc storage.Interface, vhostname, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, err := virtualHost(sc, vhostname, domain, true)
+	v, err := proute.VirtualHost(sc, vhostname, domain, true)
 	if err != nil {
 		return nil, err
 	}

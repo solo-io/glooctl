@@ -1,10 +1,12 @@
 package route
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/protoutil"
+	"github.com/solo-io/glooctl/pkg/util"
 )
 
 type TestCase [][]*v1.Route
@@ -144,4 +146,10 @@ func TestSorting(t *testing.T) {
 			}
 		}
 	}
+}
+
+func toString(r *v1.Route) string {
+	buf := &bytes.Buffer{}
+	util.PrintYAML(r, buf)
+	return buf.String()
 }

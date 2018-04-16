@@ -2,9 +2,11 @@ package route
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -76,15 +78,15 @@ func TestToRoute(t *testing.T) {
 		setupRouteParams(cmd)
 		flags := cmd.Flags()
 		flags.Parse(tc.args)
-		route, err := fromRouteDetail(routeDetails(flags))
+		route, err := fromRouteDetail(routeOpt.route)
 		if err != nil {
 			t.Errorf("case %d failed conversion", i)
 		}
 		if !tc.route.Equal(route) {
 			fmt.Println("expected: ")
-			printYAML(tc.route)
+			util.PrintYAML(tc.route, os.Stdout)
 			fmt.Println("got: ")
-			printYAML(route)
+			util.PrintYAML(route, os.Stdout)
 			t.Errorf("case %d failed comparison", i)
 		}
 	}
