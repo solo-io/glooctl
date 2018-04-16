@@ -44,3 +44,7 @@
 [[constraint]]
   branch = "master"
   name = "github.com/olekukonko/tablewriter"
+
+[[constraint]]
+  name = "gopkg.in/AlecAivazis/survey.v1"
+  version = "1.5.3"
