@@ -71,7 +71,12 @@ func runCreate(sc storage.Interface, si secret.SecretInterface, opts *upstream.O
 			fmt.Println("Warning:", message)
 		}
 	} else {
-		return nil, errors.New("please provide a file with upstream definition or select interactive mode")
+		// if not file then interactive
+		var err error
+		u, err = upstream.UpstreamInteractive(sc, si)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return sc.V1().Upstreams().Create(u)
 }
