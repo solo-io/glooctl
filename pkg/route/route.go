@@ -1,172 +1,87 @@
 package route
 
 import (
-	"bytes"
 	"fmt"
-	"io"
-	"strings"
 
-	"github.com/olekukonko/tablewriter"
-
-	"github.com/gogo/protobuf/types"
+	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/storage"
 )
 
-type Destination struct {
-	Upstream string
-	Function string
-}
+const (
+	DefaultVirtualHost = "default"
+)
 
-func (d *Destination) String() string {
-	if d.Function != "" {
-		return fmt.Sprintf("%s:%s", d.Upstream, d.Function)
-	}
-	return d.Upstream
-}
-
-func PrintTable(list []*v1.Route, w io.Writer) {
-	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
-
-	for _, r := range list {
-		matcher, rType, verb, headers := Matcher(r)
-		ext := Extension(r)
-		for _, d := range Destinations(r) {
-			table.Append([]string{matcher, rType, verb, headers, d.Upstream, d.Function, ext})
+func VirtualHost(sc storage.Interface, vhostname, domain string, create bool) (*v1.VirtualHost, error) {
+	if vhostname != "" {
+		vh, err := sc.V1().VirtualHosts().Get(vhostname)
+		if err != nil {
+			return nil, err
 		}
+		return vh, nil
 	}
 
-	table.SetAlignment(tablewriter.ALIGN_LEFT)
-	table.Render()
-}
-
-func Matcher(r *v1.Route) (string, string, string, string) {
-	switch m := r.GetMatcher().(type) {
-	case *v1.Route_EventMatcher:
-		return m.EventMatcher.EventType, "Event", "", ""
-	case *v1.Route_RequestMatcher:
-		var path string
-		var rType string
-		switch p := m.RequestMatcher.GetPath().(type) {
-		case *v1.RequestMatcher_PathExact:
-			path = p.PathExact
-			rType = "Exact Path"
-		case *v1.RequestMatcher_PathPrefix:
-			path = p.PathPrefix
-			rType = "Path Prefix"
-		case *v1.RequestMatcher_PathRegex:
-			path = p.PathRegex
-			rType = "Regex Path"
+	if domain != "" {
+		// find all virtual hosts that can match
+		virtualHosts, err := sc.V1().VirtualHosts().List()
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to get list of virtual hosts")
+		}
+		virtualHosts = virtualHostsForDomain(virtualHosts, domain)
+		switch len(virtualHosts) {
+		case 0:
+			// TODO? if create is true, should we create a new virtual host with the domain?
+			// should we add this domain to default virtual host?
+			return nil, fmt.Errorf("didn't find any virtual host for the domain %s", domain)
+		case 1:
+			return virtualHosts[0], nil
 		default:
-			path = ""
-			rType = "Unknown"
+			return nil, fmt.Errorf("the domain %s matched %d virtual hosts", domain, len(virtualHosts))
 		}
-		verb := "*"
-		if m.RequestMatcher.Verbs != nil {
-			verb = strings.Join(m.RequestMatcher.Verbs, " ")
+	}
+
+	return defaultVirtualHost(sc, create)
+}
+
+func contains(vh *v1.VirtualHost, d string) bool {
+	for _, e := range vh.Domains {
+		if e == d {
+			return true
 		}
-		headers := ""
-		if m.RequestMatcher.Headers != nil {
-			builder := bytes.Buffer{}
-			for k, v := range m.RequestMatcher.Headers {
-				builder.WriteString(k)
-				builder.WriteString(":")
-				builder.WriteString(v)
-				builder.WriteString("; ")
-			}
-			headers = builder.String()
+	}
+	return false
+}
+
+func virtualHostsForDomain(virtualHosts []*v1.VirtualHost, domain string) []*v1.VirtualHost {
+	var validOnes []*v1.VirtualHost
+	for _, v := range virtualHosts {
+		if contains(v, domain) {
+			validOnes = append(validOnes, v)
 		}
-		return path, rType, verb, headers
-	default:
-		return "", "Unknown", "", ""
 	}
+	return validOnes
 }
 
-func Destinations(r *v1.Route) []Destination {
-	single := r.GetSingleDestination()
-	if single != nil {
-		return []Destination{upstreamToDestination(single.GetUpstream(), single.GetFunction())}
+func defaultVirtualHost(sc storage.Interface, create bool) (*v1.VirtualHost, error) {
+	// does one exist?
+	vhosts, err := sc.V1().VirtualHosts().List()
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get list of existing virtual hosts")
 	}
-
-	multi := r.GetMultipleDestinations()
-	if multi != nil {
-		d := make([]Destination, len(multi))
-		for i, m := range multi {
-			d[i] = upstreamToDestination(m.GetUpstream(), m.GetFunction())
+	for _, v := range vhosts {
+		if v.Domains == nil ||
+			len(v.Domains) == 0 ||
+			contains(v, "*") {
+			return v, nil
 		}
-		return d
 	}
 
-	return []Destination{Destination{"", ""}}
-}
-
-func upstreamToDestination(u *v1.UpstreamDestination, f *v1.FunctionDestination) Destination {
-	if u != nil {
-		return Destination{u.Name, ""}
+	if !create {
+		return nil, fmt.Errorf("did not find a default virtual host")
 	}
-
-	if f != nil {
-		return Destination{f.UpstreamName, f.FunctionName}
+	fmt.Println("Did not find a default virtual host. Creating...")
+	vhost := &v1.VirtualHost{
+		Name: DefaultVirtualHost,
 	}
-
-	return Destination{"", ""}
-}
-
-func Extension(r *v1.Route) string {
-	ext := r.GetExtensions()
-	if ext == nil || ext.GetFields() == nil {
-		return ""
-	}
-	s := make([]string, len(ext.GetFields()))
-	i := 0
-	for k, v := range ext.GetFields() {
-		s[i] = fmt.Sprintf("%s: %s", k, prettyPrint(v))
-		i++
-	}
-	return fmt.Sprintf("{%s}", strings.Join(s, ",\n"))
-}
-
-func prettyPrint(v *types.Value) string {
-	switch t := v.Kind.(type) {
-	case *types.Value_NullValue:
-		return ""
-	case *types.Value_NumberValue:
-		return fmt.Sprintf("%v", t.NumberValue)
-	case *types.Value_StringValue:
-		return fmt.Sprintf("\"%v\"", t.StringValue)
-	case *types.Value_BoolValue:
-		return fmt.Sprintf("%v", t.BoolValue)
-	case *types.Value_StructValue:
-		return prettyPrintStruct(t)
-	case *types.Value_ListValue:
-		return prettyPrintList(t)
-	default:
-		return "<unknown>"
-	}
-}
-
-func prettyPrintList(lv *types.Value_ListValue) string {
-	if lv == nil || lv.ListValue == nil || lv.ListValue.Values == nil {
-		return ""
-	}
-	s := make([]string, len(lv.ListValue.Values))
-	for i, v := range lv.ListValue.Values {
-		s[i] = prettyPrint(v)
-	}
-	return fmt.Sprintf("[%s]", strings.Join(s, ", "))
-}
-
-func prettyPrintStruct(sv *types.Value_StructValue) string {
-	if sv == nil || sv.StructValue == nil || sv.StructValue.Fields == nil {
-		return ""
-	}
-
-	s := make([]string, len(sv.StructValue.GetFields()))
-	i := 0
-	for k, v := range sv.StructValue.GetFields() {
-		s[i] = fmt.Sprintf("%s: %s", k, prettyPrint(v))
-		i++
-	}
-	return fmt.Sprintf("{%s}", strings.Join(s, ", "))
-
+	return sc.V1().VirtualHosts().Create(vhost)
 }
