@@ -2,12 +2,12 @@ package upstream
 
 import (
 	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/spf13/cobra"
 )
 
 var (
-	output string
-	tplt   string
+	cliOpts = &upstream.Options{}
 )
 
 func UpstreamCmd(opts *client.StorageOptions) *cobra.Command {
@@ -16,8 +16,8 @@ func UpstreamCmd(opts *client.StorageOptions) *cobra.Command {
 		Short: "manage upstreams",
 	}
 	pflags := cmd.PersistentFlags()
-	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json|template")
-	pflags.StringVarP(&tplt, "template", "t", "", "output template")
+	pflags.StringVarP(&cliOpts.Output, "output", "o", "", "output format yaml|json|template")
+	pflags.StringVarP(&cliOpts.Template, "template", "t", "", "output template")
 	cmd.AddCommand(createCmd(opts), deleteCmd(opts), getCmd(opts), updateCmd(opts),
 		editCmd(opts))
 	return cmd

@@ -4,12 +4,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/pkg/errors"
 	secret "github.com/solo-io/gloo-secret"
-)
-
-const (
-	// expected map identifiers for secrets
-	awsAccessKey = "access_key"
-	awsSecretKey = "secret_key"
+	"github.com/solo-io/gloo/pkg/plugins/aws"
 )
 
 type AWSOptions struct {
@@ -28,8 +23,8 @@ func CreateAWS(si secret.SecretInterface, opts *AWSOptions) error {
 	s := &secret.Secret{
 		Name: opts.Name,
 		Data: map[string][]byte{
-			awsAccessKey: []byte(id),
-			awsSecretKey: []byte(key),
+			aws.AwsAccessKey: []byte(id),
+			aws.AwsSecretKey: []byte(key),
 		},
 	}
 	_, err = si.V1().Create(s)

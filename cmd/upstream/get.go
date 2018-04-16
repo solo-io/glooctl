@@ -22,19 +22,19 @@ func getCmd(opts *client.StorageOptions) *cobra.Command {
 			sc, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
-			if output == "template" && tplt == "" {
+			if cliOpts.Output == "template" && cliOpts.Template == "" {
 				fmt.Println("Must provide template when setting output as template")
-				return
+				os.Exit(1)
 			}
 			var name string
 			if len(args) > 0 {
 				name = args[0]
 			}
-			if err := runGet(sc, output, tplt, name); err != nil {
+			if err := runGet(sc, cliOpts.Output, cliOpts.Template, name); err != nil {
 				fmt.Printf("Unable to get upstream %q\n", err)
-				return
+				os.Exit(1)
 			}
 		},
 	}

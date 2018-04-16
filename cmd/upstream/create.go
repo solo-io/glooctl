@@ -13,23 +13,13 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins/google"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/client"
+	psecret "github.com/solo-io/glooctl/pkg/secret"
 	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-const (
-	// expected map identifiers for secrets
-	awsAccessKey = "access_key"
-	awsSecretKey = "secret_key"
-
-	annotationKey = "gloo.solo.io/google_secret_ref"
-	// expected map identifiers for secrets
-	serviceAccountJsonKeyFile = "json_key_file"
-)
-
 func createCmd(opts *client.StorageOptions) *cobra.Command {
-	var filename string
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create upstreams",
@@ -37,21 +27,19 @@ func createCmd(opts *client.StorageOptions) *cobra.Command {
 			sc, err := client.StorageClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 			si, err := client.SecretClient(opts)
 			if err != nil {
 				fmt.Printf("Unable to create secret client %q\n", err)
-				return
+				os.Exit(1)
 			}
-			u, err := runCreate(sc, si, filename)
+			u, err := runCreate(sc, si, cliOpts)
 			if err != nil {
 				fmt.Printf("Unable to create upstream %q\n", err)
-				return
+				os.Exit(1)
 			}
-			fmt.Println("Upstream created")
-			output, _ := c.InheritedFlags().GetString("output")
-			util.Print(output, tplt, u,
+			util.Print(cliOpts.Output, cliOpts.Template, u,
 				func(data interface{}, w io.Writer) error {
 					upstream.PrintTable([]*v1.Upstream{data.(*v1.Upstream)}, w)
 					return nil
@@ -59,27 +47,33 @@ func createCmd(opts *client.StorageOptions) *cobra.Command {
 		},
 	}
 
-	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to use to create upstream")
+	cmd.Flags().StringVarP(&cliOpts.Filename, "filename", "f", "", "file to use to create upstream")
 	cmd.MarkFlagFilename("filename", "yaml", "yml")
-	cmd.MarkFlagRequired("filename")
+
+	cmd.Flags().BoolVarP(&cliOpts.Interactive, "interactive", "i", false, "interacitve mode")
 	return cmd
 }
 
-func runCreate(sc storage.Interface, si secret.SecretInterface, filename string) (*v1.Upstream, error) {
-	upstream, err := parseFile(filename)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to load Upstream from %s", filename)
-	}
+func runCreate(sc storage.Interface, si secret.SecretInterface, opts *upstream.Options) (*v1.Upstream, error) {
+	var u *v1.Upstream
+	if opts.Filename != "" {
+		u, err := parseFile(opts.Filename)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to load Upstream from %s", opts.Filename)
+		}
 
-	valid, message := validate(sc, si, upstream)
-	if !valid {
-		return nil, fmt.Errorf("invalid upstream: %s", message)
+		valid, message := validate(sc, si, u)
+		if !valid {
+			return nil, fmt.Errorf("invalid upstream: %s", message)
+		}
+		// add verbose mode to disable this normally
+		if message != "" {
+			fmt.Println("Warning:", message)
+		}
+	} else {
+		return nil, errors.New("please provide a file with upstream definition or select interactive mode")
 	}
-	// add verbose mode to disable this normally
-	if message != "" {
-		fmt.Println("Warning:", message)
-	}
-	return sc.V1().Upstreams().Create(upstream)
+	return sc.V1().Upstreams().Create(u)
 }
 
 func validate(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) (bool, string) {
@@ -94,10 +88,10 @@ func validate(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) (
 			// warning
 			return true, fmt.Sprintf("Unable to load referenced secret. Please make sure it exists.")
 		}
-		if _, ok := awsSecrets.Data[awsAccessKey]; !ok {
+		if _, ok := awsSecrets.Data[aws.AwsAccessKey]; !ok {
 			return false, fmt.Sprintf("AWS Access Key missing in referenced secret")
 		}
-		if _, ok := awsSecrets.Data[awsSecretKey]; !ok {
+		if _, ok := awsSecrets.Data[aws.AwsSecretKey]; !ok {
 			return false, fmt.Sprintf("AWS Secret Key missing in referenced secret")
 		}
 		return true, ""
@@ -106,17 +100,17 @@ func validate(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) (
 		if err != nil {
 			return false, fmt.Sprintf("Unable to decode GCF upstream spec: %q", err)
 		}
-		secretRef, ok := u.Metadata.Annotations[annotationKey]
+		secretRef, ok := u.Metadata.Annotations[psecret.GoogleAnnotationKey]
 		if !ok {
-			return true, fmt.Sprintf("Google Cloud Function Discovery requires annotation wity key %s.", annotationKey)
+			return true, fmt.Sprintf("Google Cloud Function Discovery requires annotation wity key %s.", psecret.GoogleAnnotationKey)
 		}
 
 		gcfSecret, err := si.V1().Get(secretRef)
 		if err != nil {
 			return true, fmt.Sprintf("Unable to verify referenced secret. Please make sure it exists.")
 		}
-		if _, ok := gcfSecret.Data[serviceAccountJsonKeyFile]; !ok {
-			return false, fmt.Sprintf("secret missing key %s", serviceAccountJsonKeyFile)
+		if _, ok := gcfSecret.Data[psecret.ServiceAccountJsonKeyFile]; !ok {
+			return false, fmt.Sprintf("secret missing key %s", psecret.ServiceAccountJsonKeyFile)
 		}
 		return true, ""
 	default:
