@@ -4,31 +4,21 @@ import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/storage/consul"
-	consulfiles "github.com/solo-io/gloo/pkg/storage/dependencies/consul"
-	"k8s.io/apimachinery/pkg/util/runtime"
-	"k8s.io/client-go/tools/clientcmd"
 
-	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/crd"
-	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	filestore "github.com/solo-io/gloo/pkg/storage/dependencies/file"
-	kubestore "github.com/solo-io/gloo/pkg/storage/dependencies/kube"
-	"github.com/solo-io/gloo/pkg/storage/file"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
 	"github.com/solo-io/gloo/internal/control-plane/translator"
 	"github.com/solo-io/gloo/internal/control-plane/xds"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
-	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
 	"github.com/solo-io/gloo/pkg/secretwatcher"
-	filesecrets "github.com/solo-io/gloo/pkg/secretwatcher/file"
-	kubesecrets "github.com/solo-io/gloo/pkg/secretwatcher/kube"
-	"github.com/solo-io/gloo/pkg/secretwatcher/vault"
 )
 
 type eventLoop struct {
@@ -44,8 +34,8 @@ type eventLoop struct {
 	startFuncs []func() error
 }
 
-func Setup(opts bootstrap.Options, stop <-chan struct{}) (*eventLoop, error) {
-	store, err := createStorageClient(opts)
+func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
+	store, err := configstorage.Bootstrap(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config store client")
 	}
@@ -55,17 +45,17 @@ func Setup(opts bootstrap.Options, stop <-chan struct{}) (*eventLoop, error) {
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	secretWatcher, err := setupSecretWatcher(opts, stop)
+	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up secret watcher")
 	}
 
-	fileWatcher, err := setupFileWatcher(opts, stop)
+	fileWatcher, err := setupFileWatcher(opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
 
-	xdsConfig, _, err := xds.RunXDS(opts.XdsOptions.Port)
+	xdsConfig, _, err := xds.RunXDS(xdsPort)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start xds server")
 	}
@@ -113,91 +103,10 @@ func getDependenciesFor(translatorPlugins []plugins.TranslatorPlugin) func(cfg *
 	}
 }
 
-func createStorageClient(opts bootstrap.Options) (storage.Interface, error) {
-	switch opts.ConfigWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		dir := opts.FileOptions.ConfigDir
-		if dir == "" {
-			return nil, errors.New("must provide directory for file config watcher")
-		}
-		client, err := file.NewStorage(dir, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file config watcher for directory %v", dir)
-		}
-		return client, nil
-	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "building kube restclient")
-		}
-		cfgWatcher, err := crd.NewStorage(cfg, opts.KubeOptions.Namespace, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube config watcher with config %#v", opts.KubeOptions)
-		}
-		return cfgWatcher, nil
-	case bootstrap.WatcherTypeConsul:
-		cfg := opts.ConsulOptions.ToConsulConfig()
-		cfgWatcher, err := consul.NewStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start consul config watcher with config %#v", opts.ConsulOptions)
-		}
-		return cfgWatcher, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified config watcher type: %v", opts.ConfigWatcherOptions.Type)
-}
-
-func setupSecretWatcher(opts bootstrap.Options, stop <-chan struct{}) (secretwatcher.Interface, error) {
-	switch opts.SecretWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		secretWatcher, err := filesecrets.NewSecretWatcher(opts.FileOptions.SecretDir, opts.SecretWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start file secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeKube:
-		secretWatcher, err := kubesecrets.NewSecretWatcher(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig, opts.SecretWatcherOptions.SyncFrequency, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube secret watcher with config %#v", opts.KubeOptions)
-		}
-		return secretWatcher, nil
-	case bootstrap.WatcherTypeVault:
-		secretWatcher, err := vault.NewVaultSecretWatcher(opts.SecretWatcherOptions.SyncFrequency, opts.VaultOptions.Retries, opts.VaultOptions.VaultAddr, opts.VaultOptions.AuthToken, stop)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start vault secret watcher with config %#v", opts.VaultOptions)
-		}
-		return secretWatcher, nil
-	}
-	return nil, errors.Errorf("unknown or unspecified secret watcher type: %v", opts.SecretWatcherOptions.Type)
-}
-
-func setupFileWatcher(opts bootstrap.Options, stop <-chan struct{}) (filewatcher.Interface, error) {
-	var store dependencies.FileStorage
-	switch opts.SecretWatcherOptions.Type {
-	case bootstrap.WatcherTypeFile:
-		s, err := filestore.NewFileStorage(opts.FileOptions.FilesDir, opts.FileWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start filesystem-based file watcher with config %#v", opts.FileOptions)
-		}
-		store = s
-	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "building kube restclient")
-		}
-		s, err := kubestore.NewFileStorage(cfg, opts.KubeOptions.Namespace, opts.FileWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start kube configmap-based file watcher with config %#v", opts.KubeOptions)
-		}
-		store = s
-	case bootstrap.WatcherTypeConsul:
-		cfg := opts.ConsulOptions.ToConsulConfig()
-		s, err := consulfiles.NewFileStorage(cfg, opts.ConsulOptions.RootPath, opts.ConfigWatcherOptions.SyncFrequency)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to start consul KV-based file watcher with config %#v", opts.ConsulOptions)
-		}
-		store = s
-	default:
-		return nil, errors.Errorf("unknown or unspecified file watcher type: %v", opts.FileWatcherOptions.Type)
+func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
+	store, err := artifactstorage.Bootstrap(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "creating file storage client")
 	}
 	return filewatcher.NewFileWatcher(store)
 }
@@ -211,7 +120,10 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 	for _, eds := range e.endpointDiscoveries {
 		go eds.Run(stop)
 	}
+
 	go e.configWatcher.Run(stop)
+	go e.fileWatcher.Run(stop)
+	go e.secretWatcher.Run(stop)
 
 	endpointDiscovery := e.endpointDiscovery()
 	workerErrors := e.errors()
@@ -265,7 +177,7 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 			current.endpoints[endpointTuple.discoveredBy] = endpointTuple.endpoints
 			sync(current)
 		case err := <-workerErrors:
-			runtime.HandleError(err)
+			log.Warnf("error in control plane event loop: %v", err)
 		}
 	}
 }
@@ -290,12 +202,12 @@ func (e *eventLoop) updateXds(cache *cache) {
 	})
 	if err != nil {
 		// TODO: panic or handle these internal errors smartly
-		runtime.HandleError(errors.Wrap(err, "failed to translate based on the latest config"))
+		log.Warnf("failed to translate based on the latest config: %v", err)
 		return
 	}
 
 	if err := e.reporter.WriteReports(reports); err != nil {
-		runtime.HandleError(err)
+		log.Warnf("error writing reports: %v", err)
 	}
 
 	for _, st := range reports {

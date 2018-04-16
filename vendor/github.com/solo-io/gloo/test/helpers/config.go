@@ -2,7 +2,6 @@ package helpers
 
 import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
 	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
@@ -48,12 +47,9 @@ func NewTestUpstream1() *v1.Upstream {
 func NewTestUpstream2() *v1.Upstream {
 	return &v1.Upstream{
 		Name: "localhost-python",
-		Type: service.UpstreamTypeService,
-		Spec: service.EncodeUpstreamSpec(service.UpstreamSpec{
-			Hosts: []service.Host{
-				{Addr: "localhost", Port: 8000},
-			},
-		}),
+		// TODO: revert this to using service plugin, and move this file to its own package
+		// to prevent cyclical imports
+		Type: "service",
 		Metadata: &v1.Metadata{
 			Annotations: map[string]string{"my_annotation": "value"},
 		},

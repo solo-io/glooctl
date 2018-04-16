@@ -8,11 +8,15 @@ OUTPUT := _output
 #----------------------------------------------------------------------------------
 
 BINARIES ?= control-plane function-discovery kube-ingress-controller kube-upstream-discovery
+DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
 
 DOCKER_USER=soloio
 
 .PHONY: build
 build: $(BINARIES)
+
+.PHONY: debug-build
+debug-build: $(DEBUG_BINARIES)
 
 docker: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker))
 docker-push: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker-push))
@@ -74,7 +78,7 @@ PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES)
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
 clean:
-	rm -f $(OUTPUT)
+	rm -rf $(OUTPUT)
 
 #----------------------------------------------------------------------------------
 # Docs
