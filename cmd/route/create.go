@@ -14,7 +14,6 @@ import (
 )
 
 func createCmd(opts *client.StorageOptions) *cobra.Command {
-	var sort bool
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create a route to a destination",
@@ -28,33 +27,36 @@ the flags.`,
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			flags := c.InheritedFlags()
-			domain, _ := flags.GetString(flagDomain)
-			vhostname, _ := flags.GetString(flagVirtualHost)
-			route, err := route(c.Flags(), sc)
+			var r *v1.Route
+			if routeOpt.interactive {
+				r, err = proute.RouteInteractive(sc)
+			} else {
+				r, err = route(routeOpt, sc)
+			}
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runCreate(sc, vhostname, domain, route, sort)
+
+			routes, err := runCreate(sc, routeOpt.virtualhost, routeOpt.domain, r, routeOpt.sort)
 			if err != nil {
-				fmt.Printf("Unable to get routes for %s: %q\n", domain, err)
+				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.domain, err)
 				return
 			}
-			output, _ := flags.GetString("output")
-			util.PrintList(output, "", routes,
+			util.PrintList(routeOpt.output, "", routes,
 				func(data interface{}, w io.Writer) error {
 					proute.PrintTable(data.([]*v1.Route), w)
 					return nil
 				}, os.Stdout)
 		},
 	}
-	kube := kubeUpstream{}
+	kube := routeOpt.route.kube
 	flags := cmd.Flags()
 	flags.StringVar(&kube.name, flagKubeName, "", "kubernetes service name")
 	flags.StringVar(&kube.namespace, flagKubeNamespace, "", "kubernetes service namespace")
 	flags.IntVar(&kube.port, flagKubePort, 0, "kubernetes service port")
-	flags.BoolVar(&sort, "sort", false, "sort the routes after appending the new route")
+	flags.BoolVar(&routeOpt.sort, "sort", false, "sort the routes after appending the new route")
+	flags.BoolVarP(&routeOpt.interactive, "interactive", "i", false, "interactive mode")
 	return cmd
 }
 

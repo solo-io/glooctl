@@ -30,21 +30,17 @@ matcher and destintation only. It doesn't include extensions.`,
 				return
 			}
 
-			flags := c.InheritedFlags()
-			domain, _ := flags.GetString("domain")
-			vhostname, _ := flags.GetString(flagVirtualHost)
-			route, err := route(c.Flags(), sc)
+			route, err := route(routeOpt, sc)
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				return
 			}
-			routes, err := runDelete(sc, vhostname, domain, route)
+			routes, err := runDelete(sc, routeOpt.virtualhost, routeOpt.domain, route)
 			if err != nil {
-				fmt.Printf("Unable to get route for %s: %q\n", domain, err)
+				fmt.Printf("Unable to get route for %s: %q\n", routeOpt.domain, err)
 				return
 			}
-			output, _ := flags.GetString("output")
-			util.PrintList(output, "", routes,
+			util.PrintList(routeOpt.output, "", routes,
 				func(data interface{}, w io.Writer) error {
 					proute.PrintTable(data.([]*v1.Route), w)
 					return nil
