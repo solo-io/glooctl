@@ -33,11 +33,16 @@ func PrintTable(list []*v1.VirtualHost, w io.Writer) {
 		if v.GetRoutes() == nil || len(v.GetRoutes()) == 0 {
 			table.Append([]string{name, d, ssl, s, "", "", "", "", "", "", ""})
 		} else {
-			for _, r := range v.GetRoutes() {
+			for i, r := range v.GetRoutes() {
 				matcher, rType, verb, headers := route.Matcher(r)
 				ext := route.Extension(r)
 				for _, dst := range route.Destinations(r) {
-					table.Append([]string{name, d, ssl, s, matcher, rType, verb, headers, dst.Upstream, dst.Function, ext})
+					if i == 0 {
+						table.Append([]string{name, d, ssl, s, matcher, rType, verb, headers, dst.Upstream, dst.Function, ext})
+					} else {
+
+						table.Append([]string{"", "", "", "", matcher, rType, verb, headers, dst.Upstream, dst.Function, ext})
+					}
 				}
 			}
 		}

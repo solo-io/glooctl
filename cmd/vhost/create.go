@@ -8,6 +8,7 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 
 	"github.com/pkg/errors"
+	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
@@ -24,14 +25,18 @@ func createCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
-			vh, err := runCreate(sc, cliOpts.Filename)
+			si, err := client.SecretClient(opts)
+			if err != nil {
+				fmt.Printf("Unable to create secret client %q\n", err)
+				os.Exit(1)
+			}
+			vh, err := runCreate(sc, si, cliOpts)
 			if err != nil {
 				fmt.Printf("Unable to create virtual host %q\n", err)
-				return
+				os.Exit(1)
 			}
-			fmt.Println("Virtual host created ", vh.Name)
 			util.Print(cliOpts.Output, "", vh, func(v interface{}, w io.Writer) error {
 				virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
 				return nil
@@ -41,14 +46,26 @@ func createCmd(opts *bootstrap.Options) *cobra.Command {
 
 	cmd.Flags().StringVarP(&cliOpts.Filename, "filename", "f", "", "file to use to create virtual host")
 	cmd.MarkFlagFilename("filename", "yaml", "yml")
-	cmd.MarkFlagRequired("filename")
+	cmd.Flags().BoolVarP(&cliOpts.Interactive, "interactive", "i", true, "interactive mode")
 	return cmd
 }
 
-func runCreate(sc storage.Interface, filename string) (*v1.VirtualHost, error) {
-	vh, err := parseFile(filename)
-	if err != nil {
-		return nil, errors.Wrapf(err, "unable to load virtual host from %s", filename)
+func runCreate(sc storage.Interface, si secret.SecretInterface, opts *virtualhost.Options) (*v1.VirtualHost, error) {
+	var vh *v1.VirtualHost
+	if opts.Filename != "" {
+		var err error
+		vh, err = parseFile(opts.Filename)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to load virtual host from %s", opts.Filename)
+		}
+	} else {
+		if !opts.Interactive {
+			return nil, errors.New("no file specified and interactive mode turned off")
+		}
+		vh = &v1.VirtualHost{}
+		if err := virtualhost.VirtualHostInteractive(sc, si, vh); err != nil {
+			return nil, err
+		}
 	}
 	if err := defaultVHostValidation(vh); err != nil {
 		return nil, err
