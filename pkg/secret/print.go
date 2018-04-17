@@ -99,8 +99,8 @@ func secretType(s *dependencies.Secret) string {
 		return "AWS"
 	}
 
-	_, first = s.Data[sslCertificateChainKey]
-	_, second = s.Data[sslPrivateKeyKey]
+	_, first = s.Data[SSLCertificateChainKey]
+	_, second = s.Data[SSLPrivateKeyKey]
 	if first && second {
 		return "Certificate"
 	}

@@ -36,3 +36,17 @@ func Get(sc storage.Interface, si dependencies.SecretStorage, name string) error
 	PrintTableWithUsage(list, os.Stdout, upstreams, virtualhosts)
 	return nil
 }
+
+func SecretRefs(si dependencies.SecretStorage, filter func(*dependencies.Secret) bool) ([]string, error) {
+	secrets, err := si.List()
+	if err != nil {
+		return nil, err
+	}
+	var refs []string
+	for _, s := range secrets {
+		if filter(s) {
+			refs = append(refs, s.Ref)
+		}
+	}
+	return refs, nil
+}

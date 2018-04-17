@@ -144,7 +144,7 @@ func awsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.U
 		return err
 	}
 
-	secrets, err := secretRefs(si, isAWSSecret)
+	secrets, err := psecret.SecretRefs(si, isAWSSecret)
 	if err != nil {
 		return err
 	}
@@ -216,7 +216,7 @@ func googleInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v
 		return err
 	}
 	if discovery {
-		secrets, err := secretRefs(si, isGoogleSecret)
+		secrets, err := psecret.SecretRefs(si, isGoogleSecret)
 		if err != nil {
 			return err
 		}
