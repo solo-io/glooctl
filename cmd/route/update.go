@@ -34,20 +34,7 @@ matcher and destination only. It doesn't include extensions.`,
 				return
 			}
 
-			route, err := route(routeOpt, sc)
-			if err != nil {
-				fmt.Printf("Unable to get route %q\n", err)
-				return
-			}
-			routes, err := runUpdate(sc, routeOpt.virtualhost, routeOpt.domain, route, routeOpt.sort)
-			if err != nil {
-				fmt.Printf("Unable to get route for %s: %q\n", routeOpt.virtualhost, err)
-			}
-			util.PrintList(routeOpt.output, "", routes,
-				func(data interface{}, w io.Writer) error {
-					proute.PrintTable(data.([]*v1.Route), w)
-					return nil
-				}, os.Stdout)
+			runUpdate(sc)
 		},
 	}
 	kube := routeOpt.route.kube
@@ -56,45 +43,76 @@ matcher and destination only. It doesn't include extensions.`,
 	flags.StringVar(&kube.namespace, flagKubeNamespace, "", "kubernetes service namespace")
 	flags.IntVar(&kube.port, flagKubePort, 0, "kubernetes service port")
 	flags.BoolVar(&routeOpt.sort, "sort", false, "sort the routes after appending the new route")
+	flags.BoolVarP(&routeOpt.interactive, "interactive", "i", false, "interactive mode")
+
 	return cmd
 }
 
-func runUpdate(sc storage.Interface, vhostname, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, err := proute.VirtualHost(sc, vhostname, domain, false)
+func runUpdate(sc storage.Interface) {
+	v, err := proute.VirtualHost(sc, routeOpt.virtualhost, routeOpt.domain, false)
 	if err != nil {
-		return nil, err
+		fmt.Println("Unable to get virtual host for routes:", err)
+		os.Exit(1)
 	}
 	fmt.Println("Using virtual host:", v.Name)
+	routes := v.GetRoutes()
 
-	existing := v.GetRoutes()
-	updated := make([]*v1.Route, len(existing))
-	var matches []*v1.Route
-	for i, r := range existing {
-		if match(route, r) {
-			matches = append(matches, r)
-			route.Extensions = mergeExtensions(route, r)
-			updated[i] = route
-			continue
-		}
-		updated[i] = r
-	}
-	if len(matches) == 0 {
-		return nil, errors.New("could not find a route for the specified matcher and destination.")
-	}
-	if len(matches) > 1 {
-		return nil, errors.New("found more than one route for the specified matcher and destination")
+	updated, err := updateRoutes(sc, routes, routeOpt)
+	if err != nil {
+		fmt.Println("Unable to get updated route:", err)
+		os.Exit(1)
 	}
 
 	v.Routes = updated
-	if sort {
+	if routeOpt.sort {
 		sortRoutes(v.Routes)
 	}
-
-	vh, err := sc.V1().VirtualHosts().Update(v)
+	saved, err := save(sc, v)
 	if err != nil {
-		return nil, err
+		fmt.Println("Unable to save updated routes:", err)
+		os.Exit(1)
 	}
-	return vh.GetRoutes(), nil
+	util.PrintList(routeOpt.output, "", saved,
+		func(data interface{}, w io.Writer) error {
+			proute.PrintTable(data.([]*v1.Route), w)
+			return nil
+		}, os.Stdout)
+}
+
+func updateRoutes(sc storage.Interface, routes []*v1.Route, opts *routeOption) ([]*v1.Route, error) {
+	if opts.interactive {
+		selection, err := proute.SelectInteractive(routes, false)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to get route")
+		}
+		if err := proute.RouteInteractive(sc, selection.Selected[0]); err != nil {
+			return nil, err
+		}
+		return routes, nil // we have been working with pointers so it has changed the original route
+	} else {
+		route, err := route(opts, sc)
+		if err != nil {
+			return nil, errors.Wrap(err, "unable to get route")
+		}
+		updated := make([]*v1.Route, len(routes))
+		var matches []*v1.Route
+		for i, r := range routes {
+			if match(route, r) {
+				matches = append(matches, r)
+				route.Extensions = mergeExtensions(route, r)
+				updated[i] = route
+				continue
+			}
+			updated[i] = r
+		}
+		if len(matches) == 0 {
+			return nil, errors.New("could not find a route for the specified matcher and destination.")
+		}
+		if len(matches) > 1 {
+			return nil, errors.New("found more than one route for the specified matcher and destination")
+		}
+		return updated, nil
+	}
 }
 
 func mergeExtensions(route, old *v1.Route) *google_protobuf.Struct {
