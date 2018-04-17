@@ -12,6 +12,98 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1/core"
 )
 
+type SelectionResult struct {
+	Selected    []*v1.Route
+	NotSelected []*v1.Route
+}
+
+func SelectInteractive(routes []*v1.Route, multi bool) (*SelectionResult, error) {
+	// group routes by upstream so that selection list is smaller
+	routesByUpstream := make(map[string][]*v1.Route)
+	for _, r := range routes {
+		for _, d := range Destinations(r) {
+			routesByUpstream[d.Upstream] = append(routesByUpstream[d.Upstream], r)
+		}
+	}
+
+	upstreams := make([]string, len(routesByUpstream))
+	i := 0
+	for k := range routesByUpstream {
+		upstreams[i] = k
+		i++
+	}
+	var upstream string
+	if err := survey.AskOne(&survey.Select{
+		Message: "Please select the upstream for the route:",
+		Options: upstreams}, &upstream, survey.Required); err != nil {
+		return nil, err
+	}
+
+	routesByName := make(map[string]*v1.Route)
+	routeOptions := []string{}
+	for _, r := range routesByUpstream[upstream] {
+		name := toSelectionOption(r)
+		routeOptions = append(routeOptions, name)
+		routesByName[name] = r
+	}
+	if multi {
+		core.MarkedOptionIcon = "☑"
+		core.UnmarkedOptionIcon = "☐"
+		var selections []string
+		if err := survey.AskOne(&survey.MultiSelect{
+			Message: "Please select routes:",
+			Options: routeOptions,
+		}, &selections, survey.Required); err != nil {
+			return nil, err
+		}
+		selected := make([]*v1.Route, len(selections))
+		for i, r := range selections {
+			selected[i] = routesByName[r]
+		}
+		return &SelectionResult{
+			Selected:    selected,
+			NotSelected: notSelected(routes, selected),
+		}, nil
+	}
+
+	// single
+	var selection string
+	if err := survey.AskOne(&survey.Select{
+		Message: "Please select a route:",
+		Options: routeOptions,
+	}, &selection, survey.Required); err != nil {
+		return nil, err
+	}
+	selected := []*v1.Route{routesByName[selection]}
+	return &SelectionResult{
+		Selected:    selected,
+		NotSelected: notSelected(routes, selected),
+	}, nil
+}
+
+func toSelectionOption(r *v1.Route) string {
+	matcher, rType, verb, header := Matcher(r)
+	hasExtensions := r.Extensions != nil && len(r.Extensions.Fields) != 0
+
+	return fmt.Sprintf("%s: %s. Verb: %s Headers: %s Has Extensions: %v",
+		rType, matcher, verb, header, hasExtensions)
+}
+
+// TODO use a map if this is too slow
+func notSelected(routes []*v1.Route, selected []*v1.Route) []*v1.Route {
+	var filtered []*v1.Route
+Route:
+	for _, r := range routes {
+		for _, s := range selected {
+			if r == s {
+				continue Route
+			}
+		}
+		filtered = append(filtered, r)
+	}
+	return filtered
+}
+
 func RouteInteractive(sc storage.Interface) (*v1.Route, error) {
 	upstreams, err := sc.V1().Upstreams().List()
 
