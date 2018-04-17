@@ -97,7 +97,7 @@ func Destinations(r *v1.Route) []Destination {
 		return d
 	}
 
-	return []Destination{Destination{"", ""}}
+	return []Destination{}
 }
 
 func upstreamToDestination(u *v1.UpstreamDestination, f *v1.FunctionDestination) Destination {
