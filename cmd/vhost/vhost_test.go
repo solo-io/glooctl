@@ -3,14 +3,13 @@ package vhost
 import (
 	"bytes"
 	"fmt"
-	"io"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/protoutil"
+	"github.com/solo-io/glooctl/pkg/util"
 )
 
 var (
@@ -87,37 +86,17 @@ var (
 )
 
 func TestPrintYAML(t *testing.T) {
-	out := captureStdOut(func() {
-		printYAML(vhost1)
-	})
+	buf := &bytes.Buffer{}
+	util.PrintYAML(vhost1, buf)
+
 	expected, err := ioutil.ReadFile("testdata/vhost1.yaml") // test file has extra empty line to match the print function
 	if err != nil {
 		t.Error("unable to load yaml file ", err)
 	}
 
-	if isDiff, e, a := diff(string(expected), out); isDiff {
+	if isDiff, e, a := diff(string(expected), buf.String()); isDiff {
 		t.Errorf("expected and actual YAML didn't match:\nexpected: %s\nactual:   %s\n", e, a)
 	}
-}
-
-func captureStdOut(f func()) string {
-	old := os.Stdout
-	r, w, _ := os.Pipe()
-	os.Stdout = w
-
-	f()
-
-	outC := make(chan string)
-	// don't block printing
-	go func() {
-		var buf bytes.Buffer
-		io.Copy(&buf, r)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	os.Stdout = old
-	return <-outC
 }
 
 func diff(e, a string) (bool, string, string) {

@@ -2,12 +2,12 @@ package vhost
 
 import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/glooctl/pkg/virtualhost"
 	"github.com/spf13/cobra"
 )
 
 var (
-	output string
-	tplt   string
+	cliOpts = &virtualhost.Options{}
 )
 
 func VHostCmd(opts *bootstrap.Options) *cobra.Command {
@@ -16,8 +16,8 @@ func VHostCmd(opts *bootstrap.Options) *cobra.Command {
 		Short: "manage virtual hosts",
 	}
 	pflags := cmd.PersistentFlags()
-	pflags.StringVarP(&output, "output", "o", "", "output format yaml|json|template")
-	pflags.StringVarP(&tplt, "template", "t", "", "output template")
+	pflags.StringVarP(&cliOpts.Output, "output", "o", "", "output format yaml|json|template")
+	pflags.StringVarP(&cliOpts.Template, "template", "t", "", "output template")
 	cmd.AddCommand(createCmd(opts), deleteCmd(opts), getCmd(opts),
 		updateCmd(opts), editCmd(opts))
 	return cmd
