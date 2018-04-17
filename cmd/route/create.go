@@ -29,7 +29,8 @@ the flags.`,
 			}
 			var r *v1.Route
 			if routeOpt.interactive {
-				r, err = proute.RouteInteractive(sc)
+				r = &v1.Route{}
+				err = proute.RouteInteractive(sc, r)
 			} else {
 				r, err = route(routeOpt, sc)
 			}
