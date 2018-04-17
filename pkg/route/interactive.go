@@ -281,6 +281,7 @@ func requestMatcher(oldValues matcherValues) (*request, error) {
 	}
 
 	// headers
+	// TODO better editing instead of just replacing
 	headers := make(map[string]string)
 	hasHeaders := false
 	if len(oldValues.headers) != 0 {
@@ -340,10 +341,12 @@ func printHeaders(m map[string]string) {
 }
 
 func prefixRewrite(r *v1.Route) error {
+	if r.PrefixRewrite != "" {
+		fmt.Printf("Current prefix rewrite: %s\n\n\n", r.PrefixRewrite)
+	}
 	var prefix string
 	if err := survey.AskOne(&survey.Input{
 		Message: "Please enter the rewrite prefix (leave empty if you don't want rewrite):",
-		Default: r.GetPrefixRewrite(),
 	}, &prefix, nil); err != nil {
 		return err
 	}
@@ -462,7 +465,19 @@ func toAPIDestination(d *Destination) *v1.Destination {
 	}
 }
 
+// TODO better editing of existing extensions instead of just replacing
 func extensions(r *v1.Route) error {
+	if r.Extensions != nil && len(r.Extensions.Fields) != 0 {
+		printExtensions(r)
+		replace := false
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing extensions?"}, &replace, nil); err != nil {
+			return err
+		}
+		if !replace {
+			return nil
+		}
+	}
+
 	extensionOptions := make([]string, len(availableExtensions)+1)
 	extensionOptions[0] = "None"
 	for i, e := range availableExtensions {
@@ -486,8 +501,12 @@ func extensions(r *v1.Route) error {
 				break
 			}
 		}
-		// additional newlines at the end necessary to make it work with survey
-		fmt.Printf("\nCurrent extensions:\n%s\n\n\n", Extension(r))
+		printExtensions(r)
 	}
 	return nil
+}
+
+func printExtensions(r *v1.Route) {
+	// additional newlines at the end necessary to make it work with survey
+	fmt.Printf("\nCurrent extensions:\n%s\n\n\n", Extension(r))
 }
