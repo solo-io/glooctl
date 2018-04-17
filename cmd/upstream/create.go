@@ -22,7 +22,8 @@ import (
 func createCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "create upstreams",
+		Short: "create upstream",
+		Long:  "Create an upstream based on the file or interactively if no file is specified",
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := client.StorageClient(opts)
 			if err != nil {
@@ -50,7 +51,7 @@ func createCmd(opts *client.StorageOptions) *cobra.Command {
 	cmd.Flags().StringVarP(&cliOpts.Filename, "filename", "f", "", "file to use to create upstream")
 	cmd.MarkFlagFilename("filename", "yaml", "yml")
 
-	cmd.Flags().BoolVarP(&cliOpts.Interactive, "interactive", "i", false, "interacitve mode")
+	cmd.Flags().BoolVarP(&cliOpts.Interactive, "interactive", "i", true, "interacitve mode")
 	return cmd
 }
 
@@ -71,7 +72,10 @@ func runCreate(sc storage.Interface, si secret.SecretInterface, opts *upstream.O
 			fmt.Println("Warning:", message)
 		}
 	} else {
-		// if not file then interactive
+		// if not file then interactive unless explicitly not set to true
+		if !opts.Interactive {
+			return nil, errors.New("no file specified and interactive mode turned off")
+		}
 		var err error
 		u, err = upstream.UpstreamInteractive(sc, si)
 		if err != nil {
