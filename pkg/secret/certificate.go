@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	sslCertificateChainKey = "ca_chain"
-	sslPrivateKeyKey       = "private_key"
+	SSLCertificateChainKey = "ca_chain"
+	SSLPrivateKeyKey       = "private_key"
 )
 
 type CertificateOptions struct {
@@ -31,8 +31,8 @@ func CreateCertificate(si dependencies.SecretStorage, opts *CertificateOptions) 
 	s := &dependencies.Secret{
 		Ref: opts.Name,
 		Data: map[string]string{
-			sslCertificateChainKey: string(ca),
-			sslPrivateKeyKey:       string(pk),
+			SSLCertificateChainKey: string(ca),
+			SSLPrivateKeyKey:       string(pk),
 		},
 	}
 	_, err = si.Create(s)
