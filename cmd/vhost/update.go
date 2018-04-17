@@ -16,7 +16,6 @@ import (
 )
 
 func updateCmd(opts *bootstrap.Options) *cobra.Command {
-	var filename string
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "update virtual host",
@@ -26,21 +25,20 @@ func updateCmd(opts *bootstrap.Options) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			vh, err := runUpdate(sc, filename)
+			vh, err := runUpdate(sc, cliOpts.Filename)
 			if err != nil {
 				fmt.Printf("Unable to update virtual host %q\n", err)
 				return
 			}
 			fmt.Println("Virtual host updated")
-			output, _ := c.InheritedFlags().GetString("output")
-			util.Print(output, "", vh, func(v interface{}, w io.Writer) error {
+			util.Print(cliOpts.Output, "", vh, func(v interface{}, w io.Writer) error {
 				virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
 				return nil
 			}, os.Stdout)
 		},
 	}
 
-	cmd.Flags().StringVarP(&filename, "filename", "f", "", "file to use to update virtual host")
+	cmd.Flags().StringVarP(&cliOpts.Filename, "filename", "f", "", "file to use to update virtual host")
 	cmd.MarkFlagFilename("filename", "yaml", "yml")
 	cmd.MarkFlagRequired("filename")
 	return cmd
