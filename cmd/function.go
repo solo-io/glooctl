@@ -3,7 +3,8 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/glooctl/pkg/function"
 	"github.com/spf13/cobra"
 )
@@ -15,7 +16,7 @@ var (
 	}{}
 )
 
-func functionCmd(opts *client.StorageOptions) *cobra.Command {
+func functionCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "function",
 		Short: "manage functions",
@@ -28,13 +29,13 @@ func functionCmd(opts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func getFunctionsCmd(opts *client.StorageOptions) *cobra.Command {
+func getFunctionsCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "get",
 		Aliases: []string{"list"},
 		Short:   "get functions",
 		Run: func(c *cobra.Command, a []string) {
-			sc, err := client.StorageClient(opts)
+			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

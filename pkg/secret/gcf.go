@@ -3,8 +3,9 @@ package secret
 import (
 	"io/ioutil"
 
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 )
 
 const (
@@ -16,17 +17,17 @@ type GoogleOptions struct {
 	Filename string
 }
 
-func CreateGoogle(si secret.SecretInterface, opts *GoogleOptions) error {
+func CreateGoogle(si dependencies.SecretStorage, opts *GoogleOptions) error {
 	b, err := ioutil.ReadFile(opts.Filename)
 	if err != nil {
 		return errors.Wrapf(err, "unable to read service account key file %s", opts.Filename)
 	}
-	s := &secret.Secret{
-		Name: opts.Name,
-		Data: map[string][]byte{
-			ServiceAccountJsonKeyFile: b,
+	s := &dependencies.Secret{
+		Ref: opts.Name,
+		Data: map[string]string{
+			ServiceAccountJsonKeyFile: string(b),
 		},
 	}
-	_, err = si.V1().Create(s)
+	_, err = si.Create(s)
 	return err
 }

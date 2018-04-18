@@ -3,8 +3,8 @@ package secret
 import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 type AWSOptions struct {
@@ -15,19 +15,19 @@ type AWSOptions struct {
 	UseEnv    bool
 }
 
-func CreateAWS(si secret.SecretInterface, opts *AWSOptions) error {
+func CreateAWS(si dependencies.SecretStorage, opts *AWSOptions) error {
 	id, key, err := idAndKey(opts)
 	if err != nil {
 		return errors.Wrap(err, "unable to get AWS credentials")
 	}
-	s := &secret.Secret{
-		Name: opts.Name,
-		Data: map[string][]byte{
-			aws.AwsAccessKey: []byte(id),
-			aws.AwsSecretKey: []byte(key),
+	s := &dependencies.Secret{
+		Ref: opts.Name,
+		Data: map[string]string{
+			aws.AwsAccessKey: id,
+			aws.AwsSecretKey: key,
 		},
 	}
-	_, err = si.V1().Create(s)
+	_, err = si.Create(s)
 	return err
 }
 

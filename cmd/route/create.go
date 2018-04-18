@@ -5,15 +5,17 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/client"
 	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func createCmd(opts *client.StorageOptions) *cobra.Command {
+func createCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create a route to a destination",
@@ -22,7 +24,7 @@ Create a route. The route, with its matcher and destination, can be provided
 using a file or by specifying one of the matcher and a destintation using
 the flags.`,
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := client.StorageClient(opts)
+			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

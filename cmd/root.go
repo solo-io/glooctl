@@ -15,11 +15,12 @@
 package cmd
 
 import (
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
-	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
@@ -82,23 +83,24 @@ func App(version string) *cobra.Command {
 		BashCompletionFunction: bashCompletion,
 	}
 
-	opts := client.StorageOptions{}
-	flags := app.PersistentFlags()
-	flags.StringVar(&opts.KubeConfig, "kubeconfig", "", "kubeconfig (defaults to ~/.kube/config)")
-	flags.StringVarP(&opts.Namespace, "namespace", "n", "gloo-system", "namespace for resources")
-	flags.StringVar(&opts.GlooConfigDir, "gloo-config-dir", "", "if set, glooctl will use file-based storage. use this if gloo is running locally, "+
-		"e.g. using docker with volumes mounted for config storage.")
-	flags.StringVar(&opts.SecretDir, "secret-dir", "", "if set, glooctl will use file-based stroage. use this if gloo is running locally")
-	flags.IntVarP(&opts.SyncPeriod, "sync-period", "s", 60, "sync period (seconds) for resources")
+	opts := &bootstrap.Options{}
+	flags.AddConfigStorageOptionFlags(app, opts)
+	flags.AddSecretStorageOptionFlags(app, opts)
+	flags.AddFileStorageOptionFlags(app, opts)
+
+	flags.AddFileFlags(app, opts)
+	flags.AddKubernetesFlags(app, opts)
+	flags.AddConsulFlags(app, opts)
+	flags.AddVaultFlags(app, opts)
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
-		upstream.UpstreamCmd(&opts),
-		functionCmd(&opts),
-		vhost.VHostCmd(&opts),
-		route.RouteCmd(&opts),
-		secret.SecretCmd(&opts),
-		registerCmd(&opts),
+		upstream.UpstreamCmd(opts),
+		functionCmd(opts),
+		vhost.VHostCmd(opts),
+		route.RouteCmd(opts),
+		secret.SecretCmd(opts),
+		registerCmd(opts),
 		completionCmd())
 
 	return app

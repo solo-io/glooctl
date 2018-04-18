@@ -5,23 +5,23 @@ import (
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
 const (
 	GoogleAnnotationKey = "gloo.solo.io/google_secret_ref"
 )
 
-func PrintTableWithUsage(list []*secret.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualHost) {
+func PrintTableWithUsage(list []*dependencies.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualHost) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Name", "Type", "In Use By"})
 
 	usageMap := usage(list, u, v)
 	for _, s := range list {
-		name := s.Name
+		name := s.Ref
 		sType := secretType(s)
 		usage := ""
 		use, ok := usageMap[name]
@@ -34,10 +34,10 @@ func PrintTableWithUsage(list []*secret.Secret, w io.Writer, u []*v1.Upstream, v
 	table.Render()
 }
 
-func usage(list []*secret.Secret, upstreams []*v1.Upstream, virtualhosts []*v1.VirtualHost) map[string][]string {
+func usage(list []*dependencies.Secret, upstreams []*v1.Upstream, virtualhosts []*v1.VirtualHost) map[string][]string {
 	m := make(map[string][]string, len(list))
 	for _, s := range list {
-		m[s.Name] = []string{}
+		m[s.Ref] = []string{}
 	}
 
 	if virtualhosts != nil {
@@ -85,7 +85,7 @@ func usage(list []*secret.Secret, upstreams []*v1.Upstream, virtualhosts []*v1.V
 	return m
 }
 
-func secretType(s *secret.Secret) string {
+func secretType(s *dependencies.Secret) string {
 	if s.Data == nil {
 		return "Unknown"
 	}

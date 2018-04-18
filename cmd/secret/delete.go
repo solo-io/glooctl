@@ -3,18 +3,19 @@ package secret
 import (
 	"fmt"
 
-	secret "github.com/solo-io/gloo-secret"
-	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"github.com/spf13/cobra"
 )
 
-func deleteCmd(opts *client.StorageOptions) *cobra.Command {
+func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete [name]",
 		Short: "delete secret",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
-			si, err := client.SecretClient(opts)
+			si, err := secretstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Println("Unable to create secret client:", err)
 				return
@@ -30,10 +31,10 @@ func deleteCmd(opts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func runDelete(si secret.SecretInterface, name string) error {
+func runDelete(si dependencies.SecretStorage, name string) error {
 	if name == "" {
 		return fmt.Errorf("missing name of secret to delete")
 	}
 
-	return si.V1().Delete(name)
+	return si.Delete(name)
 }

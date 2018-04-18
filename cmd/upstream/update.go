@@ -7,20 +7,21 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func updateCmd(opts *client.StorageOptions) *cobra.Command {
+func updateCmd(opts *bootstrap.Options) *cobra.Command {
 	var filename string
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "update upstreams",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := client.StorageClient(opts)
+			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
@@ -31,8 +32,7 @@ func updateCmd(opts *client.StorageOptions) *cobra.Command {
 				return
 			}
 			fmt.Println("Upstream updated")
-			output, _ := c.InheritedFlags().GetString("output")
-			util.Print(output, "", u,
+			util.Print(cliOpts.Output, "", u,
 				func(data interface{}, w io.Writer) error {
 					upstream.PrintTable([]*v1.Upstream{data.(*v1.Upstream)}, w)
 					return nil

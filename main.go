@@ -22,7 +22,7 @@ import (
 	"time"
 
 	"github.com/solo-io/glooctl/cmd"
-	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/glooctl/pkg/util"
 	checkpoint "github.com/solo-io/go-checkpoint"
 )
 
@@ -40,7 +40,7 @@ func main() {
 }
 
 func telemetry(t time.Time) {
-	sigfile := filepath.Join(client.HomeDir(), ".glooctl.sig")
+	sigfile := filepath.Join(util.HomeDir(), ".glooctl.sig")
 	ctx := context.Background()
 	report := &checkpoint.ReportParams{
 		Product:       "glooctl",

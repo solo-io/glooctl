@@ -5,20 +5,22 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/client"
 	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func getCmd(opts *client.StorageOptions) *cobra.Command {
+func getCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "get routes on a virtual host",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := client.StorageClient(opts)
+			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return

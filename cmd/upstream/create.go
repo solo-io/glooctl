@@ -7,30 +7,32 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	psecret "github.com/solo-io/glooctl/pkg/secret"
 	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func createCmd(opts *client.StorageOptions) *cobra.Command {
+func createCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create upstream",
 		Long:  "Create an upstream based on the file or interactively if no file is specified",
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := client.StorageClient(opts)
+			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				os.Exit(1)
 			}
-			si, err := client.SecretClient(opts)
+			si, err := secretstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create secret client %q\n", err)
 				os.Exit(1)
@@ -55,7 +57,7 @@ func createCmd(opts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func runCreate(sc storage.Interface, si secret.SecretInterface, opts *upstream.Options) (*v1.Upstream, error) {
+func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *upstream.Options) (*v1.Upstream, error) {
 	var u *v1.Upstream
 	if opts.Filename != "" {
 		u, err := parseFile(opts.Filename)
@@ -85,14 +87,14 @@ func runCreate(sc storage.Interface, si secret.SecretInterface, opts *upstream.O
 	return sc.V1().Upstreams().Create(u)
 }
 
-func validate(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) (bool, string) {
+func validate(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) (bool, string) {
 	switch u.Type {
 	case aws.UpstreamTypeAws:
 		lambdaSpec, err := aws.DecodeUpstreamSpec(u.Spec)
 		if err != nil {
 			return false, fmt.Sprintf("Unable to decode lambda upstream spec: %q", err)
 		}
-		awsSecrets, err := si.V1().Get(lambdaSpec.SecretRef)
+		awsSecrets, err := si.Get(lambdaSpec.SecretRef)
 		if err != nil {
 			// warning
 			return true, fmt.Sprintf("Unable to load referenced secret. Please make sure it exists.")
@@ -114,7 +116,7 @@ func validate(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) (
 			return true, fmt.Sprintf("Google Cloud Function Discovery requires annotation wity key %s.", psecret.GoogleAnnotationKey)
 		}
 
-		gcfSecret, err := si.V1().Get(secretRef)
+		gcfSecret, err := si.Get(secretRef)
 		if err != nil {
 			return true, fmt.Sprintf("Unable to verify referenced secret. Please make sure it exists.")
 		}

@@ -3,22 +3,23 @@ package secret
 import (
 	"os"
 
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/storage"
 )
 
-func Get(sc storage.Interface, si secret.SecretInterface, name string) error {
-	var list []*secret.Secret
+func Get(sc storage.Interface, si dependencies.SecretStorage, name string) error {
+	var list []*dependencies.Secret
 	if name != "" {
-		s, err := si.V1().Get(name)
+		s, err := si.Get(name)
 		if err != nil {
 			return errors.Wrap(err, "unable to get secret "+name)
 		}
-		list = []*secret.Secret{s}
+		list = []*dependencies.Secret{s}
 	} else {
 		var err error
-		list, err = si.V1().List()
+		list, err = si.List()
 		if err != nil {
 			return errors.Wrap(err, "unable to get secrets")
 		}

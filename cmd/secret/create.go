@@ -3,12 +3,14 @@ package secret
 import (
 	"fmt"
 
-	"github.com/solo-io/glooctl/pkg/client"
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
+
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/glooctl/pkg/secret"
 	"github.com/spf13/cobra"
 )
 
-func createCmd(opts *client.StorageOptions) *cobra.Command {
+func createCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
 		Short: "create a secret",
@@ -21,7 +23,7 @@ func createCmd(opts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func createAWS(storageOpts *client.StorageOptions) *cobra.Command {
+func createAWS(storageOpts *bootstrap.Options) *cobra.Command {
 	opts := secret.AWSOptions{}
 	cmd := &cobra.Command{
 		Use:   "aws",
@@ -35,7 +37,7 @@ or provide them directly using --access-key-id and
 --secret-access-key flags.
 		`,
 		RunE: func(c *cobra.Command, a []string) error {
-			si, err := client.SecretClient(storageOpts)
+			si, err := secretstorage.Bootstrap(*storageOpts)
 			if err != nil {
 				fmt.Println("Unable to get secret client:", err)
 				return nil
@@ -64,13 +66,13 @@ or provide them directly using --access-key-id and
 	return cmd
 }
 
-func createGCF(storageOpts *client.StorageOptions) *cobra.Command {
+func createGCF(storageOpts *bootstrap.Options) *cobra.Command {
 	opts := secret.GoogleOptions{}
 	cmd := &cobra.Command{
 		Use:   "google",
 		Short: "create secret for upstream type Google (Google Cloud Function)",
 		RunE: func(c *cobra.Command, a []string) error {
-			si, err := client.SecretClient(storageOpts)
+			si, err := secretstorage.Bootstrap(*storageOpts)
 			if err != nil {
 				fmt.Println("Unable to get secret client:", err)
 				return nil
@@ -92,13 +94,13 @@ func createGCF(storageOpts *client.StorageOptions) *cobra.Command {
 	return cmd
 }
 
-func createCertificate(storageOpts *client.StorageOptions) *cobra.Command {
+func createCertificate(storageOpts *bootstrap.Options) *cobra.Command {
 	opts := secret.CertificateOptions{}
 	cmd := &cobra.Command{
 		Use:   "certificate",
 		Short: "create a secret for certificate",
 		Run: func(c *cobra.Command, args []string) {
-			si, err := client.SecretClient(storageOpts)
+			si, err := secretstorage.Bootstrap(*storageOpts)
 			if err != nil {
 				fmt.Println("Unable to get secret client:", err)
 				return
