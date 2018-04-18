@@ -15,15 +15,16 @@
 package cmd
 
 import (
+	"path/filepath"
+
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
-	"os"
-	"path/filepath"
 )
 
 var (
@@ -98,7 +99,7 @@ func App(version string) *cobra.Command {
 	opts.ConfigStorageOptions.Type = "kube"
 	opts.SecretStorageOptions.Type = "kube"
 	opts.FileStorageOptions.Type = "kube"
-	opts.KubeOptions.KubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
+	opts.KubeOptions.KubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
