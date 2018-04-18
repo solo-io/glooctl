@@ -173,7 +173,7 @@ type Dirent struct {
 }
 
 type Fsid struct {
-	_ [2]int32
+	Val [2]int32
 }
 
 type Flock_t struct {
@@ -746,7 +746,7 @@ const (
 )
 
 type Sigset_t struct {
-	_ [16]uint64
+	Val [16]uint64
 }
 
 const RNDGETENTCNT = 0x40045200
@@ -1140,3 +1140,18 @@ const (
 	CBitFieldMaskBit62 = 0x4000000000000000
 	CBitFieldMaskBit63 = 0x8000000000000000
 )
+
+type SockaddrStorage struct {
+	Family uint16
+	_      [118]uint8
+	_      uint64
+}
+
+type TCPMD5Sig struct {
+	Addr      SockaddrStorage
+	Flags     uint8
+	Prefixlen uint8
+	Keylen    uint16
+	_         uint32
+	Key       [80]uint8
+}

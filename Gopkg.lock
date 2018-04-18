@@ -66,6 +66,12 @@
   source = "https://github.com/ilackarms/go-control-plane.git"
 
 [[projects]]
+  name = "github.com/fatih/structs"
+  packages = ["."]
+  revision = "a720dfa8df582c51dee1b36feabb906bde1588bd"
+  version = "v1.0"
+
+[[projects]]
   name = "github.com/ghodss/yaml"
   packages = ["."]
   revision = "0ca9ea5df5451ffdf184b4428c902747c2c11cd7"
@@ -117,6 +123,12 @@
     "ptypes/timestamp"
   ]
   revision = "e09c5db296004fbe3f74490e84dcd62c3c5ddb1b"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/golang/snappy"
+  packages = ["."]
+  revision = "553a641470496b2327abcac10b36396bd98e45c9"
 
 [[projects]]
   branch = "master"
@@ -195,10 +207,38 @@
   revision = "0fb14efe8c47ae851c0034ed7a448854d3d34cf3"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/hashicorp/hcl"
+  packages = [
+    ".",
+    "hcl/ast",
+    "hcl/parser",
+    "hcl/scanner",
+    "hcl/strconv",
+    "hcl/token",
+    "json/parser",
+    "json/scanner",
+    "json/token"
+  ]
+  revision = "ef8a98b0bbce4a65b5aa4c368430a80ddc533168"
+
+[[projects]]
   name = "github.com/hashicorp/serf"
   packages = ["coordinate"]
   revision = "d6574a5bb1226678d7010325fb6c985db20ee458"
   version = "v0.8.1"
+
+[[projects]]
+  name = "github.com/hashicorp/vault"
+  packages = [
+    "api",
+    "helper/compressutil",
+    "helper/jsonutil",
+    "helper/parseutil",
+    "helper/strutil"
+  ]
+  revision = "7e1fbde40afee241f81ef08700e7987d86fc7242"
+  version = "v0.9.6"
 
 [[projects]]
   branch = "master"
@@ -273,6 +313,12 @@
   revision = "b8bc1bf767474819792c23f32d8286a45736f1c6"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/mitchellh/mapstructure"
+  packages = ["."]
+  revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
+
+[[projects]]
   name = "github.com/modern-go/concurrent"
   packages = ["."]
   revision = "bacd9c7ef1dd9b15be4a9909b8ac7a4e313eec94"
@@ -288,7 +334,7 @@
   branch = "master"
   name = "github.com/olekukonko/tablewriter"
   packages = ["."]
-  revision = "b8a9be070da40449e501c3c4730a889e42d87a9e"
+  revision = "d5dd8a50526aadb3d5f2c9b5233277bc2db90e88"
 
 [[projects]]
   branch = "master"
@@ -315,12 +361,27 @@
   version = "v1.0.2"
 
 [[projects]]
+  name = "github.com/ryanuber/go-glob"
+  packages = ["."]
+  revision = "572520ed46dbddaed19ea3d9541bdd0494163693"
+  version = "v0.1"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/sethgrid/pester"
+  packages = ["."]
+  revision = "ed9870dad3170c0b25ab9b11830cc57c3a7798fb"
+
+[[projects]]
   branch = "master"
   name = "github.com/solo-io/gloo"
   packages = [
     "internal/control-plane/filewatcher",
     "pkg/api/types/v1",
     "pkg/bootstrap",
+    "pkg/bootstrap/configstorage",
+    "pkg/bootstrap/flags",
+    "pkg/bootstrap/secretstorage",
     "pkg/coreplugins/common",
     "pkg/coreplugins/route-extensions",
     "pkg/endpointdiscovery",
@@ -331,6 +392,8 @@
     "pkg/protoutil",
     "pkg/secretwatcher",
     "pkg/storage",
+    "pkg/storage/base",
+    "pkg/storage/consul",
     "pkg/storage/crd",
     "pkg/storage/crd/client/clientset/versioned",
     "pkg/storage/crd/client/clientset/versioned/scheme",
@@ -338,19 +401,12 @@
     "pkg/storage/crd/solo.io/v1",
     "pkg/storage/crud",
     "pkg/storage/dependencies",
+    "pkg/storage/dependencies/file",
+    "pkg/storage/dependencies/kube",
+    "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "ef6e4411fb427df80a5c94fa16d233f689e6c1ff"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/solo-io/gloo-secret"
-  packages = [
-    ".",
-    "crd",
-    "file"
-  ]
-  revision = "04a9b03e66d43f0531e8924c0d6ca5571b2536bd"
+  revision = "d8e097734422f7e258c3d595cf85a3068cde00a0"
 
 [[projects]]
   branch = "master"
@@ -389,7 +445,7 @@
     "lex/httplex",
     "trace"
   ]
-  revision = "a35a21de978d84ffc92f010a153705b170b2f9d1"
+  revision = "d41e8174641f662c5a2d1c7a5f9e828788eb8706"
 
 [[projects]]
   branch = "master"
@@ -398,7 +454,7 @@
     "unix",
     "windows"
   ]
-  revision = "2f57af4873d00d535c5c9028850aa2152e6a5566"
+  revision = "9b006099084093fa764af5878f937ff7dafc6051"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -512,7 +568,7 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "6fb8575d8ac324ad9f9605dec64b7a4b8a632e79"
+  revision = "e68f57a7c005317989301f4e8eb654f01f08eb05"
 
 [[projects]]
   branch = "master"
@@ -524,7 +580,7 @@
     "pkg/client/clientset/clientset/scheme",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
   ]
-  revision = "667d98f32c2a6115fbd238b0da4ca75b00258b45"
+  revision = "07bbbb7a28a34c56bf9d1b192a88cc9b2350095e"
 
 [[projects]]
   branch = "master"
@@ -569,7 +625,7 @@
     "pkg/watch",
     "third_party/forked/golang/reflect"
   ]
-  revision = "ba81bc69c72dde92d5f1fefa2fa6d82aa83a6676"
+  revision = "800fcb029b488923f14852306f0c98c11d0f360c"
 
 [[projects]]
   name = "k8s.io/client-go"
@@ -630,6 +686,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "de2e2289384cac14f9c066694971bdadd14ff2c62f429e7407ee0d19dfe0c663"
+  inputs-digest = "8b97ccecc7ddbeac3c66673e000bc049a7c0faaf3f05bc10c2f0c753aff7321c"
   solver-name = "gps-cdcl"
   solver-version = 1
