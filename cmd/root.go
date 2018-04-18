@@ -15,7 +15,11 @@
 package cmd
 
 import (
+	"io/ioutil"
+	"os"
 	"path/filepath"
+
+	"github.com/ghodss/yaml"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
@@ -96,10 +100,7 @@ func App(version string) *cobra.Command {
 	flags.AddConsulFlags(app, opts)
 	flags.AddVaultFlags(app, opts)
 
-	opts.ConfigStorageOptions.Type = "kube"
-	opts.SecretStorageOptions.Type = "kube"
-	opts.FileStorageOptions.Type = "kube"
-	opts.KubeOptions.KubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
+	loadConfig(opts) // load saved configurations
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
@@ -112,4 +113,41 @@ func App(version string) *cobra.Command {
 		completionCmd())
 
 	return app
+}
+
+// loadConfig loads saved configuration if any
+// if not sets default configuration and also saves it
+func loadConfig(opts *bootstrap.Options) {
+	configDir, err := util.ConfigDir()
+	if err != nil {
+		defaultConfig(opts)
+		return
+	}
+	configFile := filepath.Join(configDir, "config.yaml")
+	data, err := ioutil.ReadFile(configFile)
+	if err != nil {
+		defaultConfig(opts)
+		if os.IsNotExist(err) {
+			saveConfig(opts, configFile)
+		}
+		return
+	}
+	if err := yaml.Unmarshal(data, opts); err != nil {
+		defaultConfig(opts)
+	}
+}
+
+func saveConfig(opts *bootstrap.Options, configFile string) {
+	b, err := yaml.Marshal(opts)
+	if err != nil {
+		return
+	}
+	ioutil.WriteFile(configFile, b, 0644)
+}
+
+func defaultConfig(opts *bootstrap.Options) {
+	opts.ConfigStorageOptions.Type = "kube"
+	opts.SecretStorageOptions.Type = "kube"
+	opts.FileStorageOptions.Type = "kube"
+	opts.KubeOptions.KubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
 }

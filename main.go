@@ -15,39 +15,23 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/solo-io/glooctl/cmd"
 	"github.com/solo-io/glooctl/pkg/util"
-	checkpoint "github.com/solo-io/go-checkpoint"
 )
 
 var Version = "unknown"
 
 func main() {
 	start := time.Now()
-	defer telemetry(start)
+	defer util.Telemetry(Version, start)
 
 	app := cmd.App(Version)
 	if err := app.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-}
-
-func telemetry(t time.Time) {
-	sigfile := filepath.Join(util.HomeDir(), ".glooctl.sig")
-	ctx := context.Background()
-	report := &checkpoint.ReportParams{
-		Product:       "glooctl",
-		Version:       Version,
-		StartTime:     t,
-		EndTime:       time.Now(),
-		SignatureFile: sigfile,
-	}
-	checkpoint.Report(ctx, report)
 }
