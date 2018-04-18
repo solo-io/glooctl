@@ -3,17 +3,18 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/client"
 	"github.com/spf13/cobra"
 )
 
-func registerCmd(opts *client.StorageOptions) *cobra.Command {
+func registerCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "register",
 		Short: "register gloo resources",
 		Run: func(c *cobra.Command, args []string) {
-			storageClient, err := client.StorageClient(opts)
+			storageClient, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to register resource defintions %q\n", err)
 				return

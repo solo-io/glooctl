@@ -3,8 +3,9 @@ package secret
 import (
 	"io/ioutil"
 
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 )
 
 const (
@@ -18,7 +19,7 @@ type CertificateOptions struct {
 	PrivateKey string
 }
 
-func CreateCertificate(si secret.SecretInterface, opts *CertificateOptions) error {
+func CreateCertificate(si dependencies.SecretStorage, opts *CertificateOptions) error {
 	ca, err := ioutil.ReadFile(opts.CAChain)
 	if err != nil {
 		return errors.Wrap(err, "unable to read CA chain certificate")
@@ -27,13 +28,13 @@ func CreateCertificate(si secret.SecretInterface, opts *CertificateOptions) erro
 	if err != nil {
 		return errors.Wrap(err, "unable to read private key")
 	}
-	s := &secret.Secret{
-		Name: opts.Name,
-		Data: map[string][]byte{
-			sslCertificateChainKey: ca,
-			sslPrivateKeyKey:       pk,
+	s := &dependencies.Secret{
+		Ref: opts.Name,
+		Data: map[string]string{
+			sslCertificateChainKey: string(ca),
+			sslPrivateKeyKey:       string(pk),
 		},
 	}
-	_, err = si.V1().Create(s)
+	_, err = si.Create(s)
 	return err
 }

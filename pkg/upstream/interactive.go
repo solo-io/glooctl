@@ -5,10 +5,11 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+
 	"github.com/solo-io/gloo/pkg/protoutil"
 
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
@@ -17,7 +18,7 @@ import (
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
-type upstreamCreator func(storage.Interface, secret.SecretInterface, *v1.Upstream) error
+type upstreamCreator func(storage.Interface, dependencies.SecretStorage, *v1.Upstream) error
 
 type plugin struct {
 	name    string
@@ -40,7 +41,7 @@ var (
 	nameRegex = regexp.MustCompile(`^[a-z][a-z0-9\-\.]{0,252}$`)
 )
 
-func UpstreamInteractive(sc storage.Interface, si secret.SecretInterface) (*v1.Upstream, error) {
+func UpstreamInteractive(sc storage.Interface, si dependencies.SecretStorage) (*v1.Upstream, error) {
 	upstreams, err := sc.V1().Upstreams().List()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get list of upstreams")
@@ -112,21 +113,21 @@ func upstreamType() (string, error) {
 	return choice, nil
 }
 
-func secretRefs(si secret.SecretInterface, filter func(*secret.Secret) bool) ([]string, error) {
-	secrets, err := si.V1().List()
+func secretRefs(si dependencies.SecretStorage, filter func(*dependencies.Secret) bool) ([]string, error) {
+	secrets, err := si.List()
 	if err != nil {
 		return nil, err
 	}
 	var refs []string
 	for _, s := range secrets {
 		if filter(s) {
-			refs = append(refs, s.Name)
+			refs = append(refs, s.Ref)
 		}
 	}
 	return refs, nil
 }
 
-func awsInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func awsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	u.Type = aws.UpstreamTypeAws
 	regions := make([]string, len(aws.ValidRegions))
 	i := 0
@@ -161,7 +162,7 @@ func awsInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstr
 	return nil
 }
 
-func isAWSSecret(s *secret.Secret) bool {
+func isAWSSecret(s *dependencies.Secret) bool {
 	if s.Data == nil {
 		return false
 	}
@@ -171,15 +172,15 @@ func isAWSSecret(s *secret.Secret) bool {
 	return first && second
 }
 
-func azureInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func azureInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	return errors.New("not implemented")
 }
 
-func consulInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func consulInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	return errors.New("not implemented")
 }
 
-func googleInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func googleInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	u.Type = gfunc.UpstreamTypeGoogle
 
 	regions := make([]string, len(gfunc.ValidRegions))
@@ -238,7 +239,7 @@ func googleInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Up
 	return nil
 }
 
-func isGoogleSecret(s *secret.Secret) bool {
+func isGoogleSecret(s *dependencies.Secret) bool {
 	if s.Data == nil {
 		return false
 	}
@@ -246,18 +247,18 @@ func isGoogleSecret(s *secret.Secret) bool {
 	return ok
 }
 
-func grpcInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func grpcInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	return errors.New("not implemented")
 }
 
-func kubeInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func kubeInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	return errors.New("not implemented")
 }
 
-func natsInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func natsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	return errors.New("not implemented")
 }
 
-func restInteractive(sc storage.Interface, si secret.SecretInterface, u *v1.Upstream) error {
+func restInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	return errors.New("not implemented")
 }

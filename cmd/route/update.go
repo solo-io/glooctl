@@ -5,17 +5,19 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+
 	google_protobuf "github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/glooctl/pkg/client"
 	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
-func updateCmd(opts *client.StorageOptions) *cobra.Command {
+func updateCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "update",
 		Short: "update a route",
@@ -26,7 +28,7 @@ or based on the route matcher and destination provided in the CLI.
 While selecting route to update, glooctl matches routes based on
 matcher and destination only. It doesn't include extensions.`,
 		Run: func(c *cobra.Command, args []string) {
-			sc, err := client.StorageClient(opts)
+			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
