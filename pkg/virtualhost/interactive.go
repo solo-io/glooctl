@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage"
 	psecret "github.com/solo-io/glooctl/pkg/secret"
@@ -44,7 +45,7 @@ func SelectInteractive(sc storage.Interface) (*v1.VirtualHost, error) {
 
 // VirtualHostInteractive for interactively creating/editing virtual hosts
 // Doesn't handle routes as we have separate interactive mode for routes
-func VirtualHostInteractive(sc storage.Interface, si secret.SecretInterface, vh *v1.VirtualHost) error {
+func VirtualHostInteractive(sc storage.Interface, si dependencies.SecretStorage, vh *v1.VirtualHost) error {
 	existing, err := sc.V1().VirtualHosts().List()
 	if err != nil {
 		return err
@@ -123,7 +124,7 @@ func domainsInteractive(list []string) ([]string, error) {
 	return strings.Split(newDomains, ","), nil
 }
 
-func sslConfigInteractive(si secret.SecretInterface, ssl *v1.SSLConfig) (*v1.SSLConfig, error) {
+func sslConfigInteractive(si dependencies.SecretStorage, ssl *v1.SSLConfig) (*v1.SSLConfig, error) {
 	if ssl != nil {
 		printSSLConfig(ssl)
 		replace := false
@@ -168,7 +169,7 @@ func sslConfigInteractive(si secret.SecretInterface, ssl *v1.SSLConfig) (*v1.SSL
 	return &v1.SSLConfig{SecretRef: secretRef}, nil
 }
 
-func isCertificate(s *secret.Secret) bool {
+func isCertificate(s *dependencies.Secret) bool {
 	if s.Data == nil {
 		return false
 	}
