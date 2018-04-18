@@ -22,6 +22,8 @@ import (
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
 	"github.com/spf13/cobra"
+	"os"
+	"path/filepath"
 )
 
 var (
@@ -92,6 +94,11 @@ func App(version string) *cobra.Command {
 	flags.AddKubernetesFlags(app, opts)
 	flags.AddConsulFlags(app, opts)
 	flags.AddVaultFlags(app, opts)
+
+	opts.ConfigStorageOptions.Type = "kube"
+	opts.SecretStorageOptions.Type = "kube"
+	opts.FileStorageOptions.Type = "kube"
+	opts.KubeOptions.KubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
