@@ -5,10 +5,13 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
+
+	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 
 	"github.com/pkg/errors"
-	secret "github.com/solo-io/gloo-secret"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
@@ -27,7 +30,7 @@ func createCmd(opts *bootstrap.Options) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				os.Exit(1)
 			}
-			si, err := client.SecretClient(opts)
+			si, err := secretstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create secret client %q\n", err)
 				os.Exit(1)
@@ -50,7 +53,7 @@ func createCmd(opts *bootstrap.Options) *cobra.Command {
 	return cmd
 }
 
-func runCreate(sc storage.Interface, si secret.SecretInterface, opts *virtualhost.Options) (*v1.VirtualHost, error) {
+func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *virtualhost.Options) (*v1.VirtualHost, error) {
 	var vh *v1.VirtualHost
 	if opts.Filename != "" {
 		var err error
