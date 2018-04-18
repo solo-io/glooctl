@@ -2,9 +2,11 @@ package route
 
 import (
 	"fmt"
+	"os"
 	"strconv"
 
 	"github.com/gogo/protobuf/types"
+	"github.com/olekukonko/tablewriter"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/storage"
@@ -104,24 +106,22 @@ Route:
 	return filtered
 }
 
-func RouteInteractive(sc storage.Interface) (*v1.Route, error) {
+func RouteInteractive(sc storage.Interface, r *v1.Route) error {
 	upstreams, err := sc.V1().Upstreams().List()
-
 	if err != nil {
-		return nil, errors.Wrap(err, "unable to get upstreams")
+		return errors.Wrap(err, "unable to get upstreams")
 	}
-	r := &v1.Route{}
 	if err := matcher(r); err != nil {
-		return nil, err
+		return err
 	}
 	if err := destination(r, upstreams); err != nil {
-		return nil, err
+		return err
 	}
 	if err := extensions(r); err != nil {
-		return nil, err
+		return err
 	}
 
-	return r, nil
+	return nil
 }
 
 type request struct {
@@ -131,10 +131,11 @@ type request struct {
 }
 
 func matcher(r *v1.Route) error {
+	oldValues := getMatcherValues(r)
 	prompt := &survey.Select{
 		Message: "Please select the type of matcher for the route:",
 		Options: []string{"event", "path-prefix", "path-regex", "path-exact"},
-		Default: "path-prefix",
+		Default: oldValues.matcherType,
 	}
 	var mType string
 	if err := survey.AskOne(prompt, &mType, survey.Required); err != nil {
@@ -145,6 +146,7 @@ func matcher(r *v1.Route) error {
 	case "event":
 		prompt := &survey.Input{
 			Message: "Please enter the event type:",
+			Default: oldValues.matcher,
 		}
 		var event string
 		survey.AskOne(prompt, &event, survey.Required)
@@ -152,7 +154,7 @@ func matcher(r *v1.Route) error {
 			EventMatcher: &v1.EventMatcher{EventType: event},
 		}
 	case "path-prefix":
-		request, err := requestMatcher()
+		request, err := requestMatcher(oldValues)
 		if err != nil {
 			return err
 		}
@@ -164,7 +166,7 @@ func matcher(r *v1.Route) error {
 			},
 		}
 	case "path-regex":
-		request, err := requestMatcher()
+		request, err := requestMatcher(oldValues)
 		if err != nil {
 			return err
 		}
@@ -176,7 +178,7 @@ func matcher(r *v1.Route) error {
 			},
 		}
 	case "path-exact":
-		request, err := requestMatcher()
+		request, err := requestMatcher(oldValues)
 		if err != nil {
 			return err
 		}
@@ -197,15 +199,63 @@ func matcher(r *v1.Route) error {
 	return nil
 }
 
-func requestMatcher() (*request, error) {
+type matcherValues struct {
+	matcherType string
+	matcher     string
+	verbs       []string
+	headers     map[string]string
+}
+
+func getMatcherValues(r *v1.Route) matcherValues {
+	switch m := r.GetMatcher().(type) {
+	case *v1.Route_EventMatcher:
+		return matcherValues{
+			matcherType: "event",
+			matcher:     m.EventMatcher.EventType,
+		}
+	case *v1.Route_RequestMatcher:
+		switch p := m.RequestMatcher.GetPath().(type) {
+		case *v1.RequestMatcher_PathExact:
+			return matcherValues{
+				matcherType: "path-exact",
+				matcher:     p.PathExact,
+				verbs:       m.RequestMatcher.Verbs,
+				headers:     m.RequestMatcher.Headers,
+			}
+		case *v1.RequestMatcher_PathPrefix:
+			return matcherValues{
+				matcherType: "path-prefix",
+				matcher:     p.PathPrefix,
+				verbs:       m.RequestMatcher.Verbs,
+				headers:     m.RequestMatcher.Headers,
+			}
+		case *v1.RequestMatcher_PathRegex:
+			return matcherValues{
+				matcherType: "path-regex",
+				matcher:     p.PathRegex,
+				verbs:       m.RequestMatcher.Verbs,
+				headers:     m.RequestMatcher.Headers,
+			}
+		}
+	}
+	return matcherValues{
+		matcherType: "path-prefix",
+		matcher:     "",
+	}
+}
+
+func requestMatcher(oldValues matcherValues) (*request, error) {
 	core.MarkedOptionIcon = "☑"
 	core.UnmarkedOptionIcon = "☐"
 
 	httpMethods := []string{"GET", "POST", "PUT", "DELETE", "PATCH", "HEAD", "OPTIONS"}
 	var questions = []*survey.Question{
 		{
-			Name:     "path",
-			Prompt:   &survey.Input{Message: "Please enter the path for the matcher:"},
+			Name: "path",
+			Prompt: &survey.Input{
+				Message: "Please enter the path for the matcher:",
+				Default: oldValues.matcher,
+			},
 			Validate: survey.Required,
 		},
 		{
@@ -213,6 +263,7 @@ func requestMatcher() (*request, error) {
 			Prompt: &survey.MultiSelect{
 				Message: "Please select all the HTTP requests methods that are applicable:",
 				Options: httpMethods,
+				Default: oldValues.verbs,
 			},
 		},
 	}
@@ -229,10 +280,26 @@ func requestMatcher() (*request, error) {
 	}
 
 	// headers
+	// TODO better editing instead of just replacing
 	headers := make(map[string]string)
 	hasHeaders := false
-	if err := survey.AskOne(&survey.Confirm{Message: "Do you want to set HTTP headers?"}, &hasHeaders, nil); err != nil {
-		return nil, err
+	if len(oldValues.headers) != 0 {
+		// print headers
+		printHeaders(oldValues.headers)
+		replaceHeaders := false
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing HTTP headers?"}, &replaceHeaders, nil); err != nil {
+			return nil, err
+		}
+		if !replaceHeaders {
+			headers = oldValues.headers
+			hasHeaders = false
+		} else {
+			hasHeaders = true
+		}
+	} else {
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to set HTTP headers?"}, &hasHeaders, nil); err != nil {
+			return nil, err
+		}
 	}
 	for hasHeaders {
 		questions = []*survey.Question{
@@ -261,9 +328,26 @@ func requestMatcher() (*request, error) {
 	return &request{path: answers.Path, verbs: answers.Verb, headers: headers}, nil
 }
 
+func printHeaders(m map[string]string) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Header", "Value"})
+	for k, v := range m {
+		table.Append([]string{k, v})
+	}
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.Render()
+	fmt.Println("\n\n") // keep survey happy
+}
+
 func prefixRewrite(r *v1.Route) error {
+	if r.PrefixRewrite != "" {
+		fmt.Printf("Current prefix rewrite: %s\n\n\n", r.PrefixRewrite)
+	}
+
 	var prefix string
-	if err := survey.AskOne(&survey.Input{Message: "Please enter the rewrite prefix (leave empty if you don't want rewrite):"}, &prefix, nil); err != nil {
+	if err := survey.AskOne(&survey.Input{
+		Message: "Please enter the rewrite prefix (leave empty if you don't want rewrite):",
+	}, &prefix, nil); err != nil {
 		return err
 	}
 	r.PrefixRewrite = prefix
@@ -271,6 +355,19 @@ func prefixRewrite(r *v1.Route) error {
 }
 
 func destination(r *v1.Route, upstreams []*v1.Upstream) error {
+	// check if we want to update destinations
+	old := Destinations(r)
+	if len(old) != 0 {
+		printDestination(old)
+		replace := false
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing destination?"}, &replace, nil); err != nil {
+			return err
+		}
+		if !replace {
+			return nil
+		}
+	}
+
 	upstreamNames := make([]string, len(upstreams))
 	for i, u := range upstreams {
 		upstreamNames[i] = u.Name
@@ -340,6 +437,17 @@ func destination(r *v1.Route, upstreams []*v1.Upstream) error {
 	return nil
 }
 
+func printDestination(list []Destination) {
+	table := tablewriter.NewWriter(os.Stdout)
+	table.SetHeader([]string{"Upstream", "Function"})
+	for _, d := range list {
+		table.Append([]string{d.Upstream, d.Function})
+	}
+	table.SetAlignment(tablewriter.ALIGN_LEFT)
+	table.Render()
+	fmt.Println("\n\n") // keep survey happy
+}
+
 func toAPIDestination(d *Destination) *v1.Destination {
 	if d.Function != "" {
 		return &v1.Destination{
@@ -358,7 +466,19 @@ func toAPIDestination(d *Destination) *v1.Destination {
 	}
 }
 
+// TODO better editing of existing extensions instead of just replacing
 func extensions(r *v1.Route) error {
+	if r.Extensions != nil && len(r.Extensions.Fields) != 0 {
+		printExtensions(r)
+		replace := false
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing extensions?"}, &replace, nil); err != nil {
+			return err
+		}
+		if !replace {
+			return nil
+		}
+	}
+
 	extensionOptions := make([]string, len(availableExtensions)+1)
 	extensionOptions[0] = "None"
 	for i, e := range availableExtensions {
@@ -382,8 +502,12 @@ func extensions(r *v1.Route) error {
 				break
 			}
 		}
-		// additional newlines at the end necessary to make it work with survey
-		fmt.Printf("\nCurrent extensions:\n%s\n\n\n", Extension(r))
+		printExtensions(r)
 	}
 	return nil
+}
+
+func printExtensions(r *v1.Route) {
+	// additional newlines at the end necessary to make it work with survey
+	fmt.Printf("\nCurrent extensions:\n%s\n\n\n", Extension(r))
 }
