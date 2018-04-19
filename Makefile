@@ -34,4 +34,5 @@ test:
 clean:
 	rm -f $(BINARY)
 	rm -f *-64
+	rm -f *-64.exe
 	rm -rf release
