@@ -15,6 +15,7 @@
 package cmd
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -59,10 +60,10 @@ __glooctl_get_virtualhosts()
 	local glooctl_out
 	if glooctl_out=$(glooctl virtualhost get -o template --template="{{range .}}{{.Name}} {{end}}" 2>/dev/null); then
 		COMPREPLY=( $( compgen -W "${glooctl_out}" -- "$cur" ) )
-	fi	
+	fi
 }
 
-__custom_func() 
+__custom_func()
 {
 	case ${last_command} in
 		glooctl_upstream_edit | glooctl_upstream_delete | glooctl_upstream_get)
@@ -120,6 +121,7 @@ func App(version string) *cobra.Command {
 func loadConfig(opts *bootstrap.Options) {
 	configDir, err := util.ConfigDir()
 	if err != nil {
+		fmt.Fprintln(os.Stderr, "Unable to get config directory:", err)
 		defaultConfig(opts)
 		return
 	}
@@ -129,11 +131,14 @@ func loadConfig(opts *bootstrap.Options) {
 		defaultConfig(opts)
 		if os.IsNotExist(err) {
 			saveConfig(opts, configFile)
+		} else {
+			fmt.Fprintln(os.Stderr, "Error reading configuration file:", err)
 		}
 		return
 	}
 	if err := yaml.Unmarshal(data, opts); err != nil {
 		defaultConfig(opts)
+		fmt.Fprintln(os.Stderr, "Unable to parse configuration file:", err)
 	}
 }
 
