@@ -1,6 +1,7 @@
 SOURCES := $(shell find . -name *.go)
 BINARY:=glooctl
 VERSION:=$(shell cat version)
+UNAME := $(shell uname)
 
 build: $(BINARY)
 
@@ -17,10 +18,15 @@ $(BINARY)-linux: $(SOURCES)
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags "-X main.Version=$(VERSION)" -v -o $(BINARY)-Linux-64 *.go
 
 release: $(BINARY)-darwin $(BINARY)-win $(BINARY)-linux
-	mkdir release
+	mkdir -p release
 	tar cvzf release/$(BINARY)-$(VERSION)-macOS-64.tar.gz $(BINARY)-macOS-64
 	tar cvzf release/$(BINARY)-$(VERSION)-Linux-64.tar.gz $(BINARY)-Linux-64
 	zip release/$(BINARY)-$(VERSION)-Windows-64.zip $(BINARY)-Windows-64
+ifeq ($(UNAME),Darwin)
+	cd release && shasum -a 256 * > $(BINARY)-$(VERSION)-checksums.txt
+else
+	cd release && sha256sum > $(BINARY)-$(VERSION)-checksums.txt
+endif
 
 test:
 	go test -cover ./...
