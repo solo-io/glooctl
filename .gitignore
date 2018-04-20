@@ -16,4 +16,6 @@
 .glide/
 
 glooctl
+glooctl.exe
+release
 _temp
