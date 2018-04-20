@@ -27,7 +27,7 @@ const (
 	envoy                 = "ingress"
 	gloo                  = "control-plane"
 	kubeIngressController = "kube-ingress-controller"
-	kubeUpstreamDiscovery = "kube-upstream-discovery"
+	upstreamDiscovery     = "upstream-discovery"
 	funcitonDiscovery     = "function-discovery"
 	upstreamForEvents     = "upstream-for-events"
 	grpcTestService       = "grpc-test-service"
@@ -56,8 +56,8 @@ func TeardownKube(namespace string) error {
 }
 func TeardownKubeE2E(namespace string) error {
 	TeardownKube(namespace)
-	kubectl("delete", "-f", filepath.Join(E2eDirectory(), "kube_resources", "install.yml"))
-	return kubectl("delete", "-f", filepath.Join(E2eDirectory(), "kube_resources", "testing-resources.yml"))
+	kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "install.yml"))
+	return kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "testing-resources.yml"))
 }
 
 func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error {
@@ -69,7 +69,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 			return err
 		}
 	}
-	kubeResourcesDir := filepath.Join(E2eDirectory(), "kube_resources")
+	kubeResourcesDir := filepath.Join(KubeE2eDirectory(), "kube_resources")
 
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
@@ -159,7 +159,7 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 		envoy,
 		gloo,
 		kubeIngressController,
-		kubeUpstreamDiscovery,
+		upstreamDiscovery,
 		funcitonDiscovery,
 	); err != nil {
 		return errors.Wrap(err, "waiting for pods to start")

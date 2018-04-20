@@ -7,8 +7,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
+	internalflags "github.com/solo-io/gloo/internal/control-plane/bootstrap/flags"
 	"github.com/solo-io/gloo/internal/control-plane/eventloop"
-	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/signals"
 
@@ -46,16 +47,21 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	// choose storage options (type, etc) for configs, secrets, and artifacts
-	flags.AddConfigStorageOptionFlags(rootCmd, &opts)
-	flags.AddSecretStorageOptionFlags(rootCmd, &opts)
-	flags.AddFileStorageOptionFlags(rootCmd, &opts)
+	baseOpts := &opts.Options
+	flags.AddConfigStorageOptionFlags(rootCmd, baseOpts)
+	flags.AddSecretStorageOptionFlags(rootCmd, baseOpts)
+	flags.AddFileStorageOptionFlags(rootCmd, baseOpts)
 
 	// storage backends
-	flags.AddFileFlags(rootCmd, &opts)
-	flags.AddKubernetesFlags(rootCmd, &opts)
-	flags.AddConsulFlags(rootCmd, &opts)
-	flags.AddVaultFlags(rootCmd, &opts)
+	flags.AddFileFlags(rootCmd, baseOpts)
+	flags.AddKubernetesFlags(rootCmd, baseOpts)
+	flags.AddConsulFlags(rootCmd, baseOpts)
+	flags.AddCoPilotFlags(rootCmd, baseOpts)
+	flags.AddVaultFlags(rootCmd, baseOpts)
 
 	// xds port
 	rootCmd.PersistentFlags().IntVar(&xdsPort, "xds.port", 8081, "port to serve envoy xDS services. this port should be specified in your envoy's static config")
+
+	// Ingress flags
+	internalflags.AddIngressFlags(rootCmd, &opts)
 }

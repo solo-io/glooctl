@@ -2,6 +2,12 @@
 
 
 [[projects]]
+  name = "cloud.google.com/go"
+  packages = ["compute/metadata"]
+  revision = "29f476ffa9c4cd4fd14336b6043090ac1ad76733"
+  version = "v0.21.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/Azure/go-ansiterm"
   packages = [
@@ -9,6 +15,17 @@
     "winterm"
   ]
   revision = "d6e3b3328b783f23731bc4d058875b0371ff8109"
+
+[[projects]]
+  name = "github.com/Azure/go-autorest"
+  packages = [
+    "autorest",
+    "autorest/adal",
+    "autorest/azure",
+    "autorest/date"
+  ]
+  revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
+  version = "v10.6.2"
 
 [[projects]]
   name = "github.com/Sirupsen/logrus"
@@ -23,8 +40,8 @@
     "aws/credentials",
     "internal/shareddefaults"
   ]
-  revision = "9b0098a71f6d4d473a26ec8ad3c2feaac6eb1da6"
-  version = "v1.13.32"
+  revision = "63f395001dd8f8d48ef82aad68256167e4051652"
+  version = "v1.13.33"
 
 [[projects]]
   name = "github.com/d4l3k/messagediff"
@@ -37,6 +54,12 @@
   packages = ["spew"]
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
+
+[[projects]]
+  name = "github.com/dgrijalva/jwt-go"
+  packages = ["."]
+  revision = "06ea1031745cb8b3dab3f6a236daf2b0aa468b7e"
+  version = "v3.2.0"
 
 [[projects]]
   name = "github.com/docker/docker"
@@ -62,8 +85,7 @@
     "envoy/config/filter/network/http_connection_manager/v2",
     "envoy/type"
   ]
-  revision = "24ec8afcc1ff4a7380f375a8bf1402dff6fd49a7"
-  source = "https://github.com/ilackarms/go-control-plane.git"
+  revision = "5f52d064b948cc3a39451b20055e173597d3885e"
 
 [[projects]]
   name = "github.com/fatih/structs"
@@ -151,6 +173,20 @@
   ]
   revision = "ee43cbb60db7bd22502942cccbc39059117352ab"
   version = "v0.1.0"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/gophercloud/gophercloud"
+  packages = [
+    ".",
+    "openstack",
+    "openstack/identity/v2/tenants",
+    "openstack/identity/v2/tokens",
+    "openstack/identity/v3/tokens",
+    "openstack/utils",
+    "pagination"
+  ]
+  revision = "c38d3807cb5863eb95a857d694f6a4d6b31cde32"
 
 [[projects]]
   branch = "master"
@@ -406,7 +442,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "d8e097734422f7e258c3d595cf85a3068cde00a0"
+  revision = "50747d3f707335113d77d75ec4c05ad2b3c5575c"
 
 [[projects]]
   branch = "master"
@@ -437,6 +473,7 @@
   name = "golang.org/x/net"
   packages = [
     "context",
+    "context/ctxhttp",
     "http/httpguts",
     "http2",
     "http2/hpack",
@@ -449,12 +486,24 @@
 
 [[projects]]
   branch = "master"
+  name = "golang.org/x/oauth2"
+  packages = [
+    ".",
+    "google",
+    "internal",
+    "jws",
+    "jwt"
+  ]
+  revision = "6881fee410a5daf86371371f9ad451b95e168b71"
+
+[[projects]]
+  branch = "master"
   name = "golang.org/x/sys"
   packages = [
     "unix",
     "windows"
   ]
-  revision = "9b006099084093fa764af5878f937ff7dafc6051"
+  revision = "a2a45943ae67364d56c5d7d62dee78cff16c8dc8"
 
 [[projects]]
   name = "golang.org/x/text"
@@ -476,6 +525,23 @@
   ]
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
+
+[[projects]]
+  name = "google.golang.org/appengine"
+  packages = [
+    ".",
+    "internal",
+    "internal/app_identity",
+    "internal/base",
+    "internal/datastore",
+    "internal/log",
+    "internal/modules",
+    "internal/remote_api",
+    "internal/urlfetch",
+    "urlfetch"
+  ]
+  revision = "150dc57a1b433e64154302bdc40b6bb8aefa313a"
+  version = "v1.0.0"
 
 [[projects]]
   branch = "master"
@@ -568,7 +634,7 @@
     "storage/v1alpha1",
     "storage/v1beta1"
   ]
-  revision = "e68f57a7c005317989301f4e8eb654f01f08eb05"
+  revision = "1c973d529bdf4c4f349357ca665fb8e1d13e2d0d"
 
 [[projects]]
   branch = "master"
@@ -580,7 +646,7 @@
     "pkg/client/clientset/clientset/scheme",
     "pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
   ]
-  revision = "07bbbb7a28a34c56bf9d1b192a88cc9b2350095e"
+  revision = "00ae8c993e173ee8232ef3d9f3b00a22442c02d9"
 
 [[projects]]
   branch = "master"
@@ -625,7 +691,7 @@
     "pkg/watch",
     "third_party/forked/golang/reflect"
   ]
-  revision = "800fcb029b488923f14852306f0c98c11d0f360c"
+  revision = "73aa818bbacf185a03468ddc170fb275763dec3d"
 
 [[projects]]
   name = "k8s.io/client-go"
@@ -662,8 +728,14 @@
     "kubernetes/typed/storage/v1alpha1",
     "kubernetes/typed/storage/v1beta1",
     "pkg/version",
+    "plugin/pkg/client/auth",
+    "plugin/pkg/client/auth/azure",
+    "plugin/pkg/client/auth/gcp",
+    "plugin/pkg/client/auth/oidc",
+    "plugin/pkg/client/auth/openstack",
     "rest",
     "rest/watch",
+    "third_party/forked/golang/template",
     "tools/auth",
     "tools/cache",
     "tools/clientcmd",
@@ -678,7 +750,8 @@
     "util/cert",
     "util/flowcontrol",
     "util/homedir",
-    "util/integer"
+    "util/integer",
+    "util/jsonpath"
   ]
   revision = "78700dec6369ba22221b72770783300f143df150"
   version = "v6.0.0"

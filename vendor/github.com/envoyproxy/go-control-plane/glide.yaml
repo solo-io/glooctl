@@ -14,11 +14,10 @@ import:
 - package: google.golang.org/grpc
   version: ^1.7.2
 - package: github.com/lyft/protoc-gen-validate
+  version: cae364899cd8c08b83bfdcabf4ce4dd4a68ca6da
 - package: istio.io/gogo-genproto
 - package: github.com/gogo/googleapis
 - package: github.com/envoyproxy/data-plane-api
-  vcs: git
-  repo: https://github.com/ilackarms/data-plane-api
-  version: 3c2d865ada7fa5cdba8c31cbd9eefbd96bace485
+  version: 7c652caedfa1f90d9994b3240f0058834ed07fff
 - package: github.com/sirupsen/logrus
   version: ^1.0.4
