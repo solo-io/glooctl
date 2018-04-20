@@ -44,15 +44,9 @@ type GrpcJsonTranscoder struct {
 	// `JsonPrintOptions <https://developers.google.com/protocol-buffers/docs/reference/cpp/
 	// google.protobuf.util.json_util#JsonPrintOptions>`_.
 	PrintOptions *GrpcJsonTranscoder_PrintOptions `protobuf:"bytes,3,opt,name=print_options,json=printOptions" json:"print_options,omitempty"`
-	// Whether to skip recalculating the route after the
-	// outgoing headers have been transformed to the match the upstream gRPC service
-	// If set to true, Envoy will determine the cluster to
-	// route to based on the route for the incoming request
-	// Note: this will require routes to be added to match
-	// the incoming HTTP requests rather than the outgoing
-	// requests (after transcoding). This means routes that
-	// point directly to gRPC services cannot be reused for
-	// transcoded requests. Defaults to false.
+	// Whether to keep the incoming request route after the outgoing headers have been transformed to
+	// the match the upstream gRPC service. Note: This means that routes for gRPC services that are
+	// not transcoded cannot be used in combination with *match_incoming_request_route*.
 	MatchIncomingRequestRoute bool `protobuf:"varint,5,opt,name=match_incoming_request_route,json=matchIncomingRequestRoute,proto3" json:"match_incoming_request_route,omitempty"`
 }
 

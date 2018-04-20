@@ -5,13 +5,13 @@ import (
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
 
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
 	"github.com/solo-io/gloo/internal/control-plane/translator"
 	"github.com/solo-io/gloo/internal/control-plane/xds"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
@@ -34,8 +34,14 @@ type eventLoop struct {
 	startFuncs []func() error
 }
 
+func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
+	var cfg translator.TranslatorConfig
+	cfg.IngressBindAddress = opts.IngressOptions.BindAddress
+	return cfg
+}
+
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
-	store, err := configstorage.Bootstrap(opts)
+	store, err := configstorage.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create config store client")
 	}
@@ -45,7 +51,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrapf(err, "failed to create config watcher")
 	}
 
-	secretWatcher, err := secretwatchersetup.Bootstrap(opts)
+	secretWatcher, err := secretwatchersetup.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to set up secret watcher")
 	}
@@ -62,7 +68,7 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 
 	plugs := plugins.RegisteredPlugins()
 
-	trans := translator.NewTranslator(plugs)
+	trans := translator.NewTranslator(translatorConfig(opts), plugs)
 
 	e := &eventLoop{
 		configWatcher:   cfgWatcher,
@@ -75,16 +81,19 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 	}
 
 	for _, endpointDiscoveryInitializer := range plugins.EndpointDiscoveryInitializers() {
-		e.startFuncs = append(e.startFuncs, func() error {
-			discovery, err := endpointDiscoveryInitializer(opts)
-			if err != nil {
-				log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
-					"upstream type", err)
+		startfunc := func(edi plugins.EndpointDiscoveryInitFunc) func() error {
+			return func() error {
+				discovery, err := edi(opts.Options)
+				if err != nil {
+					log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
+						"upstream type", err)
+					return nil
+				}
+				e.endpointDiscoveries = append(e.endpointDiscoveries, discovery)
 				return nil
 			}
-			e.endpointDiscoveries = append(e.endpointDiscoveries, discovery)
-			return nil
-		})
+		}(endpointDiscoveryInitializer)
+		e.startFuncs = append(e.startFuncs, startfunc)
 	}
 	return e, nil
 }
@@ -104,7 +113,7 @@ func getDependenciesFor(translatorPlugins []plugins.TranslatorPlugin) func(cfg *
 }
 
 func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
-	store, err := artifactstorage.Bootstrap(opts)
+	store, err := artifactstorage.Bootstrap(opts.Options)
 	if err != nil {
 		return nil, errors.Wrap(err, "creating file storage client")
 	}
@@ -159,9 +168,9 @@ func (e *eventLoop) Run(stop <-chan struct{}) error {
 			go e.secretWatcher.TrackSecrets(secretRefs)
 			go e.fileWatcher.TrackFiles(fileRefs)
 			for _, discovery := range e.endpointDiscoveries {
-				go func() {
-					discovery.TrackUpstreams(cfg.Upstreams)
-				}()
+				go func(epd endpointdiscovery.Interface) {
+					epd.TrackUpstreams(cfg.Upstreams)
+				}(discovery)
 			}
 			sync(current)
 		case secrets := <-e.secretWatcher.Secrets():
@@ -224,14 +233,14 @@ func (e *eventLoop) updateXds(cache *cache) {
 func (e *eventLoop) endpointDiscovery() <-chan endpointTuple {
 	aggregatedEndpointsChan := make(chan endpointTuple)
 	for _, ed := range e.endpointDiscoveries {
-		go func() {
-			for endpoints := range ed.Endpoints() {
+		go func(endpointDisc endpointdiscovery.Interface) {
+			for endpoints := range endpointDisc.Endpoints() {
 				aggregatedEndpointsChan <- endpointTuple{
 					endpoints:    endpoints,
-					discoveredBy: ed,
+					discoveredBy: endpointDisc,
 				}
 			}
-		}()
+		}(ed)
 	}
 	return aggregatedEndpointsChan
 }

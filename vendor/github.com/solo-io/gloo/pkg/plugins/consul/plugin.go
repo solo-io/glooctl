@@ -16,12 +16,10 @@ func init() {
 }
 
 func createEndpointDiscovery(opts bootstrap.Options) (endpointdiscovery.Interface, error) {
-	kubeConfig := opts.KubeOptions.KubeConfig
-	masterUrl := opts.KubeOptions.MasterURL
-	resyncDuration := opts.ConfigStorageOptions.SyncFrequency
-	disc, err := NewEndpointDiscovery(masterUrl, kubeConfig, resyncDuration)
+	cfg := opts.ConsulOptions.ToConsulConfig()
+	disc, err := newEndpointController(cfg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to start Kubernetes endpoint discovery")
+		return nil, errors.Wrap(err, "failed to start consul endpoint discovery")
 	}
 	return disc, err
 }
@@ -30,7 +28,7 @@ type Plugin struct{}
 
 const (
 	// define Upstream type name
-	UpstreamTypeKube = "kubernetes"
+	UpstreamTypeConsul = "consul"
 )
 
 func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
@@ -38,15 +36,15 @@ func (p *Plugin) GetDependencies(_ *v1.Config) *plugins.Dependencies {
 }
 
 func (p *Plugin) ProcessUpstream(_ *plugins.UpstreamPluginParams, in *v1.Upstream, out *envoyapi.Cluster) error {
-	if in.Type != UpstreamTypeKube {
+	if in.Type != UpstreamTypeConsul {
 		return nil
 	}
 	// decode does validation for us
 	if _, err := DecodeUpstreamSpec(in.Spec); err != nil {
-		return errors.Wrap(err, "invalid kubernetes upstream spec")
+		return errors.Wrap(err, "invalid consul upstream spec")
 	}
 
-	// just configure the cluster to use EDS:ADS and call it a day
+	// consul upstreams use EDS
 	out.Type = envoyapi.Cluster_EDS
 	out.EdsClusterConfig = &envoyapi.Cluster_EdsClusterConfig{
 		EdsConfig: &envoycore.ConfigSource{

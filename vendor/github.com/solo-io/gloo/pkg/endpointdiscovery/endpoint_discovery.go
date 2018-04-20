@@ -23,3 +23,10 @@ type Interface interface {
 	// should show valid if the most recent update passed, otherwise a useful error
 	Error() <-chan error
 }
+
+func Less(e1, e2 Endpoint) bool {
+	if e1.Address < e2.Address {
+		return true
+	}
+	return e1.Port < e2.Port
+}

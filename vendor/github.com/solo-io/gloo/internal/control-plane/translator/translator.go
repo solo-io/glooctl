@@ -44,8 +44,13 @@ const (
 	routerFilter  = "envoy.router"
 )
 
+type TranslatorConfig struct {
+	IngressBindAddress string
+}
+
 type Translator struct {
 	plugins []plugins.TranslatorPlugin
+	config  TranslatorConfig
 }
 
 // all built-in plugins should go here
@@ -55,7 +60,15 @@ var corePlugins = []plugins.TranslatorPlugin{
 	&service.Plugin{},
 }
 
-func NewTranslator(translatorPlugins []plugins.TranslatorPlugin) *Translator {
+func addDefaults(cfg TranslatorConfig) TranslatorConfig {
+	if cfg.IngressBindAddress == "" {
+		cfg.IngressBindAddress = "::"
+	}
+
+	return cfg
+}
+
+func NewTranslator(cfg TranslatorConfig, translatorPlugins []plugins.TranslatorPlugin) *Translator {
 	translatorPlugins = append(corePlugins, translatorPlugins...)
 	// special routing must be done for upstream plugins that support functions
 	var functionPlugins []plugins.FunctionPlugin
@@ -81,6 +94,7 @@ func NewTranslator(translatorPlugins []plugins.TranslatorPlugin) *Translator {
 
 	return &Translator{
 		plugins: translatorPlugins,
+		config:  addDefaults(cfg),
 	}
 }
 
@@ -576,7 +590,7 @@ func (t *Translator) constructHttpListener(name string, port uint32, filters []e
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  "::", // bind all
+					Address:  t.config.IngressBindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
@@ -625,10 +639,11 @@ func (t *Translator) constructHttpsListener(name string,
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  "0.0.0.0", // bind all
+					Address:  t.config.IngressBindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
+					Ipv4Compat: true,
 				},
 			},
 		},
