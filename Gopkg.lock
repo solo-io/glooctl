@@ -24,8 +24,8 @@
     "autorest/azure",
     "autorest/date"
   ]
-  revision = "1ff28809256a84bb6966640ff3d0371af82ccba4"
-  version = "v10.6.2"
+  revision = "fc3b03a2d2d1f43fad3007038bd16f044f870722"
+  version = "v9.10.0"
 
 [[projects]]
   name = "github.com/Sirupsen/logrus"
@@ -442,7 +442,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "50747d3f707335113d77d75ec4c05ad2b3c5575c"
+  revision = "b43340853fa7dbff8f530357e67d9956c1508abd"
 
 [[projects]]
   branch = "master"
@@ -759,6 +759,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "8b97ccecc7ddbeac3c66673e000bc049a7c0faaf3f05bc10c2f0c753aff7321c"
+  inputs-digest = "5ff47721e3a1bd15ce12fa69a6e95e0cca92f166ac41c07386005b10fd48b1ba"
   solver-name = "gps-cdcl"
   solver-version = 1

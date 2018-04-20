@@ -24,7 +24,7 @@ import (
 )
 
 var (
-	expectedFile = file{
+	expectedFile = File{
 		ClientID:                "client-id-123",
 		ClientSecret:            "client-secret-456",
 		SubscriptionID:          "sub-id-789",
@@ -38,23 +38,26 @@ var (
 	}
 )
 
-func TestNewAuthorizerFromFile(t *testing.T) {
+func TestGetClientSetup(t *testing.T) {
 	os.Setenv("AZURE_AUTH_LOCATION", filepath.Join(getCredsPath(), "credsutf16le.json"))
-	authorizer, err := NewAuthorizerFromFile("https://management.azure.com")
-	if err != nil || authorizer == nil {
-		t.Logf("NewAuthorizerFromFile failed, got error %v", err)
+	setup, err := GetClientSetup("https://management.azure.com")
+	if err != nil {
+		t.Logf("GetClientSetup failed, got error %v", err)
 		t.Fail()
 	}
-}
 
-func TestNewAuthorizerFromEnvironment(t *testing.T) {
-	os.Setenv("AZURE_TENANT_ID", expectedFile.TenantID)
-	os.Setenv("AZURE_CLIENT_ID", expectedFile.ClientID)
-	os.Setenv("AZURE_CLIENT_SECRET", expectedFile.ClientSecret)
-	authorizer, err := NewAuthorizerFromEnvironment()
+	if setup.BaseURI != "https://management.azure.com/" {
+		t.Logf("auth.BaseURI not set correctly, expected 'https://management.azure.com/', got '%s'", setup.BaseURI)
+		t.Fail()
+	}
 
-	if err != nil || authorizer == nil {
-		t.Logf("NewAuthorizerFromFile failed, got error %v", err)
+	if !reflect.DeepEqual(expectedFile, setup.File) {
+		t.Logf("auth.File not set correctly, expected %v, got %v", expectedFile, setup.File)
+		t.Fail()
+	}
+
+	if setup.BearerAuthorizer == nil {
+		t.Log("auth.Authorizer not set correctly, got nil")
 		t.Fail()
 	}
 }
@@ -77,7 +80,7 @@ func TestDecodeAndUnmarshal(t *testing.T) {
 			t.Logf("error decoding file '%s': %s", test, err)
 			t.Fail()
 		}
-		var got file
+		var got File
 		err = json.Unmarshal(decoded, &got)
 		if err != nil {
 			t.Logf("error unmarshaling file '%s': %s", test, err)

@@ -24,6 +24,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -147,7 +148,7 @@ func TestServicePrincipalTokenRefreshUsesPOST(t *testing.T) {
 	}
 }
 
-func TestServicePrincipalTokenFromMSIRefreshUsesGET(t *testing.T) {
+func TestServicePrincipalTokenFromMSIRefreshUsesPOST(t *testing.T) {
 	resource := "https://resource"
 	cb := func(token Token) error { return nil }
 
@@ -164,8 +165,8 @@ func TestServicePrincipalTokenFromMSIRefreshUsesGET(t *testing.T) {
 		(func() SendDecorator {
 			return func(s Sender) Sender {
 				return SenderFunc(func(r *http.Request) (*http.Response, error) {
-					if r.Method != "GET" {
-						t.Fatalf("adal: ServicePrincipalToken#Refresh did not correctly set HTTP method -- expected %v, received %v", "GET", r.Method)
+					if r.Method != "POST" {
+						t.Fatalf("adal: ServicePrincipalToken#Refresh did not correctly set HTTP method -- expected %v, received %v", "POST", r.Method)
 					}
 					if h := r.Header.Get("Metadata"); h != "true" {
 						t.Fatalf("adal: ServicePrincipalToken#Refresh did not correctly set Metadata header for MSI")
@@ -444,12 +445,12 @@ func TestServicePrincipalTokenRefreshUnmarshals(t *testing.T) {
 	err := spt.Refresh()
 	if err != nil {
 		t.Fatalf("adal: ServicePrincipalToken#Refresh returned an unexpected error (%v)", err)
-	} else if spt.token.AccessToken != "accessToken" ||
-		spt.token.ExpiresIn != "3600" ||
-		spt.token.ExpiresOn != expiresOn ||
-		spt.token.NotBefore != expiresOn ||
-		spt.token.Resource != "resource" ||
-		spt.token.Type != "Bearer" {
+	} else if spt.AccessToken != "accessToken" ||
+		spt.ExpiresIn != "3600" ||
+		spt.ExpiresOn != expiresOn ||
+		spt.NotBefore != expiresOn ||
+		spt.Resource != "resource" ||
+		spt.Type != "Bearer" {
 		t.Fatalf("adal: ServicePrincipalToken#Refresh failed correctly unmarshal the JSON -- expected %v, received %v",
 			j, *spt)
 	}
@@ -457,7 +458,7 @@ func TestServicePrincipalTokenRefreshUnmarshals(t *testing.T) {
 
 func TestServicePrincipalTokenEnsureFreshRefreshes(t *testing.T) {
 	spt := newServicePrincipalToken()
-	expireToken(&spt.token)
+	expireToken(&spt.Token)
 
 	body := mocks.NewBody(newTokenJSON("test", "test"))
 	resp := mocks.NewResponseWithBodyAndStatus(body, http.StatusOK, "OK")
@@ -485,7 +486,7 @@ func TestServicePrincipalTokenEnsureFreshRefreshes(t *testing.T) {
 
 func TestServicePrincipalTokenEnsureFreshSkipsIfFresh(t *testing.T) {
 	spt := newServicePrincipalToken()
-	setTokenToExpireIn(&spt.token, 1000*time.Second)
+	setTokenToExpireIn(&spt.Token, 1000*time.Second)
 
 	f := false
 	c := mocks.NewSender()
@@ -552,7 +553,7 @@ func TestRefreshCallbackErrorPropagates(t *testing.T) {
 // This demonstrates the danger of manual token without a refresh token
 func TestServicePrincipalTokenManualRefreshFailsWithoutRefresh(t *testing.T) {
 	spt := newServicePrincipalTokenManual()
-	spt.token.RefreshToken = ""
+	spt.RefreshToken = ""
 	err := spt.Refresh()
 	if err == nil {
 		t.Fatalf("adal: ServicePrincipalToken#Refresh should have failed with a ManualTokenSecret without a refresh token")
@@ -611,12 +612,26 @@ func TestNewServicePrincipalTokenFromMSIWithUserAssignedID(t *testing.T) {
 }
 
 func TestGetVMEndpoint(t *testing.T) {
-	endpoint, err := GetMSIVMEndpoint()
+	tempSettingsFile, err := ioutil.TempFile("", "ManagedIdentity-Settings")
+	if err != nil {
+		t.Fatal("Couldn't write temp settings file")
+	}
+	defer os.Remove(tempSettingsFile.Name())
+
+	settingsContents := []byte(`{
+		"url": "http://msiendpoint/"
+	}`)
+
+	if _, err := tempSettingsFile.Write(settingsContents); err != nil {
+		t.Fatal("Couldn't fill temp settings file")
+	}
+
+	endpoint, err := getMSIVMEndpoint(tempSettingsFile.Name())
 	if err != nil {
 		t.Fatal("Coudn't get VM endpoint")
 	}
 
-	if endpoint != msiEndpoint {
+	if endpoint != "http://msiendpoint/" {
 		t.Fatal("Didn't get correct endpoint")
 	}
 }

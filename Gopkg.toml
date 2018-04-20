@@ -48,3 +48,7 @@
 [[constraint]]
   name = "gopkg.in/AlecAivazis/survey.v1"
   version = "1.5.3"
+
+[[override]]
+  name = "github.com/Azure/go-autorest"
+  version = "v9.10.0"
