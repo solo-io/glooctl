@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
-	storage "github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/editor"
 	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/solo-io/glooctl/pkg/util"
@@ -68,5 +68,8 @@ func runEdit(sc storage.Interface, name string) (*v1.Upstream, error) {
 		return nil, errors.Wrap(err, "unable to edit upstream")
 	}
 	updated, err := parseFile(f.Name())
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse upstream")
+	}
 	return sc.V1().Upstreams().Update(updated)
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
-	storage "github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	psecret "github.com/solo-io/glooctl/pkg/secret"
 	"github.com/solo-io/glooctl/pkg/upstream"
@@ -60,7 +60,8 @@ func createCmd(opts *bootstrap.Options) *cobra.Command {
 func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *upstream.Options) (*v1.Upstream, error) {
 	var u *v1.Upstream
 	if opts.Filename != "" {
-		u, err := parseFile(opts.Filename)
+		var err error
+		u, err = parseFile(opts.Filename)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to load Upstream from %s", opts.Filename)
 		}

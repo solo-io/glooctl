@@ -69,5 +69,8 @@ func runEdit(sc storage.Interface, name string) (*v1.VirtualHost, error) {
 		return nil, errors.Wrap(err, "unable to edit virtualhost")
 	}
 	updated, err := parseFile(f.Name())
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse virtual host "+name)
+	}
 	return sc.V1().VirtualHosts().Update(updated)
 }

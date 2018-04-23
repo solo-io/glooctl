@@ -57,7 +57,7 @@ func runUpdate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 	var existing *v1.VirtualHost
 	if opts.Filename != "" {
 		var err error
-		vh, err := parseFile(opts.Filename)
+		vh, err = parseFile(opts.Filename)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to load virtual host from %s", opts.Filename)
 		}
