@@ -409,7 +409,7 @@
   revision = "ed9870dad3170c0b25ab9b11830cc57c3a7798fb"
 
 [[projects]]
-  branch = "master"
+  branch = "cors"
   name = "github.com/solo-io/gloo"
   packages = [
     "internal/control-plane/filewatcher",
@@ -442,7 +442,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "b43340853fa7dbff8f530357e67d9956c1508abd"
+  revision = "4d68fe38071c1861f4650d80267d53a3da9db017"
 
 [[projects]]
   branch = "master"
