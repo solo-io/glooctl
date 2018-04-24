@@ -2,6 +2,7 @@ package route
 
 import (
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/gogo/protobuf/types"
@@ -25,6 +26,7 @@ var (
 		{"Set max retries", setMaxRetries},
 		{"Set timeout", setTimeout},
 		{"Rewrite host", rewriteHost},
+		{"CORS policy", corsPolicy},
 		//{"Transformation", transformation},
 	}
 )
@@ -155,6 +157,81 @@ func rewriteHost(s *types.Struct) error {
 	var hostRewrite string
 	survey.AskOne(&survey.Input{Message: "Please enter new host name to rewrite host header:"}, &hostRewrite, survey.Required)
 	spec.HostRewrite = hostRewrite
+	addAll(s, core.EncodeRouteExtensionSpec(spec))
+	return nil
+}
+
+func corsPolicy(s *types.Struct) error {
+	spec, err := core.DecodeRouteExtensions(s)
+	if err != nil {
+		return errors.Wrap(err, "unable to decode core route extension")
+	}
+
+	questions := []*survey.Question{
+		{
+			Name: "origins",
+			Prompt: &survey.Input{
+				Message: "Please enter allowed origin (use comma to separate if more than one): ",
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name:   "methods",
+			Prompt: &survey.Input{Message: "Please enter allowed HTTP methods: "},
+		},
+		{
+			Name:   "allowHeaders",
+			Prompt: &survey.Input{Message: "Please enter allowed HTTP headers: "},
+		},
+		{
+			Name:   "exposeHeaders",
+			Prompt: &survey.Input{Message: "Please enter exposed HTTP headers: "},
+		},
+		{
+			Name:   "maxAge",
+			Prompt: &survey.Input{Message: "Please enter maximum age for cache (seconds): "},
+			Validate: func(val interface{}) error {
+				s, ok := val.(string)
+				if !ok || s == "" {
+					return nil
+				}
+				i, err := strconv.Atoi(s)
+				if err != nil || i < 0 {
+					return errors.New("maximum age must be a positive integer or empty")
+				}
+				return nil
+			},
+		},
+		{
+			Name:   "credentials",
+			Prompt: &survey.Confirm{Message: "Allow requests with credentials? "},
+		},
+	}
+	answers := struct {
+		Origins       string
+		Methods       string
+		AllowHeaders  string
+		ExposeHeaders string
+		MaxAge        int
+		Credentials   bool
+	}{}
+	if err := survey.Ask(questions, &answers); err != nil {
+		return err
+	}
+
+	origins := strings.Split(answers.Origins, ",")
+	for i, s := range origins {
+		origins[i] = strings.TrimSpace(s)
+	}
+	spec.Cors = &core.CorsPolicy{
+		AllowOrigin:      origins,
+		AllowMethods:     answers.Methods,
+		AllowHeaders:     answers.AllowHeaders,
+		ExposeHeaders:    answers.ExposeHeaders,
+		MaxAge:           time.Duration(answers.MaxAge) * time.Second,
+		AllowCredentials: answers.Credentials,
+	}
+
 	addAll(s, core.EncodeRouteExtensionSpec(spec))
 	return nil
 }
