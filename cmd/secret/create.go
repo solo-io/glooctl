@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	flagName     = "name"
+	flagFilename = "filename"
+)
+
 func createCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
@@ -54,14 +59,14 @@ or provide them directly using --access-key-id and
 	flags := cmd.Flags()
 	flags.BoolVarP(&opts.UseEnv, "env", "e", false,
 		"use environment variables AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY to create secret")
-	flags.StringVar(&opts.Name, "name", "", "name for secret")
-	flags.StringVarP(&opts.Filename, "filename", "f",
+	flags.StringVar(&opts.Name, flagName, "", "name for secret")
+	flags.StringVarP(&opts.Filename, flagFilename, "f",
 		"", "use credential file and default profile (defaults to ~/.aws/credentials)")
 	flags.StringVar(&opts.KeyID, "access-key-id", "", "AWS access key ID")
 	flags.StringVar(&opts.SecretKey, "secret-access-key", "", "AWS secret access key")
 
-	cmd.MarkFlagRequired("name")
-	cmd.MarkFlagFilename("filename")
+	cmd.MarkFlagRequired(flagName)
+	cmd.MarkFlagFilename(flagFilename)
 
 	return cmd
 }
@@ -86,11 +91,11 @@ func createGCF(storageOpts *bootstrap.Options) *cobra.Command {
 		},
 	}
 	flags := cmd.Flags()
-	flags.StringVar(&opts.Name, "name", "", "name for secret")
-	cmd.MarkFlagRequired("name")
-	flags.StringVarP(&opts.Filename, "filename", "f", "", "service account key file")
-	cmd.MarkFlagFilename("filename")
-	cmd.MarkFlagRequired("filename")
+	flags.StringVar(&opts.Name, flagName, "", "name for secret")
+	cmd.MarkFlagRequired(flagName)
+	flags.StringVarP(&opts.Filename, flagFilename, "f", "", "service account key file")
+	cmd.MarkFlagFilename(flagFilename)
+	cmd.MarkFlagRequired(flagFilename)
 	return cmd
 }
 
@@ -113,8 +118,8 @@ func createCertificate(storageOpts *bootstrap.Options) *cobra.Command {
 		},
 	}
 	flags := cmd.Flags()
-	flags.StringVar(&opts.Name, "name", "", "name for secret")
-	cmd.MarkFlagRequired("name")
+	flags.StringVar(&opts.Name, flagName, "", "name for secret")
+	cmd.MarkFlagRequired(flagName)
 	flags.StringVarP(&opts.CAChain, "ca-chain", "c", "", "certificate authority chain certificate")
 	cmd.MarkFlagFilename("ca-chain")
 	cmd.MarkFlagRequired("ca-chain")

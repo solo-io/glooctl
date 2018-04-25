@@ -5,14 +5,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const (
-	flagFilename = "filename"
-)
-
-func SecretCmd(opts *bootstrap.Options) *cobra.Command {
+// Cmd command for managing secrets in Gloo
+func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secret",
-		Short: "manage secrets for upstreams in gloo",
+		Short: "manage secrets used in gloo",
 	}
 	cmd.AddCommand(createCmd(opts), deleteCmd(opts), getCmd(opts))
 	return cmd
