@@ -361,54 +361,24 @@ func prefixRewrite(r *v1.Route) error {
 }
 
 func destination(r *v1.Route, upstreams []*v1.Upstream) error {
-	// check if we want to update destinations
-	old := Destinations(r)
-	if len(old) != 0 {
-		printDestination(old)
-		replace := false
-		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing destination?"}, &replace, nil); err != nil {
-			return err
-		}
-		if !replace {
-			return nil
-		}
+	replace, err := askReplaceDestination(r)
+	if err != nil {
+		return err
+	}
+	if !replace {
+		return nil
 	}
 
-	upstreamNames := make([]string, len(upstreams))
-	for i, u := range upstreams {
-		upstreamNames[i] = u.Name
-	}
 	var destinations []*Destination
 	ask := true
 	for ask {
-		var name string
-		survey.AskOne(&survey.Select{
-			Message: "Please select an upstream:",
-			Options: upstreamNames,
-		}, &name, survey.Required)
-
-		var selectedUpstream *v1.Upstream
-		for _, u := range upstreams {
-			if u.Name == name {
-				selectedUpstream = u
-				break
-			}
+		d, err := askDestination(upstreams)
+		if err != nil {
+			return err
 		}
-		if len(selectedUpstream.Functions) == 0 {
-			destinations = append(destinations, &Destination{Upstream: name})
-		} else {
-			functionNames := make([]string, len(selectedUpstream.Functions))
-			for i, f := range selectedUpstream.Functions {
-				functionNames[i] = f.Name
-			}
-			var fname string
-			survey.AskOne(&survey.Select{
-				Message: "Please select a function:",
-				Options: functionNames,
-			}, &fname, survey.Required)
-			destinations = append(destinations, &Destination{Upstream: name, Function: fname})
-		}
-		if err := survey.AskOne(&survey.Confirm{Message: "Does the route have more destinations?"}, &ask, nil); err != nil {
+		destinations = append(destinations, d)
+		err = survey.AskOne(&survey.Confirm{Message: "Does the route have more destinations?"}, &ask, nil)
+		if err != nil {
 			return err
 		}
 	}
@@ -423,16 +393,19 @@ func destination(r *v1.Route, upstreams []*v1.Upstream) error {
 		for i, d := range destinations {
 			var weight int
 			q := fmt.Sprintf("Please enter a weight for destination '%s' >", d)
-			survey.AskOne(&survey.Input{Message: q}, &weight, func(val interface{}) error {
-				i, err := strconv.Atoi(val.(string))
+			err := survey.AskOne(&survey.Input{Message: q}, &weight, func(val interface{}) error {
+				w, err := strconv.Atoi(val.(string))
 				if err != nil {
 					return errors.New("weight must be an integer greather than 0")
 				}
-				if i <= 0 {
+				if w <= 0 {
 					return errors.New("weight must be an integer greater than 0")
 				}
 				return nil
 			})
+			if err != nil {
+				return err
+			}
 			wd[i] = &v1.WeightedDestination{
 				Destination: toAPIDestination(d),
 				Weight:      uint32(weight),
@@ -441,6 +414,60 @@ func destination(r *v1.Route, upstreams []*v1.Upstream) error {
 		r.MultipleDestinations = wd
 	}
 	return nil
+}
+
+func askReplaceDestination(r *v1.Route) (bool, error) {
+	// check if we want to update destinations
+	old := Destinations(r)
+	if len(old) != 0 {
+		printDestination(old)
+		replace := false
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing destination?"}, &replace, nil); err != nil {
+			return false, err
+		}
+		return replace, nil
+	}
+	// if we don't have any existing destination we always replace
+	return true, nil
+}
+
+func askDestination(upstreams []*v1.Upstream) (*Destination, error) {
+	upstreamNames := make([]string, len(upstreams))
+	for i, u := range upstreams {
+		upstreamNames[i] = u.Name
+	}
+
+	var name string
+	err := survey.AskOne(&survey.Select{
+		Message: "Please select an upstream:",
+		Options: upstreamNames,
+	}, &name, survey.Required)
+	if err != nil {
+		return nil, err
+	}
+	var selectedUpstream *v1.Upstream
+	for _, u := range upstreams {
+		if u.Name == name {
+			selectedUpstream = u
+			break
+		}
+	}
+	if len(selectedUpstream.Functions) == 0 {
+		return &Destination{Upstream: name}, nil
+	}
+	functionNames := make([]string, len(selectedUpstream.Functions))
+	for i, f := range selectedUpstream.Functions {
+		functionNames[i] = f.Name
+	}
+	var fname string
+	err = survey.AskOne(&survey.Select{
+		Message: "Please select a function:",
+		Options: functionNames,
+	}, &fname, survey.Required)
+	if err != nil {
+		return nil, err
+	}
+	return &Destination{Upstream: name, Function: fname}, nil
 }
 
 func printDestination(list []Destination) {
