@@ -10,7 +10,8 @@ var (
 	cliOpts = &upstream.Options{}
 )
 
-func UpstreamCmd(opts *bootstrap.Options) *cobra.Command {
+// Cmd command to manage upstreams
+func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upstream",
 		Short: "manage upstreams",
