@@ -8,12 +8,11 @@ import (
 
 	"github.com/olekukonko/tablewriter"
 
-	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/protoutil"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/route"
+	"github.com/solo-io/glooctl/pkg/util"
 )
 
 type FunctionWithUpstream struct {
@@ -21,6 +20,8 @@ type FunctionWithUpstream struct {
 	Function *v1.Function
 }
 
+// Get gets a list of functions defined in the system and prints them
+// in the format specified by output
 func Get(sc storage.Interface, output, tplt string) error {
 	upstreams, err := sc.V1().Upstreams().List()
 	if err != nil {
@@ -43,9 +44,9 @@ func Get(sc storage.Interface, output, tplt string) error {
 	}
 	switch output {
 	case "yaml":
-		return printYAMLList(functions)
+		return util.PrintYAMLList(toV1Functions(functions), os.Stdout)
 	case "json":
-		return printJSONList(functions)
+		return util.PrintJSONList(toV1Functions(functions), os.Stdout)
 	case "template":
 		return PrintTemplate(functions, tplt, os.Stdout)
 	default:
@@ -58,32 +59,15 @@ func Get(sc storage.Interface, output, tplt string) error {
 	return nil
 }
 
-func printYAMLList(list []FunctionWithUpstream) error {
-	for _, f := range list {
-		jsn, err := protoutil.Marshal(f.Function)
-		if err != nil {
-			return errors.Wrap(err, "unable to marshal")
-		}
-		b, err := yaml.JSONToYAML(jsn)
-		if err != nil {
-			return errors.Wrap(err, "unable to convert to YAML")
-		}
-		fmt.Println(string(b))
+func toV1Functions(list []FunctionWithUpstream) []*v1.Function {
+	functions := make([]*v1.Function, len(list))
+	for i, f := range list {
+		functions[i] = f.Function
 	}
-	return nil
+	return functions
 }
 
-func printJSONList(list []FunctionWithUpstream) error {
-	for _, f := range list {
-		b, err := protoutil.Marshal(f.Function)
-		if err != nil {
-			return errors.Wrap(err, "unable to conver to JSON")
-		}
-		fmt.Println(string(b))
-	}
-	return nil
-}
-
+// PrintTemplate prints functions using the provided Go template to the io.Writer
 func PrintTemplate(list []FunctionWithUpstream, tplt string, w io.Writer) error {
 	t, err := template.New("output").Parse(tplt)
 	if err != nil {
@@ -92,6 +76,7 @@ func PrintTemplate(list []FunctionWithUpstream, tplt string, w io.Writer) error 
 	return t.Execute(w, list)
 }
 
+// PrintTableWithRoutes prints functions and routes mapped to them to the io.Writer
 func PrintTableWithRoutes(list []FunctionWithUpstream, w io.Writer, virtualhosts []*v1.VirtualHost) {
 	routeMap := routes(virtualhosts)
 	table := tablewriter.NewWriter(w)
