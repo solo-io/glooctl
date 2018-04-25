@@ -119,13 +119,15 @@ func setMaxRetries(s *types.Struct) error {
 		return errors.Wrap(err, "unable to decode core route extension")
 	}
 	var retries int
-	survey.AskOne(&survey.Input{Message: "Please enter maximum number of retries:"}, &retries, func(val interface{}) error {
-		_, err := strconv.Atoi(val.(string))
-		if err != nil {
+	err = survey.AskOne(&survey.Input{Message: "Please enter maximum number of retries:"}, &retries, func(val interface{}) error {
+		if _, errConvert := strconv.Atoi(val.(string)); errConvert != nil {
 			return errors.New("maximum number of retries must be a positive integer")
 		}
 		return nil
 	})
+	if err != nil {
+		return errors.Wrap(err, "unable to get maximum retries")
+	}
 	spec.MaxRetries = uint32(retries)
 	addAll(s, core.EncodeRouteExtensionSpec(spec))
 	return nil
@@ -137,13 +139,16 @@ func setTimeout(s *types.Struct) error {
 		return errors.Wrap(err, "unable to decode core route extension")
 	}
 	var timeout int
-	survey.AskOne(&survey.Input{Message: "Please enter request timeout in seconds:"}, &timeout, func(val interface{}) error {
-		_, err := strconv.Atoi(val.(string))
-		if err != nil {
+	err = survey.AskOne(&survey.Input{Message: "Please enter request timeout in seconds:"}, &timeout, func(val interface{}) error {
+		_, errConvert := strconv.Atoi(val.(string))
+		if errConvert != nil {
 			return errors.New("timeout must be a positive integer")
 		}
 		return nil
 	})
+	if err != nil {
+		return errors.Wrap(err, "unable to get timetout")
+	}
 	spec.Timeout = time.Duration(timeout) * time.Second
 	addAll(s, core.EncodeRouteExtensionSpec(spec))
 	return nil
@@ -155,7 +160,10 @@ func rewriteHost(s *types.Struct) error {
 		return errors.Wrap(err, "unable to decode core route extension")
 	}
 	var hostRewrite string
-	survey.AskOne(&survey.Input{Message: "Please enter new host name to rewrite host header:"}, &hostRewrite, survey.Required)
+	err = survey.AskOne(&survey.Input{Message: "Please enter new host name to rewrite host header:"}, &hostRewrite, survey.Required)
+	if err != nil {
+		return errors.Wrap(err, "unable to get rewrite host header")
+	}
 	spec.HostRewrite = hostRewrite
 	addAll(s, core.EncodeRouteExtensionSpec(spec))
 	return nil

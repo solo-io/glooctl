@@ -85,34 +85,34 @@ func updateRoutes(sc storage.Interface, routes []*v1.Route, opts *routeOption) (
 		if err != nil {
 			return nil, errors.Wrap(err, "unable to get route")
 		}
-		if err := proute.RouteInteractive(sc, selection.Selected[0]); err != nil {
+		if err := proute.Interactive(sc, selection.Selected[0]); err != nil {
 			return nil, err
 		}
 		return routes, nil // we have been working with pointers so it has changed the original route
-	} else {
-		route, err := route(opts, sc)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to get route")
-		}
-		updated := make([]*v1.Route, len(routes))
-		var matches []*v1.Route
-		for i, r := range routes {
-			if match(route, r) {
-				matches = append(matches, r)
-				route.Extensions = mergeExtensions(route, r)
-				updated[i] = route
-				continue
-			}
-			updated[i] = r
-		}
-		if len(matches) == 0 {
-			return nil, errors.New("could not find a route for the specified matcher and destination.")
-		}
-		if len(matches) > 1 {
-			return nil, errors.New("found more than one route for the specified matcher and destination")
-		}
-		return updated, nil
 	}
+
+	route, err := route(opts, sc)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get route")
+	}
+	updated := make([]*v1.Route, len(routes))
+	var matches []*v1.Route
+	for i, r := range routes {
+		if match(route, r) {
+			matches = append(matches, r)
+			route.Extensions = mergeExtensions(route, r)
+			updated[i] = route
+			continue
+		}
+		updated[i] = r
+	}
+	if len(matches) == 0 {
+		return nil, errors.New("could not find a route for the specified matcher and destination")
+	}
+	if len(matches) > 1 {
+		return nil, errors.New("found more than one route for the specified matcher and destination")
+	}
+	return updated, nil
 }
 
 func mergeExtensions(route, old *v1.Route) *google_protobuf.Struct {

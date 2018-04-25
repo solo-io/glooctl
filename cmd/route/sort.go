@@ -23,12 +23,13 @@ func sortCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 
 			routes, err := runSort(sc, routeOpt.virtualhost, routeOpt.domain)
 			if err != nil {
-
+				fmt.Println("Unable to sort routes", err)
+				os.Exit(1)
 			}
 			util.PrintList(routeOpt.output, "", routes,
 				func(data interface{}, w io.Writer) error {
@@ -77,14 +78,14 @@ func lessRoutes(left, right *v1.Route) bool {
 		case *v1.Route_EventMatcher:
 			return false
 		case *v1.Route_RequestMatcher:
-			return less(l.RequestMatcher, r.RequestMatcher)
+			return lessRequestMatcher(l.RequestMatcher, r.RequestMatcher)
 		}
 	}
 
 	return true
 }
 
-func less(left, right *v1.RequestMatcher) bool {
+func lessRequestMatcher(left, right *v1.RequestMatcher) bool {
 	lp := left.GetPath()
 	rp := right.GetPath()
 

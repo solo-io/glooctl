@@ -32,7 +32,7 @@ the flags.`,
 			var r *v1.Route
 			if routeOpt.interactive {
 				r = &v1.Route{}
-				err = proute.RouteInteractive(sc, r)
+				err = proute.Interactive(sc, r)
 			} else {
 				r, err = route(routeOpt, sc)
 			}

@@ -6,12 +6,33 @@ import (
 	"github.com/spf13/pflag"
 )
 
+const (
+	flagDomain      = "domain"
+	flagVirtualHost = "virtual-host"
+	flagFilename    = "filename"
+
+	flagEvent         = "event"
+	flagPathExact     = "path-exact"
+	flagPathRegex     = "path-regex"
+	flagPathPrefix    = "path-prefix"
+	flagMethod        = "http-method"
+	flagHeaders       = "header"
+	flagUpstream      = "upstream"
+	flagFunction      = "function"
+	flagPrefixRewrite = "prefix-rewrite"
+	flagExtension     = "extensions"
+
+	flagKubeName      = "kube-upstream"
+	flagKubeNamespace = "kube-namespace"
+	flagKubePort      = "kube-port"
+)
+
 var (
 	routeOpt = &routeOption{route: &routeDetail{kube: &kubeUpstream{}}}
 )
 
-// RouteCmd returns command related to managing routes on a virtual host
-func RouteCmd(opts *bootstrap.Options) *cobra.Command {
+// Cmd returns command related to managing routes on a virtual host
+func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "route",
 		Short: "manage routes on a virtual host",

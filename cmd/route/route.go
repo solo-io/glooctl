@@ -18,27 +18,6 @@ import (
 )
 
 const (
-	flagDomain      = "domain"
-	flagVirtualHost = "virtual-host"
-	flagFilename    = "filename"
-
-	flagEvent         = "event"
-	flagPathExact     = "path-exact"
-	flagPathRegex     = "path-regex"
-	flagPathPrefix    = "path-prefix"
-	flagMethod        = "http-method"
-	flagHeaders       = "header"
-	flagUpstream      = "upstream"
-	flagFunction      = "function"
-	flagPrefixRewrite = "prefix-rewrite"
-	flagExtension     = "extensions"
-
-	flagKubeName      = "kube-upstream"
-	flagKubeNamespace = "kube-namespace"
-	flagKubePort      = "kube-port"
-
-	defaultVHost = "default"
-
 	upstreamTypeKubernetes = "kubernetes"
 	kubeSpecName           = "service_name"
 	kubeSpecNamespace      = "service_namespace"
@@ -165,47 +144,66 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 	}
 
 	// destination
+	dst, err := destinationFromDetails(rd)
+	if err != nil {
+		return nil, err
+	}
+	// currently only support single destination from CLI
+	route.SingleDestination = dst
+
+	// extensions
+	ext, err := extensionsFromDetails(rd)
+	if err != nil {
+		return nil, err
+	}
+	if ext != nil {
+		route.Extensions = ext
+	}
+	return route, nil
+}
+
+func destinationFromDetails(rd *routeDetail) (*v1.Destination, error) {
 	if rd.upstream == "" {
 		return nil, fmt.Errorf("an upstream is necessary for specifying destination")
 	}
 	// currently only support single destination
 	if rd.function != "" {
-		route.SingleDestination = &v1.Destination{
+		return &v1.Destination{
 			DestinationType: &v1.Destination_Function{
 				Function: &v1.FunctionDestination{
 					UpstreamName: rd.upstream,
 					FunctionName: rd.function},
 			},
-		}
-	} else if rd.upstream != "" {
-		route.SingleDestination = &v1.Destination{
-			DestinationType: &v1.Destination_Upstream{
-				Upstream: &v1.UpstreamDestination{Name: rd.upstream},
-			},
-		}
-	} else {
-		return nil, fmt.Errorf("a destintation wasn't specified")
+		}, nil
 	}
 
-	// extensions
-	if rd.extensions != "" {
-		ext := &google_protobuf.Struct{}
+	return &v1.Destination{
+		DestinationType: &v1.Destination_Upstream{
+			Upstream: &v1.UpstreamDestination{Name: rd.upstream},
+		},
+	}, nil
+}
 
-		// special case: reading from stdin
-		if rd.extensions == "-" {
-			if err := util.ReadStdinInto(ext); err != nil {
-				return nil, errors.Wrap(err, "reading extensions from stdin")
-			}
-		} else {
-			err := file.ReadFileInto(rd.extensions, ext)
-			if err != nil {
-				return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.extensions)
-			}
-		}
-		route.Extensions = ext
-
+func extensionsFromDetails(rd *routeDetail) (*google_protobuf.Struct, error) {
+	if rd.extensions == "" {
+		return nil, nil
 	}
-	return route, nil
+	ext := &google_protobuf.Struct{}
+
+	// special case: reading from stdin
+	if rd.extensions == "-" {
+		if err := util.ReadStdinInto(ext); err != nil {
+			return nil, errors.Wrap(err, "reading extensions from stdin")
+		}
+		return ext, nil
+	}
+
+	err := file.ReadFileInto(rd.extensions, ext)
+	if err != nil {
+		return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.extensions)
+	}
+
+	return ext, nil
 }
 
 func upstream(kube *kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
@@ -217,7 +215,10 @@ func upstream(kube *kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 		if u.Type != upstreamTypeKubernetes {
 			continue
 		}
-		s, _ := protoutil.MarshalMap(u.Spec)
+		s, err := protoutil.MarshalMap(u.Spec)
+		if err != nil {
+			return nil, err
+		}
 		n, exists := s[kubeSpecName].(string)
 		if !exists {
 			continue
