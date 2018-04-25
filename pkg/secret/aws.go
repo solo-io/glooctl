@@ -7,6 +7,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 )
 
+// AWSOptions represents parameters for creating AWS secret
 type AWSOptions struct {
 	Name      string
 	Filename  string
@@ -15,6 +16,7 @@ type AWSOptions struct {
 	UseEnv    bool
 }
 
+// CreateAWS creates secrets that can be used by AWS upstream type
 func CreateAWS(si dependencies.SecretStorage, opts *AWSOptions) error {
 	id, key, err := idAndKey(opts)
 	if err != nil {

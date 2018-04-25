@@ -12,9 +12,20 @@ import (
 )
 
 const (
+	// GoogleAnnotationKey is the key for annotation used in Google upstream
 	GoogleAnnotationKey = "gloo.solo.io/google_secret_ref"
 )
 
+type upstreamSecretRefFetcher func(*v1.Upstream) []string
+
+var (
+	upstreamUsagePlugins = map[string]upstreamSecretRefFetcher{
+		aws.UpstreamTypeAws:      checkAWS,
+		gfunc.UpstreamTypeGoogle: checkGoogle,
+	}
+)
+
+// PrintTableWithUsage prints secrets and their usage
 func PrintTableWithUsage(list []*dependencies.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualHost) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Name", "Type", "In Use By"})
@@ -40,49 +51,56 @@ func usage(list []*dependencies.Secret, upstreams []*v1.Upstream, virtualhosts [
 		m[s.Ref] = []string{}
 	}
 
-	if virtualhosts != nil {
-		for _, v := range virtualhosts {
-			ssl := v.GetSslConfig()
-			if ssl != nil {
-				ref := ssl.GetSecretRef()
-				existing, ok := m[ref]
-				if ok {
-					m[ref] = append(existing, "Virtual Host:"+v.GetName())
-				}
-			}
-		}
-	}
-
-	if upstreams != nil {
-		for _, u := range upstreams {
-			switch u.Type {
-			case aws.UpstreamTypeAws:
-				spec, err := aws.DecodeUpstreamSpec(u.Spec)
-				if err != nil {
-					continue // TODO log it
-				}
-				ref := spec.SecretRef
-				existing, ok := m[ref]
-				if ok {
-					m[ref] = append(existing, "Upstream:"+u.Name)
-				}
-			case gfunc.UpstreamTypeGoogle:
-				if u.Metadata == nil || u.Metadata.Annotations == nil {
-					continue
-				}
-				ref, ok := u.Metadata.Annotations[GoogleAnnotationKey]
-				if !ok {
-					continue
-				}
-				existing, ok := m[ref]
-				if ok {
-					m[ref] = append(existing, "Upstream:"+u.Name)
-				}
-			}
-		}
-	}
-
+	usageVirtualHost(m, virtualhosts)
+	usageUpstream(m, upstreams)
 	return m
+}
+
+func usageVirtualHost(secrets map[string][]string, virtualhosts []*v1.VirtualHost) {
+	for _, v := range virtualhosts {
+		ssl := v.GetSslConfig()
+		if ssl != nil {
+			ref := ssl.GetSecretRef()
+			existing, ok := secrets[ref]
+			if ok {
+				secrets[ref] = append(existing, "Virtual Host:"+v.GetName())
+			}
+		}
+	}
+}
+
+func usageUpstream(secrets map[string][]string, upstreams []*v1.Upstream) {
+	for _, u := range upstreams {
+		fetcher, hasPlugin := upstreamUsagePlugins[u.Type]
+		if !hasPlugin {
+			continue
+		}
+		for _, ref := range fetcher(u) {
+			existing, knownSecret := secrets[ref]
+			if knownSecret {
+				secrets[ref] = append(existing, "Upstream:"+u.Name)
+			}
+		}
+	}
+}
+
+func checkAWS(u *v1.Upstream) []string {
+	spec, err := aws.DecodeUpstreamSpec(u.Spec)
+	if err != nil {
+		return nil
+	}
+	return []string{spec.SecretRef}
+}
+
+func checkGoogle(u *v1.Upstream) []string {
+	if u.Metadata == nil || u.Metadata.Annotations == nil {
+		return nil
+	}
+	ref, ok := u.Metadata.Annotations[GoogleAnnotationKey]
+	if !ok {
+		return nil
+	}
+	return []string{ref}
 }
 
 func secretType(s *dependencies.Secret) string {
