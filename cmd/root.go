@@ -32,6 +32,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	defaultStorage = "kube"
+)
+
 var (
 	bashCompletion = `
 __glooctl_route_http_methods()
@@ -81,11 +85,12 @@ __custom_func()
 	`
 )
 
+// App returns the command representing the CLI
 func App(version string) *cobra.Command {
 	app := &cobra.Command{
 		Use:   "glooctl",
 		Short: "manage resources in the Gloo Universe",
-		Long: `glooctl configures resources use by Gloo server.
+		Long: `glooctl configures resources used by Gloo server.
 	Find more information at https://gloo.solo.io`,
 		Version:                version,
 		BashCompletionFunction: bashCompletion,
@@ -108,7 +113,7 @@ func App(version string) *cobra.Command {
 		upstream.UpstreamCmd(opts),
 		functionCmd(opts),
 		vhost.VHostCmd(opts),
-		route.RouteCmd(opts),
+		route.Cmd(opts),
 		secret.SecretCmd(opts),
 		registerCmd(opts),
 		completionCmd())
@@ -147,12 +152,15 @@ func saveConfig(opts *bootstrap.Options, configFile string) {
 	if err != nil {
 		return
 	}
-	ioutil.WriteFile(configFile, b, 0644)
+	err = ioutil.WriteFile(configFile, b, 0644)
+	if err != nil {
+		fmt.Fprintln(os.Stderr, "Unable to save configuration file", configFile)
+	}
 }
 
 func defaultConfig(opts *bootstrap.Options) {
-	opts.ConfigStorageOptions.Type = "kube"
-	opts.SecretStorageOptions.Type = "kube"
-	opts.FileStorageOptions.Type = "kube"
+	opts.ConfigStorageOptions.Type = defaultStorage
+	opts.SecretStorageOptions.Type = defaultStorage
+	opts.FileStorageOptions.Type = defaultStorage
 	opts.KubeOptions.KubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
 }

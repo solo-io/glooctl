@@ -52,9 +52,15 @@ func completionCmd() *cobra.Command {
 		Run: func(c *cobra.Command, a []string) {
 			switch strings.ToLower(a[0]) {
 			case "bash":
-				c.Parent().GenBashCompletion(os.Stdout)
+				if err := c.Parent().GenBashCompletion(os.Stdout); err != nil {
+					fmt.Println("Unable to generate bash completion", err)
+					os.Exit(1)
+				}
 			case "zsh":
-				c.Parent().GenZshCompletion(os.Stdout)
+				if err := c.Parent().GenZshCompletion(os.Stdout); err != nil {
+					fmt.Println("Unable to generate zsh completion", err)
+					os.Exit(1)
+				}
 			default:
 				fmt.Println("Unsupported shell", a[0])
 			}

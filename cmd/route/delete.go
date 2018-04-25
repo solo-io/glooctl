@@ -75,13 +75,14 @@ func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *routeOption) (
 			return nil, err
 		}
 		return result.NotSelected, nil
-	} else {
-		route, err := route(opts, sc)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to get route")
-		}
-		return remove(routes, route)
 	}
+
+	route, err := route(opts, sc)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get route")
+	}
+	return remove(routes, route)
+
 }
 
 func save(sc storage.Interface, virtualhost *v1.VirtualHost) ([]*v1.Route, error) {

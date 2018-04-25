@@ -14,11 +14,14 @@ import (
 	"gopkg.in/AlecAivazis/survey.v1/core"
 )
 
+// SelectionResult groups routes into selected and not selected list
 type SelectionResult struct {
 	Selected    []*v1.Route
 	NotSelected []*v1.Route
 }
 
+// SelectInteractive selectes one or more routes interactively. If multi is true
+// it enables selecting multiple routess
 func SelectInteractive(routes []*v1.Route, multi bool) (*SelectionResult, error) {
 	// group routes by upstream so that selection list is smaller
 	routesByUpstream := make(map[string][]*v1.Route)
@@ -106,7 +109,8 @@ Route:
 	return filtered
 }
 
-func RouteInteractive(sc storage.Interface, r *v1.Route) error {
+// Interactive allows user to create/update a route definition interactively
+func Interactive(sc storage.Interface, r *v1.Route) error {
 	upstreams, err := sc.V1().Upstreams().List()
 	if err != nil {
 		return errors.Wrap(err, "unable to get upstreams")
@@ -149,7 +153,9 @@ func matcher(r *v1.Route) error {
 			Default: oldValues.matcher,
 		}
 		var event string
-		survey.AskOne(prompt, &event, survey.Required)
+		if err := survey.AskOne(prompt, &event, survey.Required); err != nil {
+			return err
+		}
 		r.Matcher = &v1.Route_EventMatcher{
 			EventMatcher: &v1.EventMatcher{EventType: event},
 		}
@@ -336,7 +342,7 @@ func printHeaders(m map[string]string) {
 	}
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
-	fmt.Println("\n\n") // keep survey happy
+	fmt.Printf("\n\n\n") // keep survey happy
 }
 
 func prefixRewrite(r *v1.Route) error {
@@ -445,7 +451,7 @@ func printDestination(list []Destination) {
 	}
 	table.SetAlignment(tablewriter.ALIGN_LEFT)
 	table.Render()
-	fmt.Println("\n\n") // keep survey happy
+	fmt.Printf("\n\n\n") // keep survey happy
 }
 
 func toAPIDestination(d *Destination) *v1.Destination {
