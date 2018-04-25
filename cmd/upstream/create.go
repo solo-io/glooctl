@@ -11,11 +11,8 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
-	"github.com/solo-io/gloo/pkg/plugins/aws"
-	"github.com/solo-io/gloo/pkg/plugins/google"
 	"github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
-	psecret "github.com/solo-io/glooctl/pkg/secret"
 	"github.com/solo-io/glooctl/pkg/upstream"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
@@ -66,7 +63,7 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *upstre
 			return nil, errors.Wrapf(err, "unable to load Upstream from %s", opts.Filename)
 		}
 
-		valid, message := validate(sc, si, u)
+		valid, message := upstream.Validate(sc, si, u)
 		if !valid {
 			return nil, fmt.Errorf("invalid upstream: %s", message)
 		}
@@ -86,46 +83,4 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *upstre
 		}
 	}
 	return sc.V1().Upstreams().Create(u)
-}
-
-func validate(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) (bool, string) {
-	switch u.Type {
-	case aws.UpstreamTypeAws:
-		lambdaSpec, err := aws.DecodeUpstreamSpec(u.Spec)
-		if err != nil {
-			return false, fmt.Sprintf("Unable to decode lambda upstream spec: %q", err)
-		}
-		awsSecrets, err := si.Get(lambdaSpec.SecretRef)
-		if err != nil {
-			// warning
-			return true, fmt.Sprintf("Unable to load referenced secret. Please make sure it exists.")
-		}
-		if _, ok := awsSecrets.Data[aws.AwsAccessKey]; !ok {
-			return false, fmt.Sprintf("AWS Access Key missing in referenced secret")
-		}
-		if _, ok := awsSecrets.Data[aws.AwsSecretKey]; !ok {
-			return false, fmt.Sprintf("AWS Secret Key missing in referenced secret")
-		}
-		return true, ""
-	case gfunc.UpstreamTypeGoogle:
-		_, err := gfunc.DecodeUpstreamSpec(u.Spec)
-		if err != nil {
-			return false, fmt.Sprintf("Unable to decode GCF upstream spec: %q", err)
-		}
-		secretRef, ok := u.Metadata.Annotations[psecret.GoogleAnnotationKey]
-		if !ok {
-			return true, fmt.Sprintf("Google Cloud Function Discovery requires annotation wity key %s.", psecret.GoogleAnnotationKey)
-		}
-
-		gcfSecret, err := si.Get(secretRef)
-		if err != nil {
-			return true, fmt.Sprintf("Unable to verify referenced secret. Please make sure it exists.")
-		}
-		if _, ok := gcfSecret.Data[psecret.ServiceAccountJsonKeyFile]; !ok {
-			return false, fmt.Sprintf("secret missing key %s", psecret.ServiceAccountJsonKeyFile)
-		}
-		return true, ""
-	default:
-		return true, ""
-	}
 }

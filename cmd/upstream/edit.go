@@ -60,11 +60,13 @@ func runEdit(sc storage.Interface, name string) (*v1.Upstream, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create temporary file")
 	}
-	if err := util.PrintYAML(u, f); err != nil {
+	err = util.PrintYAML(u, f)
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to write out upstream for editting")
 	}
 	defer os.Remove(f.Name())
-	if err := edit.Launch(f.Name()); err != nil {
+	err = edit.Launch(f.Name())
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to edit upstream")
 	}
 	updated, err := parseFile(f.Name())
