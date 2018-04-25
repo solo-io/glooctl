@@ -12,6 +12,8 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 )
 
+// Destination represents a single destination of a route
+// It can be either an upstream or upstream-function pair
 type Destination struct {
 	Upstream string
 	Function string
@@ -24,6 +26,7 @@ func (d *Destination) String() string {
 	return d.Upstream
 }
 
+// PrintTable prints the list of routes as a table
 func PrintTable(list []*v1.Route, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
@@ -40,6 +43,7 @@ func PrintTable(list []*v1.Route, w io.Writer) {
 	table.Render()
 }
 
+// Matcher extracts the parts of the matcher in the given route
 func Matcher(r *v1.Route) (string, string, string, string) {
 	switch m := r.GetMatcher().(type) {
 	case *v1.Route_EventMatcher:
@@ -82,6 +86,7 @@ func Matcher(r *v1.Route) (string, string, string, string) {
 	}
 }
 
+// Destinations extracts the list of destinations in a given route
 func Destinations(r *v1.Route) []Destination {
 	single := r.GetSingleDestination()
 	if single != nil {
@@ -112,6 +117,7 @@ func upstreamToDestination(u *v1.UpstreamDestination, f *v1.FunctionDestination)
 	return Destination{"", ""}
 }
 
+// Extension extracts extensions in a given route as a pretty printed string
 func Extension(r *v1.Route) string {
 	ext := r.GetExtensions()
 	if ext == nil || ext.GetFields() == nil {

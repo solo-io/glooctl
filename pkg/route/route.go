@@ -9,9 +9,12 @@ import (
 )
 
 const (
+	// DefaultVirtualHost is name of the virtual host to create if none exists
 	DefaultVirtualHost = "default"
 )
 
+// VirtualHost returns a virtual host for given name or domain
+// If name or domain isn't provided, it returns default virtual host (if exits or create is true)
 func VirtualHost(sc storage.Interface, vhostname, domain string, create bool) (*v1.VirtualHost, error) {
 	if vhostname != "" {
 		vh, err := sc.V1().VirtualHosts().Get(vhostname)
