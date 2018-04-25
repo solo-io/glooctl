@@ -26,18 +26,17 @@ func editCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 
 			v, err := runEdit(sc, args[0])
 			if err != nil {
 				fmt.Printf("Unable to edit virtual host %s: %q\n", args[0], err)
-				return
+				os.Exit(1)
 			}
 			fmt.Printf("Virtual host %s updated\n", args[0])
 
-			output, _ := c.InheritedFlags().GetString("output")
-			util.Print(output, "", v, func(v interface{}, w io.Writer) error {
+			util.Print(cliOpts.Output, "", v, func(v interface{}, w io.Writer) error {
 				virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
 				return nil
 			}, os.Stdout)
@@ -52,20 +51,27 @@ func runEdit(sc storage.Interface, name string) (*v1.VirtualHost, error) {
 	}
 
 	v, err := sc.V1().VirtualHosts().Get(name)
-	edit := editor.NewDefaultEditor([]string{"EDITOR", "GLOO_EDITOR"})
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get virtual host "+name)
 	}
+	edit := editor.NewDefaultEditor([]string{"EDITOR", "GLOO_EDITOR"})
 
 	f, err := ioutil.TempFile("", "thetool-virtualhost")
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to create temporary file")
 	}
-	if err := util.PrintYAML(v, f); err != nil {
+	err = util.PrintYAML(v, f)
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to write out virtualhost for editting")
 	}
-	defer os.Remove(f.Name())
-	if err := edit.Launch(f.Name()); err != nil {
+	defer func() {
+		if errRemove := os.Remove(f.Name()); errRemove != nil {
+			fmt.Fprintln(os.Stderr, "unable to remove temporary file", f.Name())
+		}
+	}()
+
+	err = edit.Launch(f.Name())
+	if err != nil {
 		return nil, errors.Wrap(err, "unable to edit virtualhost")
 	}
 	updated, err := parseFile(f.Name())

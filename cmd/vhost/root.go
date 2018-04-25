@@ -10,7 +10,8 @@ var (
 	cliOpts = &virtualhost.Options{}
 )
 
-func VHostCmd(opts *bootstrap.Options) *cobra.Command {
+// Cmd command to manage virtual hosts
+func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "virtualhost",
 		Short: "manage virtual hosts",
