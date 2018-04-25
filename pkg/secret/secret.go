@@ -9,6 +9,8 @@ import (
 	"github.com/solo-io/gloo/pkg/storage"
 )
 
+// Get gets a secret with given name or all secrets if no name is provided and prints
+// them and their usage
 func Get(sc storage.Interface, si dependencies.SecretStorage, name string) error {
 	var list []*dependencies.Secret
 	if name != "" {
@@ -37,6 +39,7 @@ func Get(sc storage.Interface, si dependencies.SecretStorage, name string) error
 	return nil
 }
 
+// SecretRefs returns a list of secret references filtered using the provided filter
 func SecretRefs(si dependencies.SecretStorage, filter func(*dependencies.Secret) bool) ([]string, error) {
 	secrets, err := si.List()
 	if err != nil {

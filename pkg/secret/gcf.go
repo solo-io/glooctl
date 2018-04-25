@@ -12,11 +12,13 @@ const (
 	ServiceAccountJsonKeyFile = "json_key_file"
 )
 
+// GoogleOptions represents the parameters needed to create secret for Google
 type GoogleOptions struct {
 	Name     string
 	Filename string
 }
 
+// CreateGoogle creates a secret for function discovery service to use
 func CreateGoogle(si dependencies.SecretStorage, opts *GoogleOptions) error {
 	b, err := ioutil.ReadFile(opts.Filename)
 	if err != nil {

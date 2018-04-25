@@ -9,16 +9,20 @@ import (
 )
 
 const (
+	// SSLCertificateChainKey represents the key to identify certificate chain in the secret
 	SSLCertificateChainKey = "ca_chain"
-	SSLPrivateKeyKey       = "private_key"
+	// SSLPrivateKeyKey represents the key to identify private key in the secret
+	SSLPrivateKeyKey = "private_key"
 )
 
+// CertificateOptions represents parameters for creating secrets representing SSL certificates
 type CertificateOptions struct {
 	Name       string
 	CAChain    string
 	PrivateKey string
 }
 
+// CreateCertificate creates a secret representing SSL certificate
 func CreateCertificate(si dependencies.SecretStorage, opts *CertificateOptions) error {
 	ca, err := ioutil.ReadFile(opts.CAChain)
 	if err != nil {
