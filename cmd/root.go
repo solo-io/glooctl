@@ -112,7 +112,7 @@ func App(version string) *cobra.Command {
 	app.AddCommand(
 		upstream.Cmd(opts),
 		functionCmd(opts),
-		vhost.VHostCmd(opts),
+		vhost.Cmd(opts),
 		route.Cmd(opts),
 		secret.Cmd(opts),
 		registerCmd(opts),
