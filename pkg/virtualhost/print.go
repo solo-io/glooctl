@@ -12,6 +12,7 @@ import (
 	"github.com/solo-io/glooctl/pkg/route"
 )
 
+// PrintTemplate prints virtual hosts using the provided Go template to io.Writer
 func PrintTemplate(list []*v1.VirtualHost, tmpl string, w io.Writer) error {
 	t, err := template.New("output").Parse(tmpl)
 	if err != nil {
@@ -20,6 +21,7 @@ func PrintTemplate(list []*v1.VirtualHost, tmpl string, w io.Writer) error {
 	return t.Execute(w, list)
 }
 
+// PrintTable prints virtual hosts using tables to io.Writer
 func PrintTable(list []*v1.VirtualHost, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Virtual Host", "Domain", "SSL", "Status", "Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})

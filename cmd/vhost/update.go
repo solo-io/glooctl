@@ -71,7 +71,7 @@ func runUpdate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 		if err != nil {
 			return nil, err
 		}
-		err = virtualhost.VirtualHostInteractive(sc, si, existing)
+		err = virtualhost.Interactive(sc, si, existing)
 		if err != nil {
 			return nil, err
 		}
