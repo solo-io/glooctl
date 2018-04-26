@@ -24,6 +24,9 @@ var (
 	}
 )
 
+// Validate - verifies if given upstream is defined correctly. It returns false if it isn't and
+// returns the reason. If it is valid but its dependencies missing, it returns true with
+// information about missing dependencies. If everything is valid it returns true with no message
 func Validate(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) (bool, string) {
 	for _, p := range validatorPlugins {
 		if p.upstreamType == u.Type {

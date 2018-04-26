@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 )
 
+// PrintTable prints upstreams in table format to the io.Writer
 func PrintTable(list []*v1.Upstream, w io.Writer) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Name", "Type", "Status", "Function"})
@@ -40,6 +41,7 @@ func PrintTable(list []*v1.Upstream, w io.Writer) {
 	table.Render()
 }
 
+// PrintTemplate prints upstreams using provided Go template to io.Writer
 func PrintTemplate(list []*v1.Upstream, tmpl string, w io.Writer) error {
 	t, err := template.New("output").Parse(tmpl)
 	if err != nil {
