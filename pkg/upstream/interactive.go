@@ -41,7 +41,8 @@ var (
 	nameRegex = regexp.MustCompile(`^[a-z][a-z0-9\-\.]{0,252}$`)
 )
 
-func UpstreamInteractive(sc storage.Interface, si dependencies.SecretStorage) (*v1.Upstream, error) {
+// Interactive - create/update upstream interactively
+func Interactive(sc storage.Interface, si dependencies.SecretStorage) (*v1.Upstream, error) {
 	upstreams, err := sc.V1().Upstreams().List()
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get list of upstreams")
@@ -83,13 +84,16 @@ func UpstreamInteractive(sc storage.Interface, si dependencies.SecretStorage) (*
 
 	// connection timeout
 	var timeout int
-	survey.AskOne(&survey.Input{Message: "Please enter connection timeout in seconds:"}, &timeout, func(val interface{}) error {
-		_, err := strconv.Atoi(val.(string))
-		if err != nil {
+	err = survey.AskOne(&survey.Input{Message: "Please enter connection timeout in seconds:"}, &timeout, func(val interface{}) error {
+		_, errTimeout := strconv.Atoi(val.(string))
+		if errTimeout != nil {
 			return errors.New("timeout must be a positive integer")
 		}
 		return nil
 	})
+	if err != nil {
+		return nil, err
+	}
 	u.ConnectionTimeout = time.Duration(timeout) * time.Second
 
 	// functions (separate separate interactions?)
@@ -131,7 +135,7 @@ func awsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.U
 	u.Type = aws.UpstreamTypeAws
 	regions := make([]string, len(aws.ValidRegions))
 	i := 0
-	for k, _ := range aws.ValidRegions {
+	for k := range aws.ValidRegions {
 		regions[i] = k
 		i++
 	}
@@ -185,7 +189,7 @@ func googleInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v
 
 	regions := make([]string, len(gfunc.ValidRegions))
 	i := 0
-	for k, _ := range gfunc.ValidRegions {
+	for k := range gfunc.ValidRegions {
 		regions[i] = k
 		i++
 	}
