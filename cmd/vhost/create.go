@@ -66,7 +66,7 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 			return nil, errors.New("no file specified and interactive mode turned off")
 		}
 		vh = &v1.VirtualHost{}
-		if err := virtualhost.VirtualHostInteractive(sc, si, vh); err != nil {
+		if err := virtualhost.Interactive(sc, si, vh); err != nil {
 			return nil, err
 		}
 	}

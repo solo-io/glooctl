@@ -13,6 +13,8 @@ import (
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
+// SelectInteractive - selects a virtual host interactively from the list
+// of virtual hosts in the system
 func SelectInteractive(sc storage.Interface) (*v1.VirtualHost, error) {
 	existing, err := sc.V1().VirtualHosts().List()
 	if err != nil {
@@ -43,9 +45,9 @@ func SelectInteractive(sc storage.Interface) (*v1.VirtualHost, error) {
 	return nil, errors.New("didn't find selected virtual host")
 }
 
-// VirtualHostInteractive for interactively creating/editing virtual hosts
+// Interactive for interactively creating/editing virtual hosts
 // Doesn't handle routes as we have separate interactive mode for routes
-func VirtualHostInteractive(sc storage.Interface, si dependencies.SecretStorage, vh *v1.VirtualHost) error {
+func Interactive(sc storage.Interface, si dependencies.SecretStorage, vh *v1.VirtualHost) error {
 	existing, err := sc.V1().VirtualHosts().List()
 	if err != nil {
 		return err
@@ -54,7 +56,7 @@ func VirtualHostInteractive(sc storage.Interface, si dependencies.SecretStorage,
 	if vh.Name == "" {
 		// new virtual host
 		var name string
-		if err := survey.AskOne(&survey.Input{
+		err = survey.AskOne(&survey.Input{
 			Message: "Please enter a name for virtual host:",
 		}, &name, func(val interface{}) error {
 			v, ok := val.(string)
@@ -70,7 +72,8 @@ func VirtualHostInteractive(sc storage.Interface, si dependencies.SecretStorage,
 				}
 			}
 			return nil
-		}); err != nil {
+		})
+		if err != nil {
 			return err
 		}
 		vh.Name = name
