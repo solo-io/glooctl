@@ -10,6 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
+// ReadStdinInto reads the standard input into the provided proto.Message
 func ReadStdinInto(v proto.Message) error {
 	data, err := ioutil.ReadAll(os.Stdin)
 	if err != nil {

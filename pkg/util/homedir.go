@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 )
 
+// HomeDir returns the current users home directory irrespecitve of the OS
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
@@ -12,6 +13,7 @@ func HomeDir() string {
 	return os.Getenv("USERPROFILE") // windows
 }
 
+// ConfigDir returns the config directory for glooctl
 func ConfigDir() (string, error) {
 	d := filepath.Join(HomeDir(), ".glooctl")
 	_, err := os.Stat(d)
@@ -19,7 +21,8 @@ func ConfigDir() (string, error) {
 		return d, nil
 	}
 	if os.IsNotExist(err) {
-		if err := os.Mkdir(d, 0755); err != nil {
+		err = os.Mkdir(d, 0755)
+		if err != nil {
 			return "", err
 		}
 		return d, nil
