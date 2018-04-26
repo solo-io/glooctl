@@ -8,6 +8,7 @@ import (
 	checkpoint "github.com/solo-io/go-checkpoint"
 )
 
+// Telemetry sends telemetry information about glooctl to Checkpoint server
 func Telemetry(version string, t time.Time) {
 	sigfile := filepath.Join(HomeDir(), ".glooctl.sig")
 	configDir, err := ConfigDir()

@@ -13,8 +13,11 @@ import (
 	"github.com/solo-io/gloo/pkg/protoutil"
 )
 
+// Printer represents a function that prints a value to io.Writer, usually using
+// a table
 type Printer func(interface{}, io.Writer) error
 
+// Print - prints the given proto.Message to io.Writer using the specified output format
 func Print(output, template string, m proto.Message, tblPrn Printer, w io.Writer) error {
 	switch strings.ToLower(output) {
 	case "yaml":
@@ -28,6 +31,7 @@ func Print(output, template string, m proto.Message, tblPrn Printer, w io.Writer
 	}
 }
 
+// PrintList - prints the given list of values to io.Writer using the specified output format
 func PrintList(output, template string, list interface{}, tblPrn Printer, w io.Writer) error {
 	switch strings.ToLower(output) {
 	case "yaml":
@@ -41,6 +45,7 @@ func PrintList(output, template string, list interface{}, tblPrn Printer, w io.W
 	}
 }
 
+// PrintJSON - prints the given proto.Message to io.Writer in JSON
 func PrintJSON(m proto.Message, w io.Writer) error {
 	b, err := protoutil.Marshal(m)
 	if err != nil {
@@ -50,6 +55,7 @@ func PrintJSON(m proto.Message, w io.Writer) error {
 	return err
 }
 
+// PrintYAML - prints the given proto.Message to io.Writer in YAML
 func PrintYAML(m proto.Message, w io.Writer) error {
 	jsn, err := protoutil.Marshal(m)
 	if err != nil {
@@ -63,6 +69,7 @@ func PrintYAML(m proto.Message, w io.Writer) error {
 	return err
 }
 
+// PrintJSONList - prints the given list to io.Writer in JSON
 func PrintJSONList(data interface{}, w io.Writer) error {
 	list := reflect.ValueOf(data)
 	_, err := fmt.Fprintln(w, "[")
@@ -75,11 +82,13 @@ func PrintJSONList(data interface{}, w io.Writer) error {
 			return errors.New("unable to convert to proto message")
 		}
 		if i != 0 {
-			if _, err := fmt.Fprintln(w, ","); err != nil {
+			_, err = fmt.Fprintln(w, ",")
+			if err != nil {
 				return errors.Wrap(err, "unable to print JSON list")
 			}
 		}
-		if err := PrintJSON(v, w); err != nil {
+		err = PrintJSON(v, w)
+		if err != nil {
 			return err
 		}
 	}
@@ -87,6 +96,7 @@ func PrintJSONList(data interface{}, w io.Writer) error {
 	return err
 }
 
+// PrintYAMLList - prints the given list to io.Writer in YAML
 func PrintYAMLList(data interface{}, w io.Writer) error {
 	list := reflect.ValueOf(data)
 	for i := 0; i < list.Len(); i++ {
@@ -104,6 +114,7 @@ func PrintYAMLList(data interface{}, w io.Writer) error {
 	return nil
 }
 
+// PrintTemplate prints the give value using the provided Go template to io.Writer
 func PrintTemplate(data interface{}, tmpl string, w io.Writer) error {
 	t, err := template.New("output").Parse(tmpl)
 	if err != nil {
