@@ -7,15 +7,16 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
+	helper "github.com/solo-io/glooctl/internal/test-helper"
 )
 
 var _ = Describe("Creating upstream", func() {
-	BeforeEach(setupStorage)
-	AfterEach(tearDownStorage)
+	BeforeEach(helper.SetupStorage)
+	AfterEach(helper.TearDownStorage)
 
 	It("should exit with exit code 1 when creating invalid upstream", func() {
-		opts := withStorageOpts("upstream", "create", "-f", "testdata/invalid.yaml")
-		command := exec.Command(glooctlBinary, opts...)
+		opts := helper.WithStorageOpts("upstream", "create", "-f", "testdata/invalid.yaml")
+		command := exec.Command(helper.Glooctl, opts...)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		Eventually(session.Out).Should(gbytes.Say("missing secret reference"))
@@ -25,16 +26,15 @@ var _ = Describe("Creating upstream", func() {
 	It("should create a valid upstream", func() {
 		createAWSSecret()
 
-		opts := withStorageOpts("upstream", "create", "-f", "testdata/aws.yaml")
-		command := exec.Command(glooctlBinary, opts...)
+		opts := helper.WithStorageOpts("upstream", "create", "-f", "testdata/aws.yaml")
+		command := exec.Command(helper.Glooctl, opts...)
 		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		Eventually(session).Should(gexec.Exit(0))
 
 		// check by doing a get
-		opts = []string{"upstream", "get", "-o template", "--template={{range .}}{{.Name}} {{end}}"}
-		opts = append(opts, storageOpts...)
-		command = exec.Command(glooctlBinary, opts...)
+		opts = helper.WithStorageOpts("upstream", "get", "-o template", "--template={{range .}}{{.Name}} {{end}}")
+		command = exec.Command(helper.Glooctl, opts...)
 		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
 		Ω(err).ShouldNot(HaveOccurred())
 		Ω(session.Wait().Out.Contents()).Should(ContainSubstring("testupstream"))
