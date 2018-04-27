@@ -1,0 +1,5 @@
+name: non-exist 
+type: aws
+spec:
+  region: "us-east-2"
+  secret_ref: "aws-secret"

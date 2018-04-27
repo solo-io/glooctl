@@ -1,0 +1,5 @@
+name: testupstream
+type: rest 
+spec:
+  region: "us-east-1"
+  secret_ref: "aws-secret.yaml"
