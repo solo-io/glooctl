@@ -37,7 +37,7 @@ else
 endif
 
 test:
-	go test -cover ./...
+	ginkgo -r -v 
 
 clean:
 	rm -f $(BINARY)

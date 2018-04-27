@@ -58,7 +58,7 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *upstre
 	var u *v1.Upstream
 	if opts.Filename != "" {
 		var err error
-		u, err = parseFile(opts.Filename)
+		u, err = upstream.ParseFile(opts.Filename)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to load Upstream from %s", opts.Filename)
 		}

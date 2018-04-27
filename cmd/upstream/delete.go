@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
@@ -18,16 +19,12 @@ func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 
-			if len(args) < 1 {
-				fmt.Println("missing name of upstream to delete")
-				return
-			}
 			if err := runDelete(sc, args[0]); err != nil {
 				fmt.Printf("Unable to delete upstream %s: %q\n", args[0], err)
-				return
+				os.Exit(1)
 			}
 			fmt.Printf("Upstream %s deleted\n", args[0])
 		},

@@ -1,0 +1,23 @@
+connection_timeout: 300.000s
+functions:
+- name: gloo-hello:$LATEST
+  spec:
+    function_name: gloo-hello
+    qualifier: ""
+- name: axhixh:$LATEST
+  spec:
+    function_name: axhixh
+    qualifier: ""
+- name: uppercase:$LATEST
+  spec:
+    function_name: uppercase
+    qualifier: ""
+- name: uppercase:1
+  spec:
+    function_name: uppercase
+    qualifier: "1"
+name: with-function
+spec:
+  region: us-east-1
+  secret_ref: aws-secret
+type: aws

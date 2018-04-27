@@ -24,12 +24,12 @@ func updateCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 			u, err := runUpdate(sc, filename)
 			if err != nil {
-				fmt.Printf("Unable to create upstream %q\n", err)
-				return
+				fmt.Printf("Unable to update upstream %q\n", err)
+				os.Exit(1)
 			}
 			fmt.Println("Upstream updated")
 			util.Print(cliOpts.Output, "", u,
@@ -46,7 +46,7 @@ func updateCmd(opts *bootstrap.Options) *cobra.Command {
 }
 
 func runUpdate(sc storage.Interface, filename string) (*v1.Upstream, error) {
-	upstream, err := parseFile(filename)
+	upstream, err := upstream.ParseFile(filename)
 	if err != nil {
 		return nil, errors.Wrapf(err, "unable to load Upstream from %s", filename)
 	}

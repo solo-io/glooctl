@@ -69,7 +69,7 @@ func runEdit(sc storage.Interface, name string) (*v1.Upstream, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to edit upstream")
 	}
-	updated, err := parseFile(f.Name())
+	updated, err := upstream.ParseFile(f.Name())
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse upstream")
 	}

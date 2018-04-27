@@ -2,4 +2,4 @@ name: testupstream
 type: aws
 spec:
   region: "us-east-1"
-  credential: "aws-secret"
+  secret_ref: "aws-secret.yaml"

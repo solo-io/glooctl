@@ -1,0 +1,5 @@
+name: with-function
+type: aws
+spec:
+  region: "us-west-2"
+  secret_ref: "aws-secret"
