@@ -21,7 +21,7 @@ var _ = Describe("Getting upstream", func() {
 
 	It("should get list of upstreams for template output", func() {
 		helper.RunWithArgs("upstream", "get", "-o", "template", "--template", "{{range .}}{{.Name}} {{end}}").
-			ExpectExitCodeAndOutput(0, `testupstream with-function`)
+			ExpectExitCodeAndOutput(0, `testupstream`, `with-function`)
 	})
 
 	It("should get list of upstreams for default table output", func() {
