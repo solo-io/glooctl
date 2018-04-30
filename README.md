@@ -61,7 +61,7 @@ Now, we can map the path `/calculator` to AWS Lambda `calc` using the command:
 ```
 glooctl route create --path-exact /calculator --upstream aws_lambda --function calc
 
-Using virtual host:  default
+Using virtual service:  default
 path prefix : /calculator
  -> aws_lambda/calc
 ```
@@ -70,17 +70,17 @@ This route tells Gloo to map requests to `/calculator` to the function `calc` in
 upstream `aws_lambda`.
 
 
-## Managing Routes on a Virtual Host
+## Managing Routes on a Virtual Service
 The `route` command allows us to manage the routes on a specific
-virtual host. It uses the default virtual host if we don't specify any virtual host. We can override this by using the `virtual-host` or `v` flag on route commands.
+virtual service. It uses the default virtual service if we don't specify any virtual service. We can override this by using the `virtual-service` or `v` flag on route commands.
 
-We can also use the `domain` or `d` command to specify the virtual host to use. It selects the virtual host containing that domain.
+We can also use the `domain` or `d` command to specify the virtual service to use. It selects the virtual service containing that domain.
 
 ### Getting Routes
-The `get` command returns a list of routes on the virtual host.
+The `get` command returns a list of routes on the virtual service.
 
 ```
-glooctl route get -v my-virtual-host
+glooctl route get -v my-virtual-service
 
 request exact path: /bar
 request path prefix: /foo
@@ -91,7 +91,7 @@ By default, `get` returns a summary list. We can pass the `output`
 flag to see response in YAML or JSON to get details of the routes.
 
 ```
-glooctl route get -v my-virtual-host -o yaml
+glooctl route get -v my-virtual-service -o yaml
 
 extensions:
   auth:
@@ -143,7 +143,7 @@ single_destination:
 ### Deleting a Route
 
 ```
-glooctl route delete -v my-virtual-host --path-prefix /foo
+glooctl route delete -v my-virtual-service --path-prefix /foo
 
 request exact path: /bar
 event matcher: /apple
@@ -169,18 +169,18 @@ single_destination:
 ```
 
 ```
-glooctl route create -v my-virtual-host -f route.yaml 
+glooctl route create -v my-virtual-service -f route.yaml 
 request exact path: /bar
 event matcher: /apple
 request path prefix: /foo/bar
 ```
 
-When the route is successfully created it shows the list of existing routes on the virtual host. The newly created route is appended to the end of the list. If we prefer to sort the routes when creating it, we can pass `--sort` flag. 
+When the route is successfully created it shows the list of existing routes on the virtual service. The newly created route is appended to the end of the list. If we prefer to sort the routes when creating it, we can pass `--sort` flag. 
 
 We could have created this same route passing the following parameters to `glooctl`
 
 ```
-./glooctl route create -v my-virtual-host --path-prefix /foo/bar --http-method GET,POST --upstream upstream2
+./glooctl route create -v my-virtual-service --path-prefix /foo/bar --http-method GET,POST --upstream upstream2
 ```
 
 ### Sorting Routes
@@ -189,7 +189,7 @@ Sorting routes arranges them based on the matcher. Routes matchers that are spec
 Routes are sorted in order of event, exact path, regex path and path prefix.
 
 ```
-glooctl route sort -v my-virtual-host  
+glooctl route sort -v my-virtual-service  
 event matcher: /apple
 request exact path: /bar
 request path prefix: /foo/bar
@@ -293,16 +293,16 @@ glooctl upstream delete aws_lambda
 Upstream aws_lambda deleted
 ```
 
-## Managing Virtual Hosts
-`glooctl` provides a manual method of managing Virtual Hosts. 
+## Managing Virtual Services
+`glooctl` provides a manual method of managing Virtual Services. 
 
-### Creating Virtual Host
+### Creating Virtual Service
 The CLI allows us to create a virtual from a YAML file. 
 
-Let's look at a virtual host definition in `vhost.yaml`
+Let's look at a virtual service definition in `vservice.yaml`
 
 ```
-name: vhost1
+name: vservice1
 routes:
 - request_matcher:
     path_exact: /bar
@@ -317,13 +317,13 @@ routes:
 If we want to see the newly created virtual, we can pass `output` flag.
 
 ```
-glooctl virtualhost create -f vhost.yaml --output yaml
+glooctl virtualservice create -f vservice.yaml --output yaml
 
-Virtual host created  vhost1
+Virtual service created  vservice1
 metadata:
   namespace: gloo-system
   resource_version: "226902"
-name: vhost1
+name: vservice1
 routes:
 - request_matcher:
     path_exact: /bar
@@ -335,34 +335,34 @@ routes:
       name: my-upstream
 ```
 
-### Getting Virtual Host
-By default, `get` command returns a list of virtual host names. 
+### Getting Virtual Service
+By default, `get` command returns a list of virtual service names. 
 
 ```
-glooctl virtualhost get
+glooctl virtualservice get
 
-vhost1
+vservice1
 ```
 
 We can pass it the `output` flag to return it as JSON or YAML.
 
 ```
-glooctl virtualhost get -o json
+glooctl virtualservice get -o json
 
-{"name":"vhost1","routes":[{"request_matcher":{"path_exact":"/bar","verbs":["GET","POST"]},"single_destination":{"upstream":{"name":"my-upstream"}}}],"metadata":{"resource_version":"226902","namespace":"gloo-system"}}
+{"name":"vservice1","routes":[{"request_matcher":{"path_exact":"/bar","verbs":["GET","POST"]},"single_destination":{"upstream":{"name":"my-upstream"}}}],"metadata":{"resource_version":"226902","namespace":"gloo-system"}}
 ```
 
-If we want to get details of a specific Virtual Host, we can use
-`get` command with the name of the virtual host. It returns
+If we want to get details of a specific Virtual Service, we can use
+`get` command with the name of the virtual service. It returns
 the result as YAML, but we can use `output` flag to get JSON.
 
 ```
-glooctl virtualhost get vhost1
+glooctl virtualservice get vservice1
 
 metadata:
   namespace: gloo-system
   resource_version: "226902"
-name: vhost1
+name: vservice1
 routes:
 - request_matcher:
     path_exact: /bar
@@ -374,19 +374,19 @@ routes:
       name: my-upstream
 ```
 
-### Updating Virtual Host
+### Updating Virtual Service
 Similar to `create` command, `update` command takes the definition of
-virtual host from a YAML file and replaces the existing virtual host with the
+virtual service from a YAML file and replaces the existing virtual service with the
 one from the file.
 
 ```
-glooctl virtualhost update -f vhost2.yaml -o yaml
+glooctl virtualservice update -f vservice2.yaml -o yaml
 
-Virtual host updated
+Virtual service updated
 metadata:
   namespace: gloo-system
   resource_version: "228028"
-name: vhost1
+name: vservice1
 routes:
 - request_matcher:
     path_exact: /bar
@@ -398,16 +398,16 @@ routes:
       name: new-upstream
 ```
 
-### Deleting Virtual Host
+### Deleting Virtual Service
 We can delete an existing virtual by giving the name of the
-virtual host to be deleted to `delete` command.
+virtual service to be deleted to `delete` command.
 
 ```
-glooctl virtualhost delete vhost1
+glooctl virtualservice delete vservice1
 
-Virtual host vhost1 deleted
+Virtual service vservice1 deleted
 ```
 
 ## Reference
-To learn more about Upstreams and Virtual Hosts please refer
+To learn more about Upstreams and Virtual Services please refer
 to Gloo documentation.
