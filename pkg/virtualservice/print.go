@@ -1,4 +1,4 @@
-package virtualhost
+package virtualservice
 
 import (
 	"io"
@@ -12,8 +12,8 @@ import (
 	"github.com/solo-io/glooctl/pkg/route"
 )
 
-// PrintTemplate prints virtual hosts using the provided Go template to io.Writer
-func PrintTemplate(list []*v1.VirtualHost, tmpl string, w io.Writer) error {
+// PrintTemplate prints virtual services using the provided Go template to io.Writer
+func PrintTemplate(list []*v1.VirtualService, tmpl string, w io.Writer) error {
 	t, err := template.New("output").Parse(tmpl)
 	if err != nil {
 		return errors.Wrap(err, "unable to parse template")
@@ -21,10 +21,10 @@ func PrintTemplate(list []*v1.VirtualHost, tmpl string, w io.Writer) error {
 	return t.Execute(w, list)
 }
 
-// PrintTable prints virtual hosts using tables to io.Writer
-func PrintTable(list []*v1.VirtualHost, w io.Writer) {
+// PrintTable prints virtual services using tables to io.Writer
+func PrintTable(list []*v1.VirtualService, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Virtual Host", "Domain", "SSL", "Status", "Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
+	table.SetHeader([]string{"Virtual Service", "Domain", "SSL", "Status", "Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
 
 	for _, v := range list {
 		name := v.GetName()
@@ -54,7 +54,7 @@ func PrintTable(list []*v1.VirtualHost, w io.Writer) {
 	table.Render()
 }
 
-func domains(v *v1.VirtualHost) string {
+func domains(v *v1.VirtualService) string {
 	if v.GetDomains() == nil || len(v.GetDomains()) == 0 {
 		return ""
 	}
@@ -62,14 +62,14 @@ func domains(v *v1.VirtualHost) string {
 	return strings.Join(v.GetDomains(), ", ")
 }
 
-func sslConfig(v *v1.VirtualHost) string {
+func sslConfig(v *v1.VirtualService) string {
 	if v.GetSslConfig() == nil {
 		return ""
 	}
 	return v.GetSslConfig().GetSecretRef()
 }
 
-func status(v *v1.VirtualHost) string {
+func status(v *v1.VirtualService) string {
 	if v.Status == nil {
 		return ""
 	}

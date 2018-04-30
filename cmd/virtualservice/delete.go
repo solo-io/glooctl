@@ -1,4 +1,4 @@
-package vhost
+package virtualservice
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ import (
 func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "delete [name]",
-		Short: "delete virtual host",
+		Short: "delete virtual service",
 		Args:  cobra.ExactArgs(1),
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := configstorage.Bootstrap(*opts)
@@ -22,10 +22,10 @@ func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 			}
 			name := args[0]
 			if err := runDelete(sc, name); err != nil {
-				fmt.Printf("Unable to delete virtual host %s: %q\n", name, err)
+				fmt.Printf("Unable to delete virtual service %s: %q\n", name, err)
 				return
 			}
-			fmt.Printf("Virtual host %s deleted\n", name)
+			fmt.Printf("Virtual service %s deleted\n", name)
 		},
 	}
 	return cmd
@@ -33,7 +33,7 @@ func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 
 func runDelete(sc storage.Interface, name string) error {
 	if name == "" {
-		return fmt.Errorf("missing name of virtual host to delete")
+		return fmt.Errorf("missing name of virtual service to delete")
 	}
-	return sc.V1().VirtualHosts().Delete(name)
+	return sc.V1().VirtualServices().Delete(name)
 }

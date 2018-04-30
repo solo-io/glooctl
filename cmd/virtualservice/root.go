@@ -1,20 +1,20 @@
-package vhost
+package virtualservice
 
 import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
-	"github.com/solo-io/glooctl/pkg/virtualhost"
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"github.com/spf13/cobra"
 )
 
 var (
-	cliOpts = &virtualhost.Options{}
+	cliOpts = &virtualservice.Options{}
 )
 
-// Cmd command to manage virtual hosts
+// Cmd command to manage virtual services
 func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "virtualhost",
-		Short: "manage virtual hosts",
+		Use:   "virtualservice",
+		Short: "manage virtual services",
 	}
 	pflags := cmd.PersistentFlags()
 	pflags.StringVarP(&cliOpts.Output, "output", "o", "", "output format yaml|json|template")

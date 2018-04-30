@@ -49,12 +49,12 @@ matcher and destination only. It doesn't include extensions.`,
 }
 
 func runUpdate(sc storage.Interface) {
-	v, err := proute.VirtualHost(sc, routeOpt.virtualhost, routeOpt.domain, false)
+	v, err := proute.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
 	if err != nil {
-		fmt.Println("Unable to get virtual host for routes:", err)
+		fmt.Println("Unable to get virtual service for routes:", err)
 		os.Exit(1)
 	}
-	fmt.Println("Using virtual host:", v.Name)
+	fmt.Println("Using virtual service:", v.Name)
 	routes := v.GetRoutes()
 	updated, err := updateRoutes(sc, routes, routeOpt)
 	if err != nil {

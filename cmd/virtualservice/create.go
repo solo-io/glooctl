@@ -1,4 +1,4 @@
-package vhost
+package virtualservice
 
 import (
 	"fmt"
@@ -16,14 +16,14 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
 	"github.com/solo-io/glooctl/pkg/util"
-	"github.com/solo-io/glooctl/pkg/virtualhost"
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"github.com/spf13/cobra"
 )
 
 func createCmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "create",
-		Short: "create virtual host",
+		Short: "create virtual service",
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
@@ -37,41 +37,41 @@ func createCmd(opts *bootstrap.Options) *cobra.Command {
 			}
 			vh, err := runCreate(sc, si, cliOpts)
 			if err != nil {
-				fmt.Printf("Unable to create virtual host %q\n", err)
+				fmt.Printf("Unable to create virtual service %q\n", err)
 				os.Exit(1)
 			}
 			util.Print(cliOpts.Output, "", vh, func(v interface{}, w io.Writer) error {
-				virtualhost.PrintTable([]*v1.VirtualHost{v.(*v1.VirtualHost)}, w)
+				virtualservice.PrintTable([]*v1.VirtualService{v.(*v1.VirtualService)}, w)
 				return nil
 			}, os.Stdout)
 		},
 	}
 
-	cmd.Flags().StringVarP(&cliOpts.Filename, "filename", "f", "", "file to use to create virtual host")
+	cmd.Flags().StringVarP(&cliOpts.Filename, "filename", "f", "", "file to use to create virtual service")
 	cmd.MarkFlagFilename("filename", "yaml", "yml")
 	cmd.Flags().BoolVarP(&cliOpts.Interactive, "interactive", "i", true, "interactive mode")
 	return cmd
 }
 
-func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *virtualhost.Options) (*v1.VirtualHost, error) {
-	var vh *v1.VirtualHost
+func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *virtualservice.Options) (*v1.VirtualService, error) {
+	var vs *v1.VirtualService
 	if opts.Filename != "" {
 		var err error
-		vh, err = parseFile(opts.Filename)
+		vs, err = parseFile(opts.Filename)
 		if err != nil {
-			return nil, errors.Wrapf(err, "unable to load virtual host from %s", opts.Filename)
+			return nil, errors.Wrapf(err, "unable to load virtual service from %s", opts.Filename)
 		}
 	} else {
 		if !opts.Interactive {
 			return nil, errors.New("no file specified and interactive mode turned off")
 		}
-		vh = &v1.VirtualHost{}
-		if err := virtualhost.Interactive(sc, si, vh); err != nil {
+		vs = &v1.VirtualService{}
+		if err := virtualservice.Interactive(sc, si, vs); err != nil {
 			return nil, err
 		}
 	}
-	if err := defaultVHostValidation(vh); err != nil {
+	if err := defaultVirtualServiceValidation(vs); err != nil {
 		return nil, err
 	}
-	return sc.V1().VirtualHosts().Create(vh)
+	return sc.V1().VirtualServices().Create(vs)
 }

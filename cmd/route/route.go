@@ -25,13 +25,13 @@ const (
 )
 
 type routeOption struct {
-	route       *routeDetail
-	virtualhost string
-	domain      string
-	filename    string
-	output      string
-	sort        bool
-	interactive bool
+	route          *routeDetail
+	virtualservice string
+	domain         string
+	filename       string
+	output         string
+	sort           bool
+	interactive    bool
 }
 
 type kubeUpstream struct {

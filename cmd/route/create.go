@@ -41,7 +41,7 @@ the flags.`,
 				return
 			}
 
-			routes, err := runCreate(sc, routeOpt.virtualhost, routeOpt.domain, r, routeOpt.sort)
+			routes, err := runCreate(sc, routeOpt.virtualservice, routeOpt.domain, r, routeOpt.sort)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.domain, err)
 				return
@@ -63,17 +63,17 @@ the flags.`,
 	return cmd
 }
 
-func runCreate(sc storage.Interface, vhostname, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, err := proute.VirtualHost(sc, vhostname, domain, true)
+func runCreate(sc storage.Interface, vservicename, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
+	v, err := proute.VirtualService(sc, vservicename, domain, true)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Using virtual host:", v.Name)
+	fmt.Println("Using virtual service:", v.Name)
 	v.Routes = append(v.GetRoutes(), route)
 	if sort {
 		sortRoutes(v.Routes)
 	}
-	updated, err := sc.V1().VirtualHosts().Update(v)
+	updated, err := sc.V1().VirtualServices().Update(v)
 	if err != nil {
 		return nil, err
 	}

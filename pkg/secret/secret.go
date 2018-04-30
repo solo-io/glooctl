@@ -30,12 +30,12 @@ func Get(sc storage.Interface, si dependencies.SecretStorage, name string) error
 	if err != nil {
 		return errors.Wrap(err, "unable to get upstreams")
 	}
-	virtualhosts, err := sc.V1().VirtualHosts().List()
+	virtualservices, err := sc.V1().VirtualServices().List()
 	if err != nil {
-		return errors.Wrap(err, "unable to get virtual hosts")
+		return errors.Wrap(err, "unable to get virtual services")
 	}
 
-	PrintTableWithUsage(list, os.Stdout, upstreams, virtualhosts)
+	PrintTableWithUsage(list, os.Stdout, upstreams, virtualservices)
 	return nil
 }
 

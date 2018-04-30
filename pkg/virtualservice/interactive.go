@@ -1,4 +1,4 @@
-package virtualhost
+package virtualservice
 
 import (
 	"fmt"
@@ -13,26 +13,26 @@ import (
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
-// SelectInteractive - selects a virtual host interactively from the list
-// of virtual hosts in the system
-func SelectInteractive(sc storage.Interface) (*v1.VirtualHost, error) {
-	existing, err := sc.V1().VirtualHosts().List()
+// SelectInteractive - selects a virtual service interactively from the list
+// of virtual services in the system
+func SelectInteractive(sc storage.Interface) (*v1.VirtualService, error) {
+	existing, err := sc.V1().VirtualServices().List()
 	if err != nil {
 		return nil, err
 	}
 	if len(existing) == 0 {
-		return nil, errors.New("no existing virtual hosts to update")
+		return nil, errors.New("no existing virtual services to select")
 	}
 
-	virtualHostNames := make([]string, len(existing))
+	virtualServiceNames := make([]string, len(existing))
 	for i, v := range existing {
-		virtualHostNames[i] = v.Name
+		virtualServiceNames[i] = v.Name
 	}
 
 	var selected string
 	if err := survey.AskOne(&survey.Select{
-		Message: "Please select the virtual host to edit:",
-		Options: virtualHostNames,
+		Message: "Please select the virtual service to edit:",
+		Options: virtualServiceNames,
 	}, &selected, survey.Required); err != nil {
 		return nil, err
 	}
@@ -42,33 +42,33 @@ func SelectInteractive(sc storage.Interface) (*v1.VirtualHost, error) {
 			return v, nil
 		}
 	}
-	return nil, errors.New("didn't find selected virtual host")
+	return nil, errors.New("didn't find selected virtual service")
 }
 
-// Interactive for interactively creating/editing virtual hosts
+// Interactive for interactively creating/editing virtual services
 // Doesn't handle routes as we have separate interactive mode for routes
-func Interactive(sc storage.Interface, si dependencies.SecretStorage, vh *v1.VirtualHost) error {
-	existing, err := sc.V1().VirtualHosts().List()
+func Interactive(sc storage.Interface, si dependencies.SecretStorage, vs *v1.VirtualService) error {
+	existing, err := sc.V1().VirtualServices().List()
 	if err != nil {
 		return err
 	}
 	// name
-	if vh.Name == "" {
-		// new virtual host
+	if vs.Name == "" {
+		// new virtual service
 		var name string
 		err = survey.AskOne(&survey.Input{
-			Message: "Please enter a name for virtual host:",
+			Message: "Please enter a name for virtual service:",
 		}, &name, func(val interface{}) error {
 			v, ok := val.(string)
 			if !ok {
 				return errors.New("not a string value")
 			}
 			if v == "" {
-				return errors.New("virtual host name can't be empty")
+				return errors.New("virtual service name can't be empty")
 			}
 			for _, e := range existing {
 				if e.Name == v {
-					return errors.New("virtual host with that name already exists")
+					return errors.New("virtual service with that name already exists")
 				}
 			}
 			return nil
@@ -76,20 +76,20 @@ func Interactive(sc storage.Interface, si dependencies.SecretStorage, vh *v1.Vir
 		if err != nil {
 			return err
 		}
-		vh.Name = name
+		vs.Name = name
 	}
 
-	updatedDomains, err := domainsInteractive(vh.Domains)
+	updatedDomains, err := domainsInteractive(vs.Domains)
 	if err != nil {
 		return err
 	}
-	vh.Domains = updatedDomains
+	vs.Domains = updatedDomains
 
-	updatedSSL, err := sslConfigInteractive(si, vh.SslConfig)
+	updatedSSL, err := sslConfigInteractive(si, vs.SslConfig)
 	if err != nil {
 		return err
 	}
-	vh.SslConfig = updatedSSL
+	vs.SslConfig = updatedSSL
 	return nil
 }
 
