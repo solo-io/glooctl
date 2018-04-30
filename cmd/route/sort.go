@@ -26,7 +26,7 @@ func sortCmd(opts *bootstrap.Options) *cobra.Command {
 				os.Exit(1)
 			}
 
-			routes, err := runSort(sc, routeOpt.virtualhost, routeOpt.domain)
+			routes, err := runSort(sc, routeOpt.virtualservice, routeOpt.domain)
 			if err != nil {
 				fmt.Println("Unable to sort routes", err)
 				os.Exit(1)
@@ -41,14 +41,14 @@ func sortCmd(opts *bootstrap.Options) *cobra.Command {
 	return cmd
 }
 
-func runSort(sc storage.Interface, vhostname, domain string) ([]*v1.Route, error) {
-	v, err := proute.VirtualHost(sc, vhostname, domain, false)
+func runSort(sc storage.Interface, vservicename, domain string) ([]*v1.Route, error) {
+	v, err := proute.VirtualService(sc, vservicename, domain, false)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println("Using virtual host:", v.Name)
+	fmt.Println("Using virtual service:", v.Name)
 	sortRoutes(v.Routes)
-	updated, err := sc.V1().VirtualHosts().Update(v)
+	updated, err := sc.V1().VirtualServices().Update(v)
 	if err != nil {
 		return nil, err
 	}

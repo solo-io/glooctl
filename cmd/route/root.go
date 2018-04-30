@@ -7,9 +7,9 @@ import (
 )
 
 const (
-	flagDomain      = "domain"
-	flagVirtualHost = "virtual-host"
-	flagFilename    = "filename"
+	flagDomain         = "domain"
+	flagVirtualService = "virtual-service"
+	flagFilename       = "filename"
 
 	flagEvent         = "event"
 	flagPathExact     = "path-exact"
@@ -31,17 +31,17 @@ var (
 	routeOpt = &routeOption{route: &routeDetail{kube: &kubeUpstream{}}}
 )
 
-// Cmd returns command related to managing routes on a virtual host
+// Cmd returns command related to managing routes on a virtual service
 func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "route",
-		Short: "manage routes on a virtual host",
+		Short: "manage routes on a virtual service",
 	}
 
 	pflags := cmd.PersistentFlags()
 	pflags.StringVarP(&routeOpt.output, "output", "o", "", "output format yaml|json")
-	pflags.StringVarP(&routeOpt.domain, flagDomain, "d", "", "domain for virtual host; empty defaults to default virtual host")
-	pflags.StringVarP(&routeOpt.virtualhost, flagVirtualHost, "v", "", "specify virtual host by name; empty defaults to default virtual host")
+	pflags.StringVarP(&routeOpt.domain, flagDomain, "d", "", "domain for virtual service; empty defaults to default virtual service")
+	pflags.StringVarP(&routeOpt.virtualservice, flagVirtualService, "v", "", "specify virtual service by name; empty defaults to default virtual service")
 	pflags.StringVarP(&routeOpt.filename, flagFilename, "f", "", "file with route defintion")
 	cmd.MarkFlagFilename(flagFilename, "yaml", "yml")
 
@@ -51,7 +51,7 @@ func Cmd(opts *bootstrap.Options) *cobra.Command {
 	setupRouteParams(create, update, delete)
 	cmd.AddCommand(getCmd(opts), create, delete, update, sortCmd(opts))
 
-	annotate(cmd.Flag(flagVirtualHost), "__glooctl_get_virtualhosts")
+	annotate(cmd.Flag(flagVirtualService), "__glooctl_get_virtualservices")
 	return cmd
 }
 

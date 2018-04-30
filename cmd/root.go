@@ -21,8 +21,8 @@ import (
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
-	"github.com/solo-io/glooctl/cmd/vhost"
-	"github.com/solo-io/glooctl/pkg/config"
+	"github.com/solo-io/glooctl/cmd/virtualservice"
+	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
 
@@ -49,10 +49,10 @@ __glooctl_get_functions()
 	fi
 }
 
-__glooctl_get_virtualhosts()
+__glooctl_get_virtualservices()
 {
 	local glooctl_out
-	if glooctl_out=$(glooctl virtualhost get -o template --template="{{range .}}{{.Name}} {{end}}" 2>/dev/null); then
+	if glooctl_out=$(glooctl virtualservice get -o template --template="{{range .}}{{.Name}} {{end}}" 2>/dev/null); then
 		COMPREPLY=( $( compgen -W "${glooctl_out}" -- "$cur" ) )
 	fi
 }
@@ -64,8 +64,8 @@ __custom_func()
 			__glooctl_get_upstreams
 			return
 			;;
-		glooctl_virtualhost_edit | glooctl_virtualhost_delete | glooctl_virtualhost_get)
-			__glooctl_get_virtualhosts
+		glooctl_virtualservice_edit | glooctl_virtualservice_delete | glooctl_virtualservice_get)
+			__glooctl_get_virtualservices
 			return
 			;;
 		*)
@@ -102,7 +102,7 @@ func App(version string) *cobra.Command {
 	app.AddCommand(
 		upstream.Cmd(opts),
 		functionCmd(opts),
-		vhost.Cmd(opts),
+		virtualservice.Cmd(opts),
 		route.Cmd(opts),
 		secret.Cmd(opts),
 		install.Cmd(),

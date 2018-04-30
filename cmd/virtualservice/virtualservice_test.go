@@ -1,4 +1,4 @@
-package vhost
+package virtualservice
 
 import (
 	"bytes"
@@ -79,7 +79,7 @@ var (
 		Extensions: extensions,
 	}
 
-	vhost1 = &v1.VirtualHost{
+	vservice1 = &v1.VirtualService{
 		Name:   "default",
 		Routes: []*v1.Route{route1, route2, route3},
 	}
@@ -87,9 +87,9 @@ var (
 
 func TestPrintYAML(t *testing.T) {
 	buf := &bytes.Buffer{}
-	util.PrintYAML(vhost1, buf)
+	util.PrintYAML(vservice1, buf)
 
-	expected, err := ioutil.ReadFile("testdata/vhost1.yaml") // test file has extra empty line to match the print function
+	expected, err := ioutil.ReadFile("testdata/vservice1.yaml") // test file has extra empty line to match the print function
 	if err != nil {
 		t.Error("unable to load yaml file ", err)
 	}

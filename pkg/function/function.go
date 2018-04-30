@@ -50,11 +50,11 @@ func Get(sc storage.Interface, output, tplt string) error {
 	case "template":
 		return PrintTemplate(functions, tplt, os.Stdout)
 	default:
-		virtualhosts, err := sc.V1().VirtualHosts().List()
+		virtualservices, err := sc.V1().VirtualServices().List()
 		if err != nil {
-			return errors.Wrap(err, "unable to get virtual hosts")
+			return errors.Wrap(err, "unable to get virtual services")
 		}
-		PrintTableWithRoutes(functions, os.Stdout, virtualhosts)
+		PrintTableWithRoutes(functions, os.Stdout, virtualservices)
 	}
 	return nil
 }
@@ -77,8 +77,8 @@ func PrintTemplate(list []FunctionWithUpstream, tplt string, w io.Writer) error 
 }
 
 // PrintTableWithRoutes prints functions and routes mapped to them to the io.Writer
-func PrintTableWithRoutes(list []FunctionWithUpstream, w io.Writer, virtualhosts []*v1.VirtualHost) {
-	routeMap := routes(virtualhosts)
+func PrintTableWithRoutes(list []FunctionWithUpstream, w io.Writer, virtualservices []*v1.VirtualService) {
+	routeMap := routes(virtualservices)
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Function", "Upstream", "Matcher", "Type", "Verb", "Header", "Extension"})
 
@@ -100,9 +100,9 @@ func PrintTableWithRoutes(list []FunctionWithUpstream, w io.Writer, virtualhosts
 	table.Render()
 }
 
-func routes(virtualhosts []*v1.VirtualHost) map[string][]*v1.Route {
+func routes(virtualservices []*v1.VirtualService) map[string][]*v1.Route {
 	m := make(map[string][]*v1.Route)
-	for _, v := range virtualhosts {
+	for _, v := range virtualservices {
 		for _, r := range v.Routes {
 			dsts := route.Destinations(r)
 			for _, d := range dsts {

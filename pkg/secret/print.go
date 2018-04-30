@@ -26,7 +26,7 @@ var (
 )
 
 // PrintTableWithUsage prints secrets and their usage
-func PrintTableWithUsage(list []*dependencies.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualHost) {
+func PrintTableWithUsage(list []*dependencies.Secret, w io.Writer, u []*v1.Upstream, v []*v1.VirtualService) {
 	table := tablewriter.NewWriter(w)
 	table.SetHeader([]string{"Name", "Type", "In Use By"})
 
@@ -45,25 +45,25 @@ func PrintTableWithUsage(list []*dependencies.Secret, w io.Writer, u []*v1.Upstr
 	table.Render()
 }
 
-func usage(list []*dependencies.Secret, upstreams []*v1.Upstream, virtualhosts []*v1.VirtualHost) map[string][]string {
+func usage(list []*dependencies.Secret, upstreams []*v1.Upstream, virtualservices []*v1.VirtualService) map[string][]string {
 	m := make(map[string][]string, len(list))
 	for _, s := range list {
 		m[s.Ref] = []string{}
 	}
 
-	usageVirtualHost(m, virtualhosts)
+	usageVirtualService(m, virtualservices)
 	usageUpstream(m, upstreams)
 	return m
 }
 
-func usageVirtualHost(secrets map[string][]string, virtualhosts []*v1.VirtualHost) {
-	for _, v := range virtualhosts {
+func usageVirtualService(secrets map[string][]string, virtualservices []*v1.VirtualService) {
+	for _, v := range virtualservices {
 		ssl := v.GetSslConfig()
 		if ssl != nil {
 			ref := ssl.GetSecretRef()
 			existing, ok := secrets[ref]
 			if ok {
-				secrets[ref] = append(existing, "Virtual Host:"+v.GetName())
+				secrets[ref] = append(existing, "Virtual Service:"+v.GetName())
 			}
 		}
 	}

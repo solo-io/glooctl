@@ -41,13 +41,13 @@ matcher and destintation only. It doesn't include extensions.`,
 }
 
 func runDelete(sc storage.Interface) {
-	vh, err := proute.VirtualHost(sc, routeOpt.virtualhost, routeOpt.domain, false)
+	vs, err := proute.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
 	if err != nil {
-		fmt.Printf("Unable to get virtualhost for routes: %q\n", err)
+		fmt.Printf("Unable to get virtual service for routes: %q\n", err)
 		os.Exit(1)
 	}
-	fmt.Println("Using virtual host:", vh.Name)
-	routes := vh.GetRoutes()
+	fmt.Println("Using virtual service:", vs.Name)
+	routes := vs.GetRoutes()
 
 	filtered, err := removeRoutes(sc, routes, routeOpt)
 	if err != nil {
@@ -55,8 +55,8 @@ func runDelete(sc storage.Interface) {
 		os.Exit(1)
 	}
 
-	vh.Routes = filtered
-	saved, err := save(sc, vh)
+	vs.Routes = filtered
+	saved, err := save(sc, vs)
 	if err != nil {
 		fmt.Printf("Unable to save routes: %q\n", err)
 		os.Exit(1)
@@ -85,8 +85,8 @@ func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *routeOption) (
 
 }
 
-func save(sc storage.Interface, virtualhost *v1.VirtualHost) ([]*v1.Route, error) {
-	updated, err := sc.V1().VirtualHosts().Update(virtualhost)
+func save(sc storage.Interface, virtualservice *v1.VirtualService) ([]*v1.Route, error) {
+	updated, err := sc.V1().VirtualServices().Update(virtualservice)
 	if err != nil {
 		return nil, err
 	}
