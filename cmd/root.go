@@ -15,25 +15,15 @@
 package cmd
 
 import (
-	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
-	"github.com/ghodss/yaml"
-
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
+	"github.com/solo-io/glooctl/cmd/install"
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/vhost"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/config"
 	"github.com/spf13/cobra"
-)
-
-const (
-	defaultStorage = "kube"
 )
 
 var (
@@ -106,7 +96,7 @@ func App(version string) *cobra.Command {
 	flags.AddConsulFlags(app, opts)
 	flags.AddVaultFlags(app, opts)
 
-	loadConfig(opts) // load saved configurations
+	config.LoadConfig(opts) // load saved configurations
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
@@ -115,52 +105,9 @@ func App(version string) *cobra.Command {
 		vhost.Cmd(opts),
 		route.Cmd(opts),
 		secret.Cmd(opts),
+		install.Cmd(),
 		registerCmd(opts),
 		completionCmd())
 
 	return app
-}
-
-// loadConfig loads saved configuration if any
-// if not sets default configuration and also saves it
-func loadConfig(opts *bootstrap.Options) {
-	configDir, err := util.ConfigDir()
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to get config directory:", err)
-		defaultConfig(opts)
-		return
-	}
-	configFile := filepath.Join(configDir, "config.yaml")
-	data, err := ioutil.ReadFile(configFile)
-	if err != nil {
-		defaultConfig(opts)
-		if os.IsNotExist(err) {
-			saveConfig(opts, configFile)
-		} else {
-			fmt.Fprintln(os.Stderr, "Error reading configuration file:", err)
-		}
-		return
-	}
-	if err := yaml.Unmarshal(data, opts); err != nil {
-		defaultConfig(opts)
-		fmt.Fprintln(os.Stderr, "Unable to parse configuration file:", err)
-	}
-}
-
-func saveConfig(opts *bootstrap.Options, configFile string) {
-	b, err := yaml.Marshal(opts)
-	if err != nil {
-		return
-	}
-	err = ioutil.WriteFile(configFile, b, 0644)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, "Unable to save configuration file", configFile)
-	}
-}
-
-func defaultConfig(opts *bootstrap.Options) {
-	opts.ConfigStorageOptions.Type = defaultStorage
-	opts.SecretStorageOptions.Type = defaultStorage
-	opts.FileStorageOptions.Type = defaultStorage
-	opts.KubeOptions.KubeConfig = filepath.Join(util.HomeDir(), ".kube", "config")
 }
