@@ -7,11 +7,15 @@ pages:
       - Architecture: introduction/architecture.md
     - Installation:
       - Installing on Kubernetes: installation/kubernetes.md
+      - Installing on OpenShift: installation/openshift.md
 #      - Installing on Local Docker: installation/docker.md
     - Getting Started:
       - Kubernetes:
         - Basic Routing: getting_started/kubernetes/1.md
         - Function Routing: getting_started/kubernetes/2.md
+      - OpenShift:
+        - Basic Routing: getting_started/openshift/1.md
+        - Function Routing: getting_started/openshift/2.md
       - AWS:
         - Basic Lambda with Gloo: getting_started/aws/lambda.md
     - Tutorials:
@@ -33,7 +37,7 @@ pages:
     - v1 API reference:
 #      - Overview: v1/overview.md
       - Upstreams: v1/upstream.md
-      - Virtual Hosts: v1/virtualhost.md
+      - Virtual Services: v1/virtualservice.md
       - Metadata: v1/metadata.md
       - Status: v1/status.md
 repo_url: https://github.com/solo-io/gloo/

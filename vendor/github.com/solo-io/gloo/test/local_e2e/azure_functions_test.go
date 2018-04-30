@@ -93,7 +93,7 @@ var _ = Describe("Azure Functions", func() {
 
 		funcSpec := azure.FunctionSpec{
 			FunctionName: azureFunction,
-			AuthLevel:    "anonymous",
+			AuthLevel:    "function",
 		}
 
 		v1FSpec, err := protoutil.MarshalStruct(funcSpec)
@@ -112,7 +112,7 @@ var _ = Describe("Azure Functions", func() {
 			return us.Functions, nil
 		}, time.Second*10).Should(ContainElement(expectedFunction))
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{
@@ -131,7 +131,7 @@ var _ = Describe("Azure Functions", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"message": "solo.io"}`)
@@ -197,7 +197,7 @@ var _ = Describe("Azure Functions", func() {
 			return us.Functions, nil
 		}, time.Second*10).Should(ContainElement(expectedFunction))
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_RequestMatcher{
@@ -216,7 +216,7 @@ var _ = Describe("Azure Functions", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"name": "solo.io"}`)

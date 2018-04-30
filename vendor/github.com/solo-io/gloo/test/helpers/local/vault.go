@@ -11,14 +11,15 @@ import (
 	"time"
 
 	"bytes"
-	"github.com/onsi/ginkgo"
-	"github.com/pkg/errors"
 	"io"
 	"regexp"
 	"strings"
+
+	"github.com/onsi/ginkgo"
+	"github.com/pkg/errors"
 )
 
-const defualtVaultDockerImage = "vault"
+const defualtVaultDockerImage = "vault:0.9.2"
 
 type VaultFactory struct {
 	vaultpath string
@@ -110,7 +111,12 @@ func (i *VaultInstance) Token() string {
 }
 
 func (i *VaultInstance) RunWithPort() error {
-	cmd := exec.Command(i.vaultpath, "server", "-dev")
+	cmd := exec.Command(i.vaultpath,
+		"server",
+		"-dev",
+		"-dev-root-token-id=root",
+		"-dev-listen-address=0.0.0.0:8200",
+	)
 	buf := &bytes.Buffer{}
 	w := io.MultiWriter(ginkgo.GinkgoWriter, buf)
 	cmd.Dir = i.tmpdir
@@ -146,4 +152,21 @@ func (i *VaultInstance) Clean() error {
 		os.RemoveAll(i.tmpdir)
 	}
 	return nil
+}
+
+func (i *VaultInstance) Exec(args ...string) (string, error) {
+	cmd := exec.Command(i.vaultpath, args...)
+	cmd.Env = os.Environ()
+	// disable DEBUG=1 from getting through to nomad
+	for i, pair := range cmd.Env {
+		if strings.HasPrefix(pair, "DEBUG") {
+			cmd.Env = append(cmd.Env[:i], cmd.Env[i+1:]...)
+			break
+		}
+	}
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		err = fmt.Errorf("%s (%v)", out, err)
+	}
+	return string(out), err
 }

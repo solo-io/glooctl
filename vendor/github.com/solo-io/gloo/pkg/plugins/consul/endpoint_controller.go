@@ -81,7 +81,20 @@ func (c *endpointController) Run(stop <-chan struct{}) {
 }
 
 func (c *endpointController) TrackUpstreams(upstreams []*v1.Upstream) {
-	c.upstreamsToTrack <- upstreams
+	var ourUpstreams []*v1.Upstream
+	// TODO: write a test for this filtering of upstreams
+	for _, us := range upstreams {
+		if us.Type != UpstreamTypeConsul {
+			continue
+		}
+		_, err := DecodeUpstreamSpec(us.Spec)
+		if err != nil {
+			log.Warnf("error in consul endpoint controller: %v", err)
+			continue
+		}
+		ourUpstreams = append(ourUpstreams, us)
+	}
+	c.upstreamsToTrack <- ourUpstreams
 }
 
 func (c *endpointController) Endpoints() <-chan endpointdiscovery.EndpointGroups {
@@ -170,6 +183,9 @@ func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec 
 	var eps []endpointdiscovery.Endpoint
 	for _, inst := range instances {
 		if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
+			continue
+		}
+		if inst.ServiceAddress == "" || inst.ServicePort == 0 {
 			continue
 		}
 		ep := endpointdiscovery.Endpoint{

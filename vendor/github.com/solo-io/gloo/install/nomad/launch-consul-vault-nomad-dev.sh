@@ -3,6 +3,7 @@
 consul agent -dev --client 0.0.0.0 &
 
 vault server -dev -dev-root-token-id=root \
+    -log-level=trace \
     -dev-listen-address 0.0.0.0:8200 &
 
 sleep 1
@@ -13,7 +14,6 @@ nomad agent -dev \
     --vault-enabled=true \
     --vault-address=http://127.0.0.1:8200 \
     --vault-token=root \
-    -bind 172.17.0.1 \
     -network-interface docker0 &
 
 FAIL=0

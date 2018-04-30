@@ -38,7 +38,7 @@ job "gloo" {
       }
       driver = "docker"
       config {
-        image = "soloio/control-plane:0.2.0"
+        image = "soloio/control-plane:0.2.1"
         port_map {
           xds = 8081
         }
@@ -94,14 +94,18 @@ job "gloo" {
           https = 8443
           admin = 19000
         }
-        command = "/bin/bash"
+        command = "envoy"
         args = [
           "-c",
-          <<EOF
-cat > ${NOMAD_TASK_DIR}/envoy.yaml <<CONFIG_END; envoy -c /local/envoy.yaml --v2-config-only
+          "${NOMAD_TASK_DIR}/envoy.yaml",
+          "--v2-config-only",
+        ]
+      }
+      template {
+        data = <<EOF
 node:
   cluster: ingress
-  id: ${NOMAD_ALLOC_ID}
+  id: {{ env "NOMAD_ALLOC_ID" }}
 
 static_resources:
   clusters:
@@ -110,8 +114,8 @@ static_resources:
     connect_timeout: 5.000s
     hosts:
     - socket_address:
-        address: ${NOMAD_IP_control_plane_xds}
-        port_value: ${NOMAD_PORT_control_plane_xds}
+        address: {{ env "NOMAD_IP_control_plane_xds" }}
+        port_value: {{ env "NOMAD_PORT_control_plane_xds" }}
     http2_protocol_options: {}
     type: STATIC
 
@@ -131,10 +135,8 @@ admin:
     socket_address:
       address: 0.0.0.0
       port_value: 19000
-CONFIG_END
-
 EOF
-        ]
+        destination = "${NOMAD_TASK_DIR}/envoy.yaml"
       }
       resources {
         cpu = 500
@@ -149,7 +151,31 @@ EOF
       service {
         name = "ingress"
         tags = [
-          "gloo"]
+          "gloo", "http"]
+        port = "http"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "5s"
+        }
+      }
+      service {
+        name = "ingress"
+        tags = [
+          "gloo", "https"]
+        port = "https"
+        check {
+          name = "alive"
+          type = "tcp"
+          interval = "10s"
+          timeout = "5s"
+        }
+      }
+      service {
+        name = "ingress"
+        tags = [
+          "gloo", "admin"]
         port = "admin"
         check {
           name = "alive"
@@ -157,6 +183,30 @@ EOF
           interval = "10s"
           timeout = "5s"
         }
+      }
+    }
+
+    # upstream-discovery
+    task "upstream-discovery" {
+
+      env {
+        DEBUG = "1"
+      }
+
+      driver = "docker"
+      config {
+        image = "soloio/upstream-discovery:0.2.1"
+        args = [
+          "--storage.type=consul",
+          "--storage.refreshrate=1m",
+          "--consul.address=${attr.driver.docker.bridge_ip}:8500",
+          "--consul.scheme=http",
+          "--enable.consul",
+        ]
+      }
+      resources {
+        cpu = 500
+        memory = 256
       }
     }
 
@@ -169,7 +219,7 @@ EOF
 
       driver = "docker"
       config {
-        image = "soloio/function-discovery:0.2.0"
+        image = "soloio/function-discovery:0.2.1"
         args = [
           "--storage.type=consul",
           "--storage.refreshrate=1m",

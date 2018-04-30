@@ -17,7 +17,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 
 	Context("route with CORS", func() {
 		servicePath := "/" + uuid.New()
-		vhostName := "cors-route"
+		vServiceName := "cors-route"
 		BeforeEach(func() {
 			_, err := gloo.V1().Upstreams().Create(&v1.Upstream{
 				Name: helloService,
@@ -32,15 +32,14 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 				}),
 			})
 			Must(err)
-			_, err = gloo.V1().VirtualHosts().Create(&v1.VirtualHost{
-				Name: vhostName,
+			_, err = gloo.V1().VirtualServices().Create(&v1.VirtualService{
+				Name: vServiceName,
 				Routes: []*v1.Route{{
 					Matcher: &v1.Route_RequestMatcher{
 						RequestMatcher: &v1.RequestMatcher{
 							Path: &v1.RequestMatcher_PathExact{
 								PathExact: servicePath,
 							},
-							Verbs: []string{"HEAD", "GET"},
 						},
 					},
 					SingleDestination: &v1.Destination{
@@ -54,7 +53,7 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 						extensions.RouteExtensionSpec{
 							Cors: &extensions.CorsPolicy{
 								AllowOrigin:  []string{"*"},
-								AllowMethods: "GET, POST",
+								AllowMethods: "GET, POST, PUT",
 							},
 						},
 					),
@@ -65,16 +64,30 @@ var _ = Describe("Route Exetnsion - CORS", func() {
 
 		AfterEach(func() {
 			gloo.V1().Upstreams().Delete(helloService)
-			gloo.V1().VirtualHosts().Delete(vhostName)
+			gloo.V1().VirtualServices().Delete(vServiceName)
 		})
 
 		It("should return response with CORS allow method header", func() {
-			curlEventuallyShouldRespond(curlOpts{path: servicePath, returnHeaders: true},
-				"access-control-allow-methods: GET, POST", time.Minute*5)
+			curlEventuallyShouldRespond(curlOpts{
+				path:          servicePath,
+				method:        "OPTIONS",
+				returnHeaders: true,
+				headers: map[string]string{
+					"Origin":                        "gloo.solo.io",
+					"Access-Control-Request-Method": "POST",
+				}},
+				"access-control-allow-methods: GET, POST, PUT", time.Minute*5)
 		})
 		It("should return response with CORS allow origin header", func() {
-			curlEventuallyShouldRespond(curlOpts{path: servicePath, returnHeaders: true},
-				"access-control-allow-origin: *", time.Minute*5)
+			curlEventuallyShouldRespond(curlOpts{
+				path:          servicePath,
+				method:        "OPTIONS",
+				returnHeaders: true,
+				headers: map[string]string{
+					"Origin":                        "gloo.solo.io",
+					"Access-Control-Request-Method": "POST",
+				}},
+				"access-control-allow-origin: gloo.solo.io", time.Minute*5)
 		})
 	})
 })

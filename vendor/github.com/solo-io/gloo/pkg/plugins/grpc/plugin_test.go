@@ -15,21 +15,6 @@ import (
 )
 
 var _ = Describe("Plugin", func() {
-	//FIt("unmarshal file descriptor", func() {
-	//	b, err := ioutil.ReadFile("grpc-test-service/descriptors/proto.pb")
-	//	Expect(err).NotTo(HaveOccurred())
-	//	descriptor, err := convertProto(b)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	log.Printf("%v", FuncsForProto("Bookstore", descriptor))
-	//})
-	//It("unmarshal file descriptor", func() {
-	//	b, err := ioutil.ReadFile("grpc-test-service/descriptors/proto.pb")
-	//	Expect(err).NotTo(HaveOccurred())
-	//	descriptor, err := convertProto(b)
-	//	Expect(err).NotTo(HaveOccurred())
-	//	//addHttpRulesToProto("my-upstream", "Bookstore", descriptor)
-	//	log.Printf("%v", FuncsForProto("Bookstore", descriptor))
-	//})
 	It("returns a dependency with a file ref for each descriptor file "+
 		"specified in the spec", func() {
 		us := &v1.Upstream{
@@ -70,6 +55,44 @@ var _ = Describe("Plugin", func() {
 			Expect(out.Metadata.FilterMetadata).NotTo(BeNil())
 			Expect(out.Metadata.FilterMetadata).To(HaveKey("io.solo.transformation"))
 		})
+
+		It("processes two upstreams with the same service", func() {
+			in1 := &v1.Upstream{
+				Name: "myupstream1",
+				ServiceInfo: &v1.ServiceInfo{
+					Type: ServiceTypeGRPC,
+					Properties: EncodeServiceProperties(ServiceProperties{
+						DescriptorsFileRef: "file_1",
+						GRPCServiceNames:   []string{"Bookstore"},
+					}),
+				},
+			}
+			in2 := &v1.Upstream{
+				Name: "myupstream2",
+				ServiceInfo: &v1.ServiceInfo{
+					Type: ServiceTypeGRPC,
+					Properties: EncodeServiceProperties(ServiceProperties{
+						DescriptorsFileRef: "file_1",
+						GRPCServiceNames:   []string{"Bookstore"},
+					}),
+				},
+			}
+			p := NewPlugin()
+			b, err := ioutil.ReadFile("test/proto.pb")
+			Expect(err).NotTo(HaveOccurred())
+			params := &plugins.UpstreamPluginParams{
+				Files: map[string]*dependencies.File{"file_1": {Ref: "file_1", Contents: b}},
+			}
+			out := &envoyapi.Cluster{}
+			err = p.ProcessUpstream(params, in1, out)
+			Expect(err).NotTo(HaveOccurred())
+
+			out = &envoyapi.Cluster{}
+			err = p.ProcessUpstream(params, in2, out)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(p.upstreamServices).To(HaveLen(2))
+		})
+
 		It("Stores the descriptors proto in the plugin memory and adds to it http rules", func() {
 			in := &v1.Upstream{
 				Name: "myupstream",
@@ -90,8 +113,8 @@ var _ = Describe("Plugin", func() {
 			out := &envoyapi.Cluster{}
 			err = p.ProcessUpstream(params, in, out)
 			Expect(err).To(BeNil())
-			Expect(p.upstreamServices["myupstream"]).To(Equal("bookstore.Bookstore"))
-			Expect(p.serviceDescriptors["bookstore.Bookstore"]).NotTo(BeNil())
+			Expect(p.upstreamServices["myupstream"].FullServiceName).To(Equal("bookstore.Bookstore"))
+			Expect(p.upstreamServices["myupstream"].Descriptors).NotTo(BeNil())
 			route := &v1.Route{
 				Matcher: &v1.Route_RequestMatcher{
 					RequestMatcher: &v1.RequestMatcher{
