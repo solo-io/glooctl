@@ -1,12 +1,7 @@
 package upstream_test
 
 import (
-	"os/exec"
-
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gbytes"
-	"github.com/onsi/gomega/gexec"
 	helper "github.com/solo-io/glooctl/internal/test-helper"
 )
 
@@ -15,26 +10,14 @@ var _ = Describe("Getting upstream", func() {
 	AfterEach(helper.TearDownStorage)
 
 	It("should exit with exit code 1 when updating non existing upstream", func() {
-		opts := helper.WithStorageOpts("upstream", "update", "-f", "testdata/update-non-exist.yaml")
-		command := exec.Command(helper.Glooctl, opts...)
-		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
-		Eventually(session.Out).Should(gbytes.Say(`unable to find existing`))
-		Eventually(session).Should(gexec.Exit(1))
+		helper.RunWithArgs("upstream", "update", "-f", "testdata/update-non-exist.yaml").
+			ExpectExitCodeAndOutput(1, `unable to find existing`)
 	})
 	It("should update valid upstream", func() {
-		opts := helper.WithStorageOpts("upstream", "update", "-f", "testdata/update.yaml")
-		command := exec.Command(helper.Glooctl, opts...)
-		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(0))
+		helper.RunWithArgs("upstream", "update", "-f", "testdata/update.yaml").ExpectExitCode(0)
 
 		// verify update
-		opts = helper.WithStorageOpts("upstream", "get", "with-function", "-o", "yaml")
-		command = exec.Command(helper.Glooctl, opts...)
-		session, err = gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
-		Eventually(session.Out).Should(gbytes.Say(`region: us-west-2`))
-		Eventually(session).Should(gexec.Exit(0))
+		helper.RunWithArgs("upstream", "get", "with-function", "-o", "yaml").
+			ExpectExitCodeAndOutput(0, `region: us-west-2`)
 	})
 })

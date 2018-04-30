@@ -1,12 +1,10 @@
 package upstream_test
 
 import (
-	"os/exec"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/onsi/gomega/gexec"
 	"github.com/solo-io/gloo/pkg/bootstrap/secretstorage"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
@@ -38,11 +36,6 @@ func setupUpstreams() {
 	createAWSSecret()
 
 	for _, f := range []string{"testdata/basic.yaml", "testdata/withfunctions.yaml"} {
-		opts := helper.WithStorageOpts("upstream", "create", "-f", f)
-		command := exec.Command(helper.Glooctl, opts...)
-		session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
-		Ω(err).ShouldNot(HaveOccurred())
-		Eventually(session).Should(gexec.Exit(0))
+		helper.RunWithArgs("upstream", "create", "-f", f).ExpectExitCode(0)
 	}
-
 }
