@@ -3,8 +3,10 @@ package helper
 import (
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"path/filepath"
 
+	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
@@ -65,11 +67,6 @@ func TearDownStorage() {
 	Expect(err).NotTo(HaveOccurred())
 }
 
-// WithStorageOpts adds file based storage flags to the glooctl CLI
-func WithStorageOpts(opts ...string) []string {
-	return append(opts, storageOpts...)
-}
-
 // BootstrapOpts returns the options used to represent the storage used
 func BootstrapOpts() *bootstrap.Options {
 	opts := &bootstrap.Options{}
@@ -79,4 +76,33 @@ func BootstrapOpts() *bootstrap.Options {
 	opts.FileOptions.SecretDir = secretDir
 
 	return opts
+}
+
+type Args struct {
+	Opts []string
+}
+
+// RunWithArgs setups glooctl to run with given CLI parameters
+func RunWithArgs(opts ...string) *Args {
+	return &Args{Opts: append(opts, storageOpts...)}
+}
+
+// ExpectExitCode runs glooctl and expects the given exit code
+func (a *Args) ExpectExitCode(code int) {
+	command := exec.Command(Glooctl, a.Opts...)
+	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+	Ω(err).ShouldNot(HaveOccurred())
+	Eventually(session).Should(gexec.Exit(code))
+}
+
+// ExpectExitCodeAndOutput runs glooctl and expects the given exit code and
+// output message
+func (a *Args) ExpectExitCodeAndOutput(code int, messages ...string) {
+	command := exec.Command(Glooctl, a.Opts...)
+	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
+	Ω(err).ShouldNot(HaveOccurred())
+	for _, m := range messages {
+		Eventually(session.Out).Should(gbytes.Say(m))
+	}
+	Eventually(session).Should(gexec.Exit(code))
 }
