@@ -26,6 +26,10 @@
 
 
 [[constraint]]
+  name = "github.com/hashicorp/nomad"
+  revision = "1c75593351b712bb2c22339efd642f1518ae837f"
+
+[[constraint]]
   name = "github.com/aws/aws-sdk-go"
   version = "1.13.29"
 

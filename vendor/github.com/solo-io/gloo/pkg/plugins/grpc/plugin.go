@@ -26,19 +26,22 @@ func init() {
 	plugins.Register(NewPlugin(), nil)
 }
 
+type ServiceAndDescriptors struct {
+	FullServiceName string
+	Descriptors     *descriptor.FileDescriptorSet
+}
+
 func NewPlugin() *Plugin {
 	return &Plugin{
-		serviceDescriptors: make(map[string]*descriptor.FileDescriptorSet),
-		upstreamServices:   make(map[string]string),
-		transformation:     transformation.NewTransformationPlugin(),
+		upstreamServices: make(map[string]ServiceAndDescriptors),
+		transformation:   transformation.NewTransformationPlugin(),
 	}
 }
 
 type Plugin struct {
 	// map service names to their descriptors
-	serviceDescriptors map[string]*descriptor.FileDescriptorSet
 	// keep track of which service belongs to which upstream
-	upstreamServices map[string]string
+	upstreamServices map[string]ServiceAndDescriptors
 	transformation   transformation.Plugin
 }
 
@@ -104,10 +107,10 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 		}
 		// cache the descriptors; we'll need then when we create our grpc filters
 		// need the package name as well, required by the transcoder filter
-		fullServiceName := packageName + "." + serviceName
-		p.serviceDescriptors[fullServiceName] = descriptors
+		fullServiceName := genFullServiceName(in.Name, packageName, serviceName)
 		// keep track of which service belongs to which upstream
-		p.upstreamServices[in.Name] = fullServiceName
+		p.upstreamServices[in.Name] = ServiceAndDescriptors{
+			Descriptors: descriptors, FullServiceName: fullServiceName}
 	}
 
 	addWellKnownProtos(descriptors)
@@ -117,6 +120,10 @@ func (p *Plugin) ProcessUpstream(params *plugins.UpstreamPluginParams, in *v1.Up
 	p.transformation.ActivateFilterForCluster(out)
 
 	return nil
+}
+
+func genFullServiceName(upstreamName, packageName, serviceName string) string {
+	return packageName + "." + serviceName
 }
 
 func convertProto(b []byte) (*descriptor.FileDescriptorSet, error) {
@@ -153,7 +160,7 @@ func (p *Plugin) ProcessRoute(_ *plugins.RoutePluginParams, in *v1.Route, out *e
 
 func (p *Plugin) templateForFunction(dest *v1.Destination_Function) (*transformation.TransformationTemplate, error) {
 	upstreamName := dest.Function.UpstreamName
-	serviceName, ok := p.upstreamServices[upstreamName]
+	serviceAndDescriptor, ok := p.upstreamServices[upstreamName]
 	if !ok {
 		// the upstream is not a grpc desintation
 		return nil, nil
@@ -164,7 +171,7 @@ func (p *Plugin) templateForFunction(dest *v1.Destination_Function) (*transforma
 
 	// create the transformation for the route
 
-	outPath := httpPath(upstreamName, serviceName, methodName)
+	outPath := httpPath(upstreamName, serviceAndDescriptor.FullServiceName, methodName)
 
 	// add query matcher to out path. kombina for now
 	// TODO: support query for matching
@@ -192,7 +199,7 @@ func addHttpRulesToProto(upstreamName, serviceName string, set *descriptor.FileD
 			if *svc.Name == serviceName {
 				for _, method := range svc.Method {
 					packageName = *file.Package
-					fullServiceName := packageName + "." + serviceName
+					fullServiceName := genFullServiceName(upstreamName, packageName, serviceName)
 					if err := proto.SetExtension(method.Options, api.E_Http, &api.HttpRule{
 						Pattern: &api.HttpRule_Post{
 							Post: httpPath(upstreamName, fullServiceName, *method.Name),
@@ -252,7 +259,12 @@ func httpPath(upstreamName, serviceName, methodName string) string {
 }
 
 func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilter {
-	if len(p.serviceDescriptors) == 0 {
+	defer func() {
+		// clear cache
+		p.upstreamServices = make(map[string]ServiceAndDescriptors)
+	}()
+
+	if len(p.upstreamServices) == 0 {
 		return nil
 	}
 
@@ -262,10 +274,9 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 		return nil
 	}
 
-	filters := []plugins.StagedFilter{*transformationFilter}
-
-	for serviceName, protoDescriptor := range p.serviceDescriptors {
-		descriptorBytes, err := proto.Marshal(protoDescriptor)
+	var filters []plugins.StagedFilter
+	for _, serviceAndDescriptor := range p.upstreamServices {
+		descriptorBytes, err := proto.Marshal(serviceAndDescriptor.Descriptors)
 		if err != nil {
 			log.Warnf("ERROR: marshaling proto descriptor: %v", err)
 			continue
@@ -275,7 +286,7 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 			DescriptorSet: &envoytranscoder.GrpcJsonTranscoder_ProtoDescriptorBin{
 				ProtoDescriptorBin: descriptorBytes,
 			},
-			Services:                  []string{serviceName},
+			Services:                  []string{serviceAndDescriptor.FullServiceName},
 			MatchIncomingRequestRoute: true,
 		})
 		if err != nil {
@@ -291,9 +302,11 @@ func (p *Plugin) HttpFilters(_ *plugins.FilterPluginParams) []plugins.StagedFilt
 		})
 	}
 
-	// clear cache
-	p.serviceDescriptors = make(map[string]*descriptor.FileDescriptorSet)
-	p.upstreamServices = make(map[string]string)
+	if len(filters) == 0 {
+		log.Warnf("ERROR: no valid GrpcJsonTranscoder available")
+		return nil
+	}
+	filters = append([]plugins.StagedFilter{*transformationFilter}, filters...)
 
 	return filters
 }
@@ -305,71 +318,3 @@ func (p *Plugin) ParseFunctionSpec(params *plugins.FunctionPluginParams, in v1.F
 	}
 	return nil, errors.New("functions are not required for service type " + ServiceTypeGRPC)
 }
-
-//func FuncsForProto(serviceName string, set *descriptor.FileDescriptorSet) []*v1.Function {
-//	var funcs []*v1.Function
-//	for _, file := range set.File {
-//		for _, svc := range file.Service {
-//			if svc.Name == nil || *svc.Name != serviceName {
-//				continue
-//			}
-//			for _, method := range svc.Method {
-//				g, err := proto.GetExtension(method.Options, api.E_Http)
-//				if err != nil {
-//					log.Printf("missing http option on the extensions, skipping: %v", *method.Name)
-//					continue
-//				}
-//				httpRule, ok := g.(*api.HttpRule)
-//				if !ok {
-//					panic(g)
-//				}
-//				log.Printf("rule: %v", httpRule)
-//				verb, path := verbAndPathForRule(httpRule)
-//				fn := &v1.Function{
-//					Name: *method.Name,
-//					Spec: transformation.EncodeFunctionSpec(transformation.Template{
-//						Path:            toInjaTemplateFormat(path),
-//						Header:          map[string]string{":method": verb},
-//						PassthroughBody: true,
-//					}),
-//				}
-//				funcs = append(funcs, fn)
-//			}
-//		}
-//		log.Printf("%v", file.MessageType)
-//	}
-//	return funcs
-//}
-//
-//func toInjaTemplateFormat(in string) string {
-//	in = strings.Replace(in, "{", "{{", -1)
-//	return strings.Replace(in, "}", "}}", -1)
-//}
-//
-//func verbAndPathForRule(httpRule *api.HttpRule) (string, string) {
-//	switch rule := httpRule.Pattern.(type) {
-//	case *api.HttpRule_Get:
-//		return "GET", rule.Get
-//	case *api.HttpRule_Custom:
-//		return rule.Custom.Kind, rule.Custom.Path
-//	case *api.HttpRule_Delete:
-//		return "DELETE", rule.Delete
-//	case *api.HttpRule_Patch:
-//		return "PATCH", rule.Patch
-//	case *api.HttpRule_Post:
-//		return "POST", rule.Post
-//	case *api.HttpRule_Put:
-//		return "PUT", rule.Put
-//	}
-//	panic("unknown rule type")
-//}
-//
-//func lookupMessageType(inputType string, messageTypes []*descriptor.DescriptorProto) *descriptor.DescriptorProto {
-//	for _, msg := range messageTypes {
-//		if *msg.Name == inputType {
-//			return msg
-//		}
-//	}
-//	return nil
-//}
-//

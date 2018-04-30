@@ -32,7 +32,7 @@ var _ = Describe("Nats streaming test", func() {
 
 		serviceSpec := service.UpstreamSpec{
 			Hosts: []service.Host{{
-				Addr: "localhost",
+				Addr: envoyInstance.LocalAddr(),
 				Port: natsStreamingInstance.NatsPort(),
 			}},
 		}
@@ -48,7 +48,7 @@ var _ = Describe("Nats streaming test", func() {
 		err = glooInstance.AddUpstream(u)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{{
 				Matcher: &v1.Route_EventMatcher{
@@ -83,7 +83,7 @@ var _ = Describe("Nats streaming test", func() {
 			}},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte("solo.io test")

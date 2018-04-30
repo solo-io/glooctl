@@ -7,10 +7,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
 
+	"github.com/hashicorp/consul/api"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
 	"github.com/solo-io/gloo/internal/function-discovery/grpc"
 	"github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
 	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
+	"github.com/solo-io/gloo/internal/function-discovery/fission"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/swagger"
@@ -68,6 +70,9 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 
 	if discoveryOpts.AutoDiscoverFAAS {
 		detectors = append(detectors, openfaas.NewFaasDetector())
+	}
+	if discoveryOpts.AutoDiscoverFission {
+		detectors = append(detectors, fission.NewFissionDetector())
 	}
 
 	if discoveryOpts.AutoDiscoverSwagger {
@@ -180,7 +185,16 @@ func createResolver(opts bootstrap.Options) resolver.Resolver {
 		return kube, nil
 	}()
 	if err != nil {
-		log.Warnf("create kube client failed: %v. swagger services running in kubernetes will not be discovered by function discovery")
+		log.Warnf("create kube client failed: %v. functonal services running in kubernetes will not be discovered " +
+			"by function discovery")
 	}
-	return resolver.NewResolver(kube)
+	consul, err := func() (*api.Client, error) {
+		cfg := opts.ConsulOptions.ToConsulConfig()
+		return api.NewClient(cfg)
+	}()
+	if err != nil {
+		log.Warnf("create consul client failed: %v. functional services running in consul will " +
+			"not be discovered by function discovery")
+	}
+	return resolver.NewResolver(kube, consul)
 }

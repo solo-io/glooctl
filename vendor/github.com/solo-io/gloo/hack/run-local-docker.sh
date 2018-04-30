@@ -5,36 +5,48 @@ set -x -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"/..
 
 #DIR=${PWD}
-CONFIG_DIR=${CONFIG_DIR:-${DIR}/hack/gen-config-yaml/_gloo_config/}
+CONFIG_DIR=${CONFIG_DIR:-${DIR}/_gloo_config/}
 SECRETS_DIR=${CONFIG_DIR}/secrets/
 FILES_DIR=${CONFIG_DIR}/files
 
 mkdir -p ${CONFIG_DIR}/upstreams
-mkdir -p ${CONFIG_DIR}/virtualhosts
+mkdir -p ${CONFIG_DIR}/virtualservices
 mkdir -p ${SECRETS_DIR}
 mkdir -p ${FILES_DIR}
 
 FAIL=0
 
-echo "Starting gloo"
-#docker run --rm -i \
-#    -e DEBUG=1 \
-#    -v ${CONFIG_DIR}:/config \
-#    -v ${SECRETS_DIR}:/secrets \
-#    --name gloo \
-#    soloio/gloo:v0.1.local \
-#    --file.config.dir /config \
-#    --file.secret.dir /secrets &
+echo "Starting control plane"
+docker run --rm -i \
+    -e DEBUG=1 \
+    --net=host \
+    -v ${CONFIG_DIR}:/config \
+    -v ${SECRETS_DIR}:/secrets \
+    -v ${FILES_DIR}:/files \
+    --name control-plane \
+    soloio/control-plane:0.2.1 \
+    --file.config.dir /config \
+    --file.secret.dir /secrets \
+    --file.files.dir /files &
 
-./gloo --file.config.dir ${CONFIG_DIR} \
-       --file.secret.dir ${SECRETS_DIR} \
-       --file.files.dir ${FILES_DIR} &
+echo "Starting function discovery"
+docker run --rm -i \
+    -e DEBUG=1 \
+    --net=host \
+    -v ${CONFIG_DIR}:/config \
+    -v ${SECRETS_DIR}:/secrets \
+    -v ${FILES_DIR}:/files \
+    --name function-discovery \
+    soloio/function-discovery:0.2.0 \
+    --file.config.dir /config \
+    --file.secret.dir /secrets \
+    --file.files.dir /files &
 
 sleep 1
 
-echo "Starting envoy"
-#GLOO_IP=$(docker inspect gloo -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
-GLOO_IP=localhost
+echo "Starting Envoy"
+#CONTROL_PLANE_IP=$(docker inspect control-plane -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}')
+CONTROL_PLANE_IP=localhost
 cat > ${CONFIG_DIR}/envoy.yaml <<EOF
 node:
   cluster: ingress
@@ -47,7 +59,7 @@ static_resources:
     connect_timeout: 5.000s
     hosts:
     - socket_address:
-        address: ${GLOO_IP}
+        address: ${CONTROL_PLANE_IP}
         port_value: 8081
     http2_protocol_options: {}
     type: STRICT_DNS
@@ -70,19 +82,14 @@ admin:
       port_value: 19000
 EOF
 
-#docker run --rm -i \
-#    -v ${CONFIG_DIR}:/config \
-#    --name envoy \
-#    --net=host \
-#    soloio/envoy:be0d5f72 \
-#    envoy \
-#    -c /config/envoy.yaml \
-#    --service-cluster envoy \
-#    --service-node envoy &
-
-#./envoy -c ./hack/gen-config-yaml/_gloo_config/envoy.yaml --v2-config-only
-
-./envoy -c ${CONFIG_DIR}/envoy.yaml --v2-config-only
+docker run --rm  -i \
+    -v ${CONFIG_DIR}:/config \
+    --net=host \
+    --name envoy \
+    soloio/envoy:v0.1.6-127 \
+    envoy \
+    -c /config/envoy.yaml \
+    --v2-config-only &
 
 sleep 1
 

@@ -28,11 +28,11 @@ var _ = Describe("GRPC Plugin", func() {
 
 		envoyPort := glooInstance.EnvoyPort()
 
-		tu := NewTestGRPCUpstream(glooInstance.FilesDir())
+		tu := NewTestGRPCUpstream(envoyInstance.LocalAddr(), glooInstance.FilesDir())
 		err = glooInstance.AddUpstream(tu.Upstream)
 		Expect(err).NotTo(HaveOccurred())
 
-		v := &v1.VirtualHost{
+		v := &v1.VirtualService{
 			Name: "default",
 			Routes: []*v1.Route{
 				{
@@ -53,7 +53,7 @@ var _ = Describe("GRPC Plugin", func() {
 			},
 		}
 
-		err = glooInstance.AddVhost(v)
+		err = glooInstance.AddvService(v)
 		Expect(err).NotTo(HaveOccurred())
 
 		body := []byte(`{"str": "foo"}`)

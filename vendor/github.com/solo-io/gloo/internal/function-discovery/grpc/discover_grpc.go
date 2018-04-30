@@ -12,11 +12,13 @@ import (
 	"github.com/jhump/protoreflect/desc"
 	"github.com/jhump/protoreflect/grpcreflect"
 	"github.com/pkg/errors"
-	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/gloo/internal/function-discovery"
 	"github.com/solo-io/gloo/internal/function-discovery/detector"
-	grpcplugin "github.com/solo-io/gloo/pkg/plugins/grpc"
-	"github.com/solo-io/gloo/pkg/storage/dependencies"
+	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
+	grpcplugin "github.com/solo-io/gloo/pkg/plugins/grpc"
+	"github.com/solo-io/gloo/pkg/storage"
+	"github.com/solo-io/gloo/pkg/storage/dependencies"
 	"google.golang.org/grpc"
 	reflectpb "google.golang.org/grpc/reflection/grpc_reflection_v1alpha"
 )
@@ -83,7 +85,14 @@ func (d *grpcDetector) DetectFunctionalService(us *v1.Upstream, addr string) (*v
 	}
 
 	if _, err := d.files.Create(file); err != nil {
-		return nil, nil, errors.Wrap(err, "creating file for discovered descriptors")
+		if storage.IsAlreadyExists(err) {
+			_, err := d.files.Update(file)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "creating file for discovered descriptors")
+			}
+		} else {
+			return nil, nil, errors.Wrap(err, "creating file for discovered descriptors")
+		}
 	}
 
 	svcInfo := &v1.ServiceInfo{
@@ -94,7 +103,9 @@ func (d *grpcDetector) DetectFunctionalService(us *v1.Upstream, addr string) (*v
 		}),
 	}
 
-	return svcInfo, nil, nil
+	annotations := make(map[string]string)
+	annotations[functiondiscovery.DiscoveryTypeAnnotationKey] = "grpc"
+	return svcInfo, annotations, nil
 }
 
 func getAllDescriptors(refClient *grpcreflect.Client, s string) ([]*descriptor.FileDescriptorProto, error) {

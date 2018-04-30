@@ -3,6 +3,9 @@ PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
 GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go") docs/api.json
 OUTPUT := _output
+
+PACKAGE_PATH:=github.com/solo-io/gloo
+
 #----------------------------------------------------------------------------------
 # Build
 #----------------------------------------------------------------------------------
@@ -10,7 +13,7 @@ OUTPUT := _output
 BINARIES ?= control-plane function-discovery kube-ingress-controller upstream-discovery
 DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
 
-DOCKER_USER=soloio
+DOCKER_ORG=soloio
 
 .PHONY: build
 build: $(BINARIES)
@@ -36,6 +39,15 @@ $(GENERATED_PROTO_FILES): $(PROTOS)
 	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types:\
 	$(ROOTDIR)/pkg/api/types/v1 \
 	./*.proto
+
+# kubernetes custom clientsets
+.PHONY: clientset
+clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
+	cd ${GOPATH}/src/k8s.io/code-generator && \
+	./generate-groups.sh all \
+		$(PACKAGE_PATH)/pkg/storage/crd/client \
+		$(PACKAGE_PATH)/pkg/storage/crd \
+		"solo.io:v1"
 
 $(OUTPUT):
 	mkdir -p $(OUTPUT)
@@ -64,13 +76,13 @@ $(OUTPUT_BINARY)-debug: $(OUTPUT) $(PREREQUISITES)
 
 # docker
 $(BINARY)-docker: $(OUTPUT_BINARY)
-	docker build -t $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile 
+	docker build -t $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile
 $(BINARY)-docker-debug: $(OUTPUT_BINARY)-debug
-	docker build -t $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile.debug
+	docker build -t $(DOCKER_ORG)/$(BINARY)-debug:$(IMAGE_TAG) $(OUTPUT) -f - < cmd/$(BINARY)/Dockerfile.debug
 $(BINARY)-docker-push: $(BINARY)-docker
-	docker push $(DOCKER_USER)/$(BINARY):$(IMAGE_TAG)
+	docker push $(DOCKER_ORG)/$(BINARY):$(IMAGE_TAG)
 $(BINARY)-docker-push-debug: $(BINARY)-docker-debug
-	docker push $(DOCKER_USER)/$(BINARY)-debug:$(IMAGE_TAG)
+	docker push $(DOCKER_ORG)/$(BINARY)-debug:$(IMAGE_TAG)
 
 endef
 
@@ -79,6 +91,25 @@ $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
 clean:
 	rm -rf $(OUTPUT)
+
+
+#----------------------------------------------------------------------------------
+# Installation Manifests
+#----------------------------------------------------------------------------------
+
+.PHONY: manifests
+manifests: install/kube/install.yaml
+
+install/kube/install.yaml: $(shell find install/helm/ -name '*.yaml')
+	cat install/helm/bootstrap.yaml \
+	  | sed -e "s/{{ .Namespace }}/gloo-system/" > $@
+	echo >> $@
+	echo >> $@
+	helm template --namespace gloo-system \
+		-f install/helm/gloo/values.yaml \
+		-n REMOVEME install/helm/gloo | \
+		sed s/REMOVEME-//g | \
+		sed '/^.*REMOVEME$$/d' >> $@
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -92,7 +123,7 @@ site: doc
 	mkdocs build
 
 docker-docs: site
-	docker build -t $(DOCKER_USER)/nginx-docs:v$(VERSION) -f Dockerfile.site .
+	docker build -t $(DOCKER_USER)/nginx-docs:v$(shell cat cmd/control-plane/version) -f Dockerfile.site .
 
 #----------------------------------------------------------------------------------
 # Test
