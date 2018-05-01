@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/coreplugins/service"
+
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 
 	"github.com/solo-io/gloo/pkg/protoutil"
@@ -34,7 +36,7 @@ var (
 		//{"GRPC", grpcInteractive},
 		//{"Kubernetes", kubeInteractive},
 		//{"NATS streaming", natsInteractive},
-		//{"REST service", restInteractive},
+		{"Service", serviceInteractive},
 	}
 
 	// name regex
@@ -115,20 +117,6 @@ func upstreamType() (string, error) {
 		return "", err
 	}
 	return choice, nil
-}
-
-func secretRefs(si dependencies.SecretStorage, filter func(*dependencies.Secret) bool) ([]string, error) {
-	secrets, err := si.List()
-	if err != nil {
-		return nil, err
-	}
-	var refs []string
-	for _, s := range secrets {
-		if filter(s) {
-			refs = append(refs, s.Ref)
-		}
-	}
-	return refs, nil
 }
 
 func awsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
@@ -263,6 +251,54 @@ func natsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.
 	return errors.New("not implemented")
 }
 
-func restInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
-	return errors.New("not implemented")
+func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
+	u.Type = service.UpstreamTypeService
+
+	var hosts []service.Host
+	add := true
+	for add {
+		questions := []*survey.Question{
+			{
+				Name:     "addr",
+				Prompt:   &survey.Input{Message: "Please enter the service host address:"},
+				Validate: survey.Required,
+			},
+			{
+				Name:     "port",
+				Prompt:   &survey.Input{Message: "Please enter the service host port:"},
+				Validate: validatePort,
+			},
+		}
+		host := service.Host{}
+		if err := survey.Ask(questions, &host); err != nil {
+			return err
+		}
+		hosts = append(hosts, host)
+		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to add more hosts?"}, &add, nil); err != nil {
+			return err
+		}
+	}
+
+	spec, err := protoutil.MarshalStruct(service.UpstreamSpec{Hosts: hosts})
+	if err != nil {
+		return err
+	}
+	u.Spec = spec
+	return nil
+}
+
+// validators
+func validatePort(val interface{}) error {
+	v, ok := val.(string)
+	if !ok {
+		return errors.New("unable to convert value for validation")
+	}
+	i, err := strconv.Atoi(v)
+	if err != nil {
+		return errors.Wrap(err, "unable to convert into a number")
+	}
+	if i <= 0 || i > 65535 {
+		return errors.New("invalid port number")
+	}
+	return nil
 }
