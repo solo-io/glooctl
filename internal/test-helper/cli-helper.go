@@ -90,6 +90,7 @@ func RunWithArgs(opts ...string) *Args {
 // ExpectExitCode runs glooctl and expects the given exit code
 func (a *Args) ExpectExitCode(code int) {
 	command := exec.Command(Glooctl, a.Opts...)
+	command.Env = append(os.Environ(), "CHECKPOINT_DISABLE=1")
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Ω(err).ShouldNot(HaveOccurred())
 	Eventually(session).Should(gexec.Exit(code))
@@ -99,6 +100,7 @@ func (a *Args) ExpectExitCode(code int) {
 // output message
 func (a *Args) ExpectExitCodeAndOutput(code int, messages ...string) {
 	command := exec.Command(Glooctl, a.Opts...)
+	command.Env = append(os.Environ(), "CHECKPOINT_DISABLE=1")
 	session, err := gexec.Start(command, GinkgoWriter, GinkgoWriter)
 	Ω(err).ShouldNot(HaveOccurred())
 	for _, m := range messages {
