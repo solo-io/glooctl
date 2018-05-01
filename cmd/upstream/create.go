@@ -76,8 +76,8 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *upstre
 		if !opts.Interactive {
 			return nil, errors.New("no file specified and interactive mode turned off")
 		}
-		var err error
-		u, err = upstream.Interactive(sc, si)
+		u = &v1.Upstream{}
+		err := upstream.Interactive(sc, si, u)
 		if err != nil {
 			return nil, err
 		}
