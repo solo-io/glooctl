@@ -5,11 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/radovskyb/watcher"
+
+	"time"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/log"
@@ -171,10 +172,13 @@ func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHan
 			select {
 			case event := <-w.Event:
 				if err := u.onEvent(event, handlers...); err != nil {
-					log.Warnf("failed to handle file event: %v", err)
+					log.Warnf("event handle error in file-based config storage client: %v", err)
 				}
 			case err := <-w.Error:
-				errs <- err
+				log.Warnf("watcher error in file-based config storage client: %v", err)
+				return
+			case err := <-errs:
+				log.Warnf("failed to start file watcher: %v", err)
 				return
 			case <-stop:
 				w.Close()

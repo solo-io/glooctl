@@ -6,6 +6,8 @@ import (
 
 	"time"
 
+	"io/ioutil"
+
 	"github.com/hashicorp/consul/api"
 	vaultapi "github.com/hashicorp/vault/api"
 	. "github.com/onsi/ginkgo"
@@ -27,12 +29,18 @@ func TestConsul(t *testing.T) {
 
 	helpers.RegisterPreFailHandler(func() {
 		var logs string
-		for _, task := range []string{"control-plane", "ingress"} {
-			if nomadInstance != nil {
-				l, err := nomadInstance.Logs("gloo", task)
-				logs += l + "\n"
-				if err != nil {
-					logs += "error getting logs for " + task + ": " + err.Error()
+		for job, tasks := range map[string][]string{
+			"gloo": []string{"control-plane", "ingress"},
+			"testing-resources": []string{"grpc-test-service",
+				"helloservice-2", "helloservice", "petstore", "nats-streaming"},
+		} {
+			for _, task := range tasks {
+				if nomadInstance != nil {
+					l, err := nomadInstance.Logs(job, task)
+					logs += l + "\n"
+					if err != nil {
+						logs += "error getting logs for " + job + ":" + task + ": " + err.Error()
+					}
 				}
 			}
 		}
@@ -55,6 +63,8 @@ func TestConsul(t *testing.T) {
 }
 
 var (
+	envoyFactory *localhelpers.EnvoyFactory
+
 	vaultFactory  *localhelpers.VaultFactory
 	vaultInstance *localhelpers.VaultInstance
 
@@ -67,10 +77,14 @@ var (
 	gloo    storage.Interface
 	secrets dependencies.SecretStorage
 
-	err error
+	outputDirectory string
+	err             error
 )
 
 var _ = BeforeSuite(func() {
+	envoyFactory, err = localhelpers.NewEnvoyFactory()
+	helpers.Must(err)
+
 	vaultFactory, err = localhelpers.NewVaultFactory()
 	helpers.Must(err)
 	vaultInstance, err = vaultFactory.NewVaultInstance()
@@ -105,7 +119,10 @@ var _ = BeforeSuite(func() {
 
 	secrets = vault.NewSecretStorage(cli, "gloo", time.Second)
 
-	err = nomadInstance.SetupNomadForE2eTest(true)
+	// TODO: set outputDirectory from something more variable
+	outputDirectory, err = ioutil.TempDir(os.Getenv("HELPER_TMP"), "gloo-nomad-e2e")
+	helpers.Must(err)
+	err = nomadInstance.SetupNomadForE2eTest(envoyFactory.EnvoyPath(), outputDirectory, true)
 	helpers.Must(err)
 })
 
@@ -113,6 +130,7 @@ var _ = AfterSuite(func() {
 	if err := nomadInstance.TeardownNomadE2e(); err != nil {
 		log.Warnf("FAILED TEARING DOWN: %v", err)
 	}
+	envoyFactory.Clean()
 
 	vaultInstance.Clean()
 	vaultFactory.Clean()
@@ -123,4 +141,5 @@ var _ = AfterSuite(func() {
 	nomadInstance.Clean()
 	nomadFactory.Clean()
 
+	os.RemoveAll(outputDirectory)
 })

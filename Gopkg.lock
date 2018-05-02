@@ -455,7 +455,7 @@
   revision = "ed9870dad3170c0b25ab9b11830cc57c3a7798fb"
 
 [[projects]]
-  branch = "rename-vhost"
+  branch = "master"
   name = "github.com/solo-io/gloo"
   packages = [
     "internal/control-plane/filewatcher",
@@ -466,6 +466,7 @@
     "pkg/bootstrap/secretstorage",
     "pkg/coreplugins/common",
     "pkg/coreplugins/route-extensions",
+    "pkg/coreplugins/service",
     "pkg/endpointdiscovery",
     "pkg/log",
     "pkg/plugins",
@@ -488,7 +489,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "f9905353a00a365af87f47e1f9c6daadbe9dd53a"
+  revision = "84022273b67ec631e0aae9f9bf9262e80fbac8c8"
 
 [[projects]]
   branch = "master"
@@ -820,6 +821,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "0ece793b10ee0cd50449abfd7def6719f5563d0909ce62080693160f99f4c9ca"
+  inputs-digest = "059f6b84957dc970b7df345407c575efce29573d2696f11db346aa63aa5bc517"
   solver-name = "gps-cdcl"
   solver-version = 1

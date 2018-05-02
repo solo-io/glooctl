@@ -15,6 +15,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/crud"
 	kuberrs "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/client-go/tools/cache"
+	"github.com/solo-io/gloo/pkg/log"
 )
 
 type upstreamsClient struct {
@@ -38,15 +39,19 @@ func (c *upstreamsClient) Delete(name string) error {
 }
 
 func (c *upstreamsClient) Get(name string) (*v1.Upstream, error) {
-	crdUs, err := c.crds.GlooV1().Upstreams(c.namespace).Get(name, metav1.GetOptions{})
+	crdUpstream, err := c.crds.GlooV1().Upstreams(c.namespace).Get(name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed performing get api request")
 	}
-	returnedUpstream, err := UpstreamFromCrd(crdUs)
-	if err != nil {
+	var returnedUpstream v1.Upstream
+	if err := ConfigObjectFromCrd(
+		crdUpstream.ObjectMeta,
+		crdUpstream.Spec,
+		crdUpstream.Status,
+		&returnedUpstream); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to upstream")
 	}
-	return returnedUpstream, nil
+	return &returnedUpstream, nil
 }
 
 func (c *upstreamsClient) List() ([]*v1.Upstream, error) {
@@ -55,12 +60,16 @@ func (c *upstreamsClient) List() ([]*v1.Upstream, error) {
 		return nil, errors.Wrap(err, "failed performing list api request")
 	}
 	var returnedUpstreams []*v1.Upstream
-	for _, crdUs := range crdList.Items {
-		upstream, err := UpstreamFromCrd(&crdUs)
-		if err != nil {
+	for _, crdUpstream := range crdList.Items {
+		var returnedUpstream v1.Upstream
+		if err := ConfigObjectFromCrd(
+			crdUpstream.ObjectMeta,
+			crdUpstream.Spec,
+			crdUpstream.Status,
+			&returnedUpstream); err != nil {
 			return nil, errors.Wrap(err, "converting returned crd to upstream")
 		}
-		returnedUpstreams = append(returnedUpstreams, upstream)
+		returnedUpstreams = append(returnedUpstreams, &returnedUpstream)
 	}
 	return returnedUpstreams, nil
 }
@@ -77,15 +86,15 @@ func (u *upstreamsClient) Watch(handlers ...storage.UpstreamEventHandler) (*stor
 }
 
 func (c *upstreamsClient) createOrUpdateUpstreamCrd(upstream *v1.Upstream, op crud.Operation) (*v1.Upstream, error) {
-	upstreamCrd, err := UpstreamToCrd(c.namespace, upstream)
+	upstreamCrd, err := ConfigObjectToCrd(c.namespace, upstream)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting gloo object to crd")
 	}
-	upstreams := c.crds.GlooV1().Upstreams(upstreamCrd.Namespace)
+	upstreams := c.crds.GlooV1().Upstreams(upstreamCrd.GetNamespace())
 	var returnedCrd *crdv1.Upstream
 	switch op {
 	case crud.OperationCreate:
-		returnedCrd, err = upstreams.Create(upstreamCrd)
+		returnedCrd, err = upstreams.Create(upstreamCrd.(*crdv1.Upstream))
 		if err != nil {
 			if kuberrs.IsAlreadyExists(err) {
 				return nil, storage.NewAlreadyExistsErr(err)
@@ -94,22 +103,26 @@ func (c *upstreamsClient) createOrUpdateUpstreamCrd(upstream *v1.Upstream, op cr
 		}
 	case crud.OperationUpdate:
 		// need to make sure we preserve labels
-		currentCrd, err := upstreams.Get(upstreamCrd.Name, metav1.GetOptions{ResourceVersion: upstreamCrd.ResourceVersion})
+		currentCrd, err := upstreams.Get(upstreamCrd.GetName(), metav1.GetOptions{ResourceVersion: upstreamCrd.GetResourceVersion()})
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes get api request")
 		}
 		// copy labels
-		upstreamCrd.Labels = currentCrd.Labels
-		returnedCrd, err = upstreams.Update(upstreamCrd)
+		upstreamCrd.SetLabels(currentCrd.Labels)
+		returnedCrd, err = upstreams.Update(upstreamCrd.(*crdv1.Upstream))
 		if err != nil {
 			return nil, errors.Wrap(err, "kubernetes update api request")
 		}
 	}
-	returnedUpstream, err := UpstreamFromCrd(returnedCrd)
-	if err != nil {
+	var returnedUpstream v1.Upstream
+	if err := ConfigObjectFromCrd(
+		returnedCrd.ObjectMeta,
+		returnedCrd.Spec,
+		returnedCrd.Status,
+		&returnedUpstream); err != nil {
 		return nil, errors.Wrap(err, "converting returned crd to upstream")
 	}
-	return returnedUpstream, nil
+	return &returnedUpstream, nil
 }
 
 // implements the kubernetes ResourceEventHandler interface
@@ -122,50 +135,59 @@ func (eh *upstreamEventHandler) getUpdatedList() []*v1.Upstream {
 	updatedList := eh.store.List()
 	var updatedUpstreamList []*v1.Upstream
 	for _, updated := range updatedList {
-		usCrd, ok := updated.(*crdv1.Upstream)
+		upstreamCrd, ok := updated.(*crdv1.Upstream)
 		if !ok {
 			continue
 		}
-		updatedUpstream, err := UpstreamFromCrd(usCrd)
-		if err != nil {
-			continue
+		var returnedUpstream v1.Upstream
+		if err := ConfigObjectFromCrd(
+			upstreamCrd.ObjectMeta,
+			upstreamCrd.Spec,
+			upstreamCrd.Status,
+			&returnedUpstream); err != nil {
+			log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to upstream"))
 		}
-		updatedUpstreamList = append(updatedUpstreamList, updatedUpstream)
+		updatedUpstreamList = append(updatedUpstreamList, &returnedUpstream)
 	}
 	return updatedUpstreamList
 }
 
-func convertUs(obj interface{}) (*v1.Upstream, bool) {
-	usCrd, ok := obj.(*crdv1.Upstream)
+func convertUpstream(obj interface{}) (*v1.Upstream, bool) {
+	upstreamCrd, ok := obj.(*crdv1.Upstream)
 	if !ok {
 		return nil, ok
 	}
-	us, err := UpstreamFromCrd(usCrd)
-	if err != nil {
+	var returnedUpstream v1.Upstream
+	if err := ConfigObjectFromCrd(
+		upstreamCrd.ObjectMeta,
+		upstreamCrd.Spec,
+		upstreamCrd.Status,
+		&returnedUpstream); err != nil {
+		log.Warnf("watch event: %v", errors.Wrap(err, "converting returned crd to upstream"))
 		return nil, false
 	}
-	return us, ok
+	return &returnedUpstream, true
 }
 
 func (eh *upstreamEventHandler) OnAdd(obj interface{}) {
-	us, ok := convertUs(obj)
+	upstream, ok := convertUpstream(obj)
 	if !ok {
 		return
 	}
-	eh.handler.OnAdd(eh.getUpdatedList(), us)
+	eh.handler.OnAdd(eh.getUpdatedList(), upstream)
 }
 func (eh *upstreamEventHandler) OnUpdate(_, newObj interface{}) {
-	newUs, ok := convertUs(newObj)
+	newUpstream, ok := convertUpstream(newObj)
 	if !ok {
 		return
 	}
-	eh.handler.OnUpdate(eh.getUpdatedList(), newUs)
+	eh.handler.OnUpdate(eh.getUpdatedList(), newUpstream)
 }
 
 func (eh *upstreamEventHandler) OnDelete(obj interface{}) {
-	us, ok := convertUs(obj)
+	upstream, ok := convertUpstream(obj)
 	if !ok {
 		return
 	}
-	eh.handler.OnDelete(eh.getUpdatedList(), us)
+	eh.handler.OnDelete(eh.getUpdatedList(), upstream)
 }
