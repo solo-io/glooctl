@@ -22,7 +22,7 @@ import (
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"
 	"github.com/solo-io/glooctl/cmd/virtualservice"
-	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/config"
 	"github.com/spf13/cobra"
 )
 
