@@ -16,6 +16,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
+	natsstreaming "github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 	"github.com/solo-io/gloo/pkg/storage"
 	psecret "github.com/solo-io/glooctl/pkg/secret"
 	survey "gopkg.in/AlecAivazis/survey.v1"
@@ -31,9 +32,13 @@ type plugin struct {
 }
 
 var (
+	// upstreamPlugins are evaluated in order to see if an upstream can be edited by it.
+	// the check stops on first match, so make sure if the upstream is a special case of
+	// "service" that it is evaluated before the service upstream
 	upstreamPlugins = []plugin{
 		{"AWS", typeBasedMatcher(aws.UpstreamTypeAws), awsInteractive},
 		{"Google", typeBasedMatcher(gfunc.UpstreamTypeGoogle), googleInteractive},
+		{"NATS", natsMatcher, natsInteractive},
 		{"Service", typeBasedMatcher(service.UpstreamTypeService), serviceInteractive},
 	}
 
@@ -328,9 +333,58 @@ func isGoogleSecret(s *dependencies.Secret) bool {
 	return ok
 }
 
+func natsMatcher(u *v1.Upstream) bool {
+	if u.Type != service.UpstreamTypeService {
+		return false
+	}
+
+	if u.ServiceInfo == nil {
+		return false
+	}
+
+	return u.ServiceInfo.Type == natsstreaming.ServiceTypeNatsStreaming
+}
+
+func natsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
+	u.Type = service.UpstreamTypeService
+	if u.ServiceInfo == nil {
+		u.ServiceInfo = &v1.ServiceInfo{}
+
+	}
+	u.ServiceInfo.Type = natsstreaming.ServiceTypeNatsStreaming
+
+	replace, err := askReplaceHosts(u, "NATS Servers", "Do you want to replace existing NATS server(s)?")
+	if err != nil {
+		return err
+	}
+	if !replace {
+		return nil
+	}
+	return askNewHosts(u, "NATS Servers", hostQuestions{
+		addr: "Please enter the NATS server address:",
+		port: "Please enter the NATS servre port:",
+		more: "Do you want to add more NATS servers?",
+	})
+}
+
 func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
 	u.Type = service.UpstreamTypeService
 
+	replace, err := askReplaceHosts(u, "Hosts", "Do you want to replace existing host(s)?")
+	if err != nil {
+		return err
+	}
+	if !replace {
+		return nil
+	}
+	return askNewHosts(u, "Hosts", hostQuestions{
+		addr: "Please enter the service host address:",
+		port: "Please enter the service host port:",
+		more: "Do you want to add more hosts?",
+	})
+}
+
+func askReplaceHosts(u *v1.Upstream, title, message string) (bool, error) {
 	var existingHosts []service.Host
 	if u.Spec != nil {
 		spec, err := service.DecodeUpstreamSpec(u.Spec)
@@ -339,28 +393,36 @@ func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *
 		}
 	}
 
-	if len(existingHosts) != 0 {
-		printHosts(existingHosts)
-		replace := false
-		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to replace existing host(s)?"}, &replace, nil); err != nil {
-			return err
-		}
-		if !replace {
-			return nil
-		}
+	if len(existingHosts) == 0 {
+		// we are creating new upstream
+		return true, nil
 	}
+
+	printHosts(title, existingHosts)
+	replace := false
+	err := survey.AskOne(&survey.Confirm{Message: message}, &replace, nil)
+	return replace, err
+}
+
+type hostQuestions struct {
+	addr string
+	port string
+	more string
+}
+
+func askNewHosts(u *v1.Upstream, title string, q hostQuestions) error {
 	var hosts []service.Host
 	add := true
 	for add {
 		questions := []*survey.Question{
 			{
 				Name:     "addr",
-				Prompt:   &survey.Input{Message: "Please enter the service host address:"},
+				Prompt:   &survey.Input{Message: q.addr},
 				Validate: survey.Required,
 			},
 			{
 				Name:     "port",
-				Prompt:   &survey.Input{Message: "Please enter the service host port:"},
+				Prompt:   &survey.Input{Message: q.port},
 				Validate: validatePort,
 			},
 		}
@@ -369,8 +431,8 @@ func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *
 			return err
 		}
 		hosts = append(hosts, host)
-		printHosts(hosts)
-		if err := survey.AskOne(&survey.Confirm{Message: "Do you want to add more hosts?"}, &add, nil); err != nil {
+		printHosts("Hosts", hosts)
+		if err := survey.AskOne(&survey.Confirm{Message: q.more}, &add, nil); err != nil {
 			return err
 		}
 	}
@@ -383,8 +445,8 @@ func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *
 	return nil
 }
 
-func printHosts(list []service.Host) {
-	fmt.Println("Hosts")
+func printHosts(label string, list []service.Host) {
+	fmt.Println(label)
 	for i, h := range list {
 		fmt.Printf("%2d: %s:%d\n", (i + 1), h.Addr, h.Port)
 	}
