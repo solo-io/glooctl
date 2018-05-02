@@ -9,6 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/base"
 )
 
+//go:generate go run ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/generate/generate_clients.go -f ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/consul/client_template.go.tmpl -o ${GOPATH}/src/github.com/solo-io/gloo/pkg/storage/consul/
 type Client struct {
 	v1 *v1client
 }
@@ -31,6 +32,9 @@ func NewStorage(cfg *api.Config, rootPath string, syncFrequency time.Duration) (
 			virtualServices: &virtualServicesClient{
 				base: base.NewConsulStorageClient(rootPath+"/virtualservices", client),
 			},
+			virtualMeshes: &virtualMeshesClient{
+				base: base.NewConsulStorageClient(rootPath+"/virtualmeshes", client),
+			},
 		},
 	}, nil
 }
@@ -42,6 +46,7 @@ func (c *Client) V1() storage.V1 {
 type v1client struct {
 	upstreams       *upstreamsClient
 	virtualServices *virtualServicesClient
+	virtualMeshes *virtualMeshesClient
 }
 
 func (c *v1client) Register() error {
@@ -54,4 +59,8 @@ func (c *v1client) Upstreams() storage.Upstreams {
 
 func (c *v1client) VirtualServices() storage.VirtualServices {
 	return c.virtualServices
+}
+
+func (c *v1client) VirtualMeshes() storage.VirtualMeshes {
+	return c.virtualMeshes
 }
