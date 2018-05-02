@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/plugins/common/transformation"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	core "github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
@@ -20,14 +22,14 @@ type extensionPlugin struct {
 
 var (
 	availableExtensions = []extensionPlugin{
-		{"Add request header", addRequestHeader},
-		{"Add response header", addResponseHeader},
-		{"Remove response header", removeResponseHeader},
+		{"Add a new request header", addRequestHeader},
+		{"Add a new response header", addResponseHeader},
+		{"CORS policy", corsPolicy},
+		{"Remove an existing response header", removeResponseHeader},
+		{"Response Transformation", responseTransformation},
+		{"Rewrite host", rewriteHost},
 		{"Set max retries", setMaxRetries},
 		{"Set timeout", setTimeout},
-		{"Rewrite host", rewriteHost},
-		{"CORS policy", corsPolicy},
-		//{"Transformation", transformation},
 	}
 )
 
@@ -244,6 +246,102 @@ func corsPolicy(s *types.Struct) error {
 	return nil
 }
 
-func transformation(s *types.Struct) error {
-	return errors.New("not implemented")
+// responseTransformation shares the route extension struct with request
+// transformation. We are changing just two fields of this struct
+func responseTransformation(s *types.Struct) error {
+	spec, err := transformation.DecodeRouteExtension(s)
+	if err != nil {
+		return errors.Wrap(err, "unable to decode transformation route extension")
+	}
+
+	hasResponseParams := false
+	if err := survey.AskOne(&survey.Confirm{
+		Message: "Do you want to define response parameters?",
+		Help:    "Define custom parameters that are used by response template",
+	}, &hasResponseParams, nil); err != nil {
+		return err
+	}
+	if hasResponseParams {
+		responseParam := transformation.Parameters{}
+		err = survey.AskOne(&survey.Input{
+			Message: "Please enter path based parameter (leave empty if you don't need one):",
+			Help:    "Path based parameter help you extract parameters from the URL path",
+		}, &responseParam.Path, nil)
+		if err != nil {
+			return err
+		}
+
+		headers, err := askHeaders()
+		if err != nil {
+			return err
+		}
+		if len(headers) != 0 {
+			responseParam.Headers = headers
+		}
+		spec.ResponseParams = &responseParam
+	}
+
+	bodyTemplate := ""
+	if err := survey.AskOne(&survey.Editor{
+		Message: "Please enter the response template for the body (leave empty to not modify the body):",
+	}, &bodyTemplate, nil); err != nil {
+		return err
+	}
+	responseTemplate := transformation.Template{}
+	responseTemplate.Body = &bodyTemplate
+
+	headers, err := askHeaders()
+	if err != nil {
+		return err
+	}
+	if len(headers) != 0 {
+		responseTemplate.Header = headers
+	}
+
+	spec.ResponseTemplate = &responseTemplate
+	// since this is a shared route extension struct with request
+	// we are going to merge individual components
+	// FIXME - ashish; can get away as we don't have request transformation
+	// yet
+	addAll(s, transformation.EncodeRouteExtension(spec))
+	return nil
+}
+
+func askHeaders() (map[string]string, error) {
+	headers := make(map[string]string)
+	addHeaders := false
+	if err := survey.AskOne(&survey.Confirm{
+		Message: "Add a response header?",
+	}, &addHeaders, nil); err != nil {
+		return nil, err
+	}
+	for addHeaders {
+		questions := []*survey.Question{
+			{
+				Name:     "key",
+				Prompt:   &survey.Input{Message: "Please enter HTTP header name:"},
+				Validate: survey.Required,
+			},
+			{
+				Name:     "value",
+				Prompt:   &survey.Input{Message: "Please enter HTTP header template:"},
+				Validate: survey.Required,
+			},
+		}
+		answers := struct {
+			Key   string
+			Value string
+		}{}
+		if err := survey.Ask(questions, &answers); err != nil {
+			return nil, err
+		}
+		headers[answers.Key] = answers.Value
+
+		if err := survey.AskOne(&survey.Confirm{
+			Message: "Add another response header?",
+		}, &addHeaders, nil); err != nil {
+			return nil, err
+		}
+	}
+	return headers, nil
 }
