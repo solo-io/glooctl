@@ -83,7 +83,8 @@
     "envoy/api/v2/route",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
-    "envoy/type"
+    "envoy/type",
+    "pkg/util"
   ]
   revision = "5f52d064b948cc3a39451b20055e173597d3885e"
 
@@ -350,6 +351,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mitchellh/hashstructure"
+  packages = ["."]
+  revision = "2bca23e0e452137f789efbc8610126fd8b94f73b"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
@@ -471,6 +478,7 @@
     "pkg/log",
     "pkg/plugins",
     "pkg/plugins/aws",
+    "pkg/plugins/common/transformation",
     "pkg/plugins/google",
     "pkg/protoutil",
     "pkg/secretwatcher",
