@@ -74,7 +74,7 @@ func runEdit(sc storage.Interface, name string) (*v1.VirtualService, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to edit virtual service")
 	}
-	updated, err := parseFile(f.Name())
+	updated, err := virtualservice.ParseFile(f.Name())
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to parse virtual service "+name)
 	}

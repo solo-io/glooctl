@@ -57,7 +57,7 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 	var vs *v1.VirtualService
 	if opts.Filename != "" {
 		var err error
-		vs, err = parseFile(opts.Filename)
+		vs, err = virtualservice.ParseFile(opts.Filename)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to load virtual service from %s", opts.Filename)
 		}
@@ -70,7 +70,7 @@ func runCreate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 			return nil, err
 		}
 	}
-	if err := defaultVirtualServiceValidation(vs); err != nil {
+	if err := virtualservice.DefaultVirtualServiceValidation(sc, vs); err != nil {
 		return nil, err
 	}
 	return sc.V1().VirtualServices().Create(vs)

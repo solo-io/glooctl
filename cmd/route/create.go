@@ -64,7 +64,7 @@ the flags.`,
 }
 
 func runCreate(sc storage.Interface, vservicename, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
-	v, err := proute.VirtualService(sc, vservicename, domain, true)
+	v, err := virtualservice.VirtualService(sc, vservicename, domain, true)
 	if err != nil {
 		return nil, err
 	}

@@ -14,6 +14,7 @@ import (
 	storage "github.com/solo-io/gloo/pkg/storage"
 	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"github.com/spf13/cobra"
 )
 
@@ -49,7 +50,7 @@ matcher and destination only. It doesn't include extensions.`,
 }
 
 func runUpdate(sc storage.Interface) {
-	v, err := proute.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
+	v, err := virtualservice.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
 	if err != nil {
 		fmt.Println("Unable to get virtual service for routes:", err)
 		os.Exit(1)

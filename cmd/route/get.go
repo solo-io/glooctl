@@ -5,6 +5,8 @@ import (
 	"io"
 	"os"
 
+	"github.com/solo-io/glooctl/pkg/virtualservice"
+
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
@@ -41,7 +43,7 @@ func getCmd(opts *bootstrap.Options) *cobra.Command {
 }
 
 func runGet(sc storage.Interface, vservicename, domain string) ([]*v1.Route, error) {
-	v, err := proute.VirtualService(sc, vservicename, domain, false)
+	v, err := virtualservice.VirtualService(sc, vservicename, domain, false)
 	if err != nil {
 		return nil, err
 	}

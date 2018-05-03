@@ -12,6 +12,7 @@ import (
 	storage "github.com/solo-io/gloo/pkg/storage"
 	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"github.com/spf13/cobra"
 )
 
@@ -42,7 +43,7 @@ func sortCmd(opts *bootstrap.Options) *cobra.Command {
 }
 
 func runSort(sc storage.Interface, vservicename, domain string) ([]*v1.Route, error) {
-	v, err := proute.VirtualService(sc, vservicename, domain, false)
+	v, err := virtualservice.VirtualService(sc, vservicename, domain, false)
 	if err != nil {
 		return nil, err
 	}
