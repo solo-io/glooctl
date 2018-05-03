@@ -248,6 +248,7 @@ func corsPolicy(s *types.Struct) error {
 
 // responseTransformation shares the route extension struct with request
 // transformation. We are changing just two fields of this struct
+// TODO: add request transformation after changes in Gloo
 func responseTransformation(s *types.Struct) error {
 	spec, err := transformation.DecodeRouteExtension(s)
 	if err != nil {
@@ -300,9 +301,9 @@ func responseTransformation(s *types.Struct) error {
 
 	spec.ResponseTemplate = &responseTemplate
 	// since this is a shared route extension struct with request
-	// we are going to merge individual components
-	// FIXME - ashish; can get away as we don't have request transformation
-	// yet
+	// we should merge individual components
+	// FIXME - ashish; deferred. waiting for changes in request transformation
+	// changes in Gloo and will add after that
 	addAll(s, transformation.EncodeRouteExtension(spec))
 	return nil
 }
