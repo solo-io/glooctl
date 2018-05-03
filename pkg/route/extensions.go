@@ -256,25 +256,30 @@ func responseTransformation(s *types.Struct) error {
 	}
 
 	hasResponseParams := false
-	if err := survey.AskOne(&survey.Confirm{
+	err = survey.AskOne(&survey.Confirm{
 		Message: "Do you want to define response parameters?",
 		Help:    "Define custom parameters that are used by response template",
-	}, &hasResponseParams, nil); err != nil {
+	}, &hasResponseParams, nil)
+	if err != nil {
 		return err
 	}
 	if hasResponseParams {
-		responseParam := transformation.Parameters{}
+		path := ""
 		err = survey.AskOne(&survey.Input{
 			Message: "Please enter path based parameter (leave empty if you don't need one):",
 			Help:    "Path based parameter help you extract parameters from the URL path",
-		}, &responseParam.Path, nil)
+		}, &path, nil)
 		if err != nil {
 			return err
 		}
 
-		headers, err := askHeaders()
-		if err != nil {
-			return err
+		responseParam := transformation.Parameters{}
+		if path != "" {
+			responseParam.Path = &path
+		}
+		headers, errHeaders := askHeaders("Define a response header based parameter?", "Define another response header based parameter?")
+		if errHeaders != nil {
+			return errHeaders
 		}
 		if len(headers) != 0 {
 			responseParam.Headers = headers
@@ -283,15 +288,16 @@ func responseTransformation(s *types.Struct) error {
 	}
 
 	bodyTemplate := ""
-	if err := survey.AskOne(&survey.Editor{
+	err = survey.AskOne(&survey.Editor{
 		Message: "Please enter the response template for the body (leave empty to not modify the body):",
-	}, &bodyTemplate, nil); err != nil {
+	}, &bodyTemplate, nil)
+	if err != nil {
 		return err
 	}
 	responseTemplate := transformation.Template{}
 	responseTemplate.Body = &bodyTemplate
 
-	headers, err := askHeaders()
+	headers, err := askHeaders("Add a response header?", "Add another response header?")
 	if err != nil {
 		return err
 	}
@@ -308,11 +314,11 @@ func responseTransformation(s *types.Struct) error {
 	return nil
 }
 
-func askHeaders() (map[string]string, error) {
+func askHeaders(first, more string) (map[string]string, error) {
 	headers := make(map[string]string)
 	addHeaders := false
 	if err := survey.AskOne(&survey.Confirm{
-		Message: "Add a response header?",
+		Message: first,
 	}, &addHeaders, nil); err != nil {
 		return nil, err
 	}
@@ -339,7 +345,7 @@ func askHeaders() (map[string]string, error) {
 		headers[answers.Key] = answers.Value
 
 		if err := survey.AskOne(&survey.Confirm{
-			Message: "Add another response header?",
+			Message: more,
 		}, &addHeaders, nil); err != nil {
 			return nil, err
 		}
