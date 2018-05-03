@@ -1,4 +1,4 @@
-package route
+package route_test
 
 import (
 	"fmt"
