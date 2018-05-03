@@ -2,154 +2,73 @@ package route
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-	"testing"
-	"time"
 
+	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	storage "github.com/solo-io/gloo/pkg/storage"
-	"github.com/solo-io/gloo/pkg/storage/file"
+	helper "github.com/solo-io/glooctl/internal/test-helper"
 )
 
-func setupStorage() (storage.Interface, func(), error) {
-	dir, err := ioutil.TempDir("", "glooctl-test")
-	if err != nil {
-		return nil, func() {}, fmt.Errorf("unable to get temporary directory %q", err)
-	}
-	cleanup := func() { os.RemoveAll(dir) }
-	os.Mkdir(filepath.Join(dir, "virtualservices"), 0777)
-	sc, err := file.NewStorage(dir, time.Second)
-	if err != nil {
-		return nil, cleanup, fmt.Errorf("unable to get storage for testing: %q\n", err)
-	}
-	return sc, cleanup, nil
-}
-func TestCreateWithNoDefault(t *testing.T) {
-	sc, cleanup, err := setupStorage()
-	if err != nil {
-		t.Errorf("unable to setup storage %q", err)
-	}
-	defer cleanup()
-	route, err := fromRouteDetail(&routeDetail{pathPrefix: "/foo", upstream: "upstream"})
-	if err != nil {
-		t.Errorf("error creating route")
-	}
-	routes, err := runCreate(sc, "", "", route, false)
-	if err != nil {
-		t.Errorf("unable to create route %q\n", err)
-	}
-	if len(routes) != 1 {
-		t.Errorf("expected one route but got %d instead", len(routes))
-	}
-}
+var _ = Describe("Creating route", func() {
+	BeforeEach(helper.SetupStorage)
+	AfterEach(helper.TearDownStorage)
 
-func TestCreateWithExistingDefaultOfDifferentName(t *testing.T) {
-	sc, cleanup, err := setupStorage()
-	if err != nil {
-		t.Errorf("unable to setup storage %q", err)
-	}
-	defer cleanup()
+	It("should allow creating without any virtual service in system", func() {
+		helper.RunWithArgs("route", "create", "--path-prefix", "/foo", "--upstream", "test-upstream").
+			ExpectExitCodeAndOutput(0, "Did not find a default virtual service. Creating",
+				"/foo", "test-upstream")
+	})
 
-	vservice := &v1.VirtualService{Name: "mydefault"}
-	if _, err = sc.V1().VirtualServices().Create(vservice); err != nil {
-		t.Errorf("unable to create virtual service %q", err)
-	}
-	route, err := fromRouteDetail(&routeDetail{pathPrefix: "/foo", upstream: "upstream"})
-	if err != nil {
-		t.Errorf("error creating route")
-	}
-	routes, err := runCreate(sc, "", "", route, false)
-	if err != nil {
-		t.Errorf("unable to create route %q\n", err)
-	}
-	if len(routes) != 1 {
-		t.Errorf("expected one route but got %d instead", len(routes))
-	}
+	It("should allow creating with a default virtual service not called 'default'", func() {
+		// create a default virtual service of different name - mydefault
+		fmt.Fprintln(GinkgoWriter, "Creating a virtual host with different name")
+		helper.RunWithArgs("virtualservice", "create", "-f", "testdata/vs-mydefault.yaml").
+			ExpectExitCode(0)
 
-	// check it is on the existing virtual service
-	v, err := sc.V1().VirtualServices().Get("mydefault")
-	if err != nil {
-		t.Error("unable to get virtual service to validate", err)
-	}
-	if len(v.Routes) != 1 {
-		t.Error("expecting 1 route got", len(v.Routes))
-	}
-}
+		fmt.Fprintln(GinkgoWriter, "Creating a route")
+		helper.RunWithArgs("route", "create", "--path-prefix", "/foo", "--upstream", "test-upstream").
+			ExpectExitCodeAndOutput(0, "Using virtual service: mydefault", "/foo", "test-upstream")
+	})
 
-func TestCreateAndSort(t *testing.T) {
-	sc, cleanup, err := setupStorage()
-	if err != nil {
-		t.Errorf("unable to setup storage %q", err)
-	}
-	defer cleanup()
+	It("should allow selecting the virtual service using domain", func() {
+		// create a default virtual service of different name - mydefault
+		helper.RunWithArgs("virtualservice", "create", "-f", "testdata/vs-mydefault.yaml").
+			ExpectExitCode(0)
+		// create a virtual service with domain
+		helper.RunWithArgs("virtualservice", "create", "-f", "testdata/vs-with-domain.yaml").
+			ExpectExitCode(0)
 
-	prefixRoute, _ := fromRouteDetail(&routeDetail{pathPrefix: "/foo", upstream: "upstream"})
-	vservice := &v1.VirtualService{
-		Name:   "default",
-		Routes: []*v1.Route{prefixRoute}}
-	if _, err = sc.V1().VirtualServices().Create(vservice); err != nil {
-		t.Errorf("unable to create virtual service %q", err)
-	}
-	newRoute, _ := fromRouteDetail(&routeDetail{pathExact: "/a", upstream: "upstream"})
-	runCreate(sc, "", "", newRoute, true)
+		fmt.Fprintln(GinkgoWriter, "Creating a route with domain")
+		helper.RunWithArgs("route", "create", "--domain", "axhixh.com", "--path-prefix", "/foo",
+			"--upstream", "test-upstream").
+			ExpectExitCodeAndOutput(0, "Using virtual service: with-domain", "/foo", "test-upstream")
+	})
 
-	// check it is on the existing virtual service
-	v, err := sc.V1().VirtualServices().Get("default")
-	if err != nil {
-		t.Error("unable to get virtual service to validate", err)
-	}
-	if len(v.Routes) != 2 {
-		t.Error("expecting 2 route got", len(v.Routes))
-	}
-	if !v.Routes[0].Equal(newRoute) {
-		t.Error("route not sorted correctly")
-	}
-}
+	It("should fail when giving invalid domain", func() {
+		helper.RunWithArgs("route", "create", "--domain", "nowhere.com", "--path-prefix", "/foo",
+			"--upstream", "test-upstream").
+			ExpectExitCodeAndOutput(1, "didn't find any virtual service for the domain nowhere.com")
+	})
 
-func TestCreateWithExistingDomain(t *testing.T) {
-	sc, cleanup, err := setupStorage()
-	if err != nil {
-		t.Errorf("unable to setup storage %q", err)
-	}
-	defer cleanup()
+	It("should reorder the routes if asked to sort", func() {
+		helper.RunWithArgs("route", "create", "--path-prefix", "/foo", "--upstream", "test-upstream").
+			ExpectExitCode(0)
 
-	vservice := &v1.VirtualService{Name: "default"}
-	if _, err = sc.V1().VirtualServices().Create(vservice); err != nil {
-		t.Errorf("unable to create virtual service %q", err)
-	}
-	vservice2 := &v1.VirtualService{Name: "axhixh.com", Domains: []string{"axhixh.com"}}
-	if _, err = sc.V1().VirtualServices().Create(vservice2); err != nil {
-		t.Errorf("unable to create virtual service 2 %q", err)
-	}
-	newRoute, _ := fromRouteDetail(&routeDetail{pathExact: "/a", upstream: "upstream"})
-	runCreate(sc, "", "axhixh.com", newRoute, true)
+		// create second with sort
+		helper.RunWithArgs("route", "create", "--path-exact", "/a", "--upstream", "test-upstream2",
+			"--sort").ExpectExitCode(0)
 
-	// check it is on the existing virtual service
-	v, err := sc.V1().VirtualServices().Get("axhixh.com")
-	if err != nil {
-		t.Error("unable to get virtual service to validate", err)
-	}
-	if len(v.Routes) != 1 {
-		t.Error("expecting 1 route got", len(v.Routes))
-	}
-}
-
-func TestCreateWithNonExistingDomain(t *testing.T) {
-	sc, cleanup, err := setupStorage()
-	if err != nil {
-		t.Errorf("unable to setup storage %q", err)
-	}
-	defer cleanup()
-
-	vservice := &v1.VirtualService{Name: "default"}
-	if _, err = sc.V1().VirtualServices().Create(vservice); err != nil {
-		t.Errorf("unable to create virtual service %q", err)
-	}
-	newRoute, _ := fromRouteDetail(&routeDetail{pathExact: "/a", upstream: "upstream"})
-	_, err = runCreate(sc, "", "axhixh.com", newRoute, true)
-	if err == nil {
-		t.Errorf("should have error saying didn't find a virtual service")
-	}
-}
+		sc, err := configstorage.Bootstrap(*helper.BootstrapOpts())
+		Expect(err).NotTo(HaveOccurred())
+		vs, err := sc.V1().VirtualServices().Get("default")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(len(vs.Routes)).To(Equal(2))
+		matcher, ok := vs.Routes[0].Matcher.(*v1.Route_RequestMatcher)
+		Expect(ok).To(Equal(true))
+		path, ok := matcher.RequestMatcher.Path.(*v1.RequestMatcher_PathExact)
+		Expect(ok).To(Equal(true))
+		Expect(path.PathExact).To(Equal("/a"))
+	})
+})
