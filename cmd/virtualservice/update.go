@@ -57,7 +57,7 @@ func runUpdate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 	var existing *v1.VirtualService
 	if opts.Filename != "" {
 		var err error
-		vh, err = parseFile(opts.Filename)
+		vh, err = virtualservice.ParseFile(opts.Filename)
 		if err != nil {
 			return nil, errors.Wrapf(err, "unable to load virtual service from %s", opts.Filename)
 		}
@@ -77,7 +77,7 @@ func runUpdate(sc storage.Interface, si dependencies.SecretStorage, opts *virtua
 		}
 		vh = existing
 	}
-	if err := defaultVirtualServiceValidation(vh); err != nil {
+	if err := virtualservice.DefaultVirtualServiceValidation(sc, vh); err != nil {
 		return nil, err
 	}
 

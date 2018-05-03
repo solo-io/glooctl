@@ -1,6 +1,7 @@
 package route
 
 import (
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"fmt"
 	"io"
 	"os"
@@ -41,7 +42,7 @@ matcher and destintation only. It doesn't include extensions.`,
 }
 
 func runDelete(sc storage.Interface) {
-	vs, err := proute.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
+	vs, err := virtualservice.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
 	if err != nil {
 		fmt.Printf("Unable to get virtual service for routes: %q\n", err)
 		os.Exit(1)
