@@ -12,6 +12,7 @@ import (
 	storage "github.com/solo-io/gloo/pkg/storage"
 	proute "github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"github.com/spf13/cobra"
 )
 
@@ -27,7 +28,7 @@ the flags.`,
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 			var r *v1.Route
 			if routeOpt.interactive {
@@ -38,13 +39,13 @@ the flags.`,
 			}
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
-				return
+				os.Exit(1)
 			}
 
 			routes, err := runCreate(sc, routeOpt.virtualservice, routeOpt.domain, r, routeOpt.sort)
 			if err != nil {
 				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.domain, err)
-				return
+				os.Exit(1)
 			}
 			util.PrintList(routeOpt.output, "", routes,
 				func(data interface{}, w io.Writer) error {

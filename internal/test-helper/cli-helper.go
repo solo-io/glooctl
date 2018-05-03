@@ -51,6 +51,9 @@ func SetupStorage() {
 	err = os.MkdirAll(filepath.Join(configDir, "upstreams"), 0700)
 	Expect(err).NotTo(HaveOccurred())
 
+	err = os.MkdirAll(filepath.Join(configDir, "virtualservices"), 0700)
+	Expect(err).NotTo(HaveOccurred())
+
 	err = os.MkdirAll(secretDir, 0700)
 	Expect(err).NotTo(HaveOccurred())
 
