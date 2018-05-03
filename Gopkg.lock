@@ -472,6 +472,7 @@
     "pkg/plugins",
     "pkg/plugins/aws",
     "pkg/plugins/google",
+    "pkg/plugins/nats-streaming",
     "pkg/protoutil",
     "pkg/secretwatcher",
     "pkg/storage",
@@ -821,6 +822,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "059f6b84957dc970b7df345407c575efce29573d2696f11db346aa63aa5bc517"
+  inputs-digest = "63fdb839fa78e5d71421c2e3e8cb5575f331d8934905cd7a8e7f9bf44e403c0e"
   solver-name = "gps-cdcl"
   solver-version = 1
