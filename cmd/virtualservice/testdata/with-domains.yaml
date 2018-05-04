@@ -1,0 +1,13 @@
+name: axhixh.com
+domains:
+- axhixh.com
+- www.axhixh.com
+routes:
+- request_matcher:
+    path_exact: /bar
+    verbs:
+    - GET
+    - POST
+  single_destination:
+    upstream:
+      name: my-upstream
