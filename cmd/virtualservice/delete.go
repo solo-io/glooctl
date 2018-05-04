@@ -2,6 +2,7 @@ package virtualservice
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
@@ -18,12 +19,12 @@ func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 			name := args[0]
 			if err := runDelete(sc, name); err != nil {
 				fmt.Printf("Unable to delete virtual service %s: %q\n", name, err)
-				return
+				os.Exit(1)
 			}
 			fmt.Printf("Virtual service %s deleted\n", name)
 		},
