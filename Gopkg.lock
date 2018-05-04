@@ -83,7 +83,8 @@
     "envoy/api/v2/route",
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
-    "envoy/type"
+    "envoy/type",
+    "pkg/util"
   ]
   revision = "5f52d064b948cc3a39451b20055e173597d3885e"
 
@@ -350,6 +351,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/mitchellh/hashstructure"
+  packages = ["."]
+  revision = "2bca23e0e452137f789efbc8610126fd8b94f73b"
+
+[[projects]]
+  branch = "master"
   name = "github.com/mitchellh/mapstructure"
   packages = ["."]
   revision = "00c29f56e2386353d58c599509e8dc3801b0d716"
@@ -471,6 +478,7 @@
     "pkg/log",
     "pkg/plugins",
     "pkg/plugins/aws",
+    "pkg/plugins/common/transformation",
     "pkg/plugins/google",
     "pkg/plugins/nats-streaming",
     "pkg/protoutil",
@@ -490,7 +498,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "84022273b67ec631e0aae9f9bf9262e80fbac8c8"
+  revision = "8e9a321e8fcf33a676a4ec9fef7116311d12c3e4"
 
 [[projects]]
   branch = "master"
@@ -822,6 +830,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "63fdb839fa78e5d71421c2e3e8cb5575f331d8934905cd7a8e7f9bf44e403c0e"
+  inputs-digest = "29d3d049cb248c216b8a46596fa71edda9d97d4b3af62f387b008cffe4f6636c"
   solver-name = "gps-cdcl"
   solver-version = 1

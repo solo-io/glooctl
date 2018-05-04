@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/plugins/common/transformation"
+
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
 	core "github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
@@ -20,14 +22,14 @@ type extensionPlugin struct {
 
 var (
 	availableExtensions = []extensionPlugin{
-		{"Add request header", addRequestHeader},
-		{"Add response header", addResponseHeader},
-		{"Remove response header", removeResponseHeader},
+		{"Add a new request header", addRequestHeader},
+		{"Add a new response header", addResponseHeader},
+		{"CORS policy", corsPolicy},
+		{"Remove an existing response header", removeResponseHeader},
+		{"Response Transformation", responseTransformation},
+		{"Rewrite host", rewriteHost},
 		{"Set max retries", setMaxRetries},
 		{"Set timeout", setTimeout},
-		{"Rewrite host", rewriteHost},
-		{"CORS policy", corsPolicy},
-		//{"Transformation", transformation},
 	}
 )
 
@@ -244,6 +246,109 @@ func corsPolicy(s *types.Struct) error {
 	return nil
 }
 
-func transformation(s *types.Struct) error {
-	return errors.New("not implemented")
+// responseTransformation shares the route extension struct with request
+// transformation. We are changing just two fields of this struct
+// TODO: add request transformation after changes in Gloo
+func responseTransformation(s *types.Struct) error {
+	spec, err := transformation.DecodeRouteExtension(s)
+	if err != nil {
+		return errors.Wrap(err, "unable to decode transformation route extension")
+	}
+
+	hasResponseParams := false
+	err = survey.AskOne(&survey.Confirm{
+		Message: "Do you want to define response parameters?",
+		Help:    "Define custom parameters that are used by response template",
+	}, &hasResponseParams, nil)
+	if err != nil {
+		return err
+	}
+	if hasResponseParams {
+		path := ""
+		err = survey.AskOne(&survey.Input{
+			Message: "Please enter path based parameter (leave empty if you don't need one):",
+			Help:    "Path based parameter helps you extract parameters from the URL path",
+		}, &path, nil)
+		if err != nil {
+			return err
+		}
+
+		responseParam := transformation.Parameters{}
+		if path != "" {
+			responseParam.Path = &path
+		}
+		headers, errHeaders := askHeaders("Define a response header based parameter?", "Define another response header based parameter?")
+		if errHeaders != nil {
+			return errHeaders
+		}
+		if len(headers) != 0 {
+			responseParam.Headers = headers
+		}
+		spec.ResponseParams = &responseParam
+	}
+
+	bodyTemplate := ""
+	err = survey.AskOne(&survey.Editor{
+		Message: "Please enter the response template for the body (leave empty to not modify the body):",
+	}, &bodyTemplate, nil)
+	if err != nil {
+		return err
+	}
+	responseTemplate := transformation.Template{}
+	responseTemplate.Body = &bodyTemplate
+
+	headers, err := askHeaders("Add a response header?", "Add another response header?")
+	if err != nil {
+		return err
+	}
+	if len(headers) != 0 {
+		responseTemplate.Header = headers
+	}
+
+	spec.ResponseTemplate = &responseTemplate
+	// since this is a shared route extension struct with request
+	// we should merge individual components
+	// FIXME - ashish; deferred. waiting for changes in request transformation
+	// changes in Gloo and will add after that
+	addAll(s, transformation.EncodeRouteExtension(spec))
+	return nil
+}
+
+func askHeaders(first, more string) (map[string]string, error) {
+	headers := make(map[string]string)
+	addHeaders := false
+	if err := survey.AskOne(&survey.Confirm{
+		Message: first,
+	}, &addHeaders, nil); err != nil {
+		return nil, err
+	}
+	for addHeaders {
+		questions := []*survey.Question{
+			{
+				Name:     "key",
+				Prompt:   &survey.Input{Message: "Please enter HTTP header name:"},
+				Validate: survey.Required,
+			},
+			{
+				Name:     "value",
+				Prompt:   &survey.Input{Message: "Please enter HTTP header template:"},
+				Validate: survey.Required,
+			},
+		}
+		answers := struct {
+			Key   string
+			Value string
+		}{}
+		if err := survey.Ask(questions, &answers); err != nil {
+			return nil, err
+		}
+		headers[answers.Key] = answers.Value
+
+		if err := survey.AskOne(&survey.Confirm{
+			Message: more,
+		}, &addHeaders, nil); err != nil {
+			return nil, err
+		}
+	}
+	return headers, nil
 }
