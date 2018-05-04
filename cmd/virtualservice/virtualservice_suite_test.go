@@ -15,3 +15,12 @@ func TestVirtualService(t *testing.T) {
 
 var _ = BeforeSuite(helper.Build)
 var _ = AfterSuite(helper.CleanUp)
+
+func setupVirtualServices() {
+	helper.SetupStorage()
+	helper.RunWithArgs("virtualservice", "create", "-f", "testdata/mydefault.yaml").
+		ExpectExitCode(0)
+	helper.RunWithArgs("virtualservice", "create", "-f", "testdata/with-domains.yaml").
+		ExpectExitCode(0)
+
+}

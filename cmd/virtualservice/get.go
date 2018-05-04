@@ -23,11 +23,11 @@ func getCmd(opts *bootstrap.Options) *cobra.Command {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
 				fmt.Printf("Unable to create storage client %q\n", err)
-				return
+				os.Exit(1)
 			}
 			if cliOpts.Output == "template" && cliOpts.Template == "" {
 				fmt.Println("Must provide template when setting output as template")
-				return
+				os.Exit(1)
 			}
 			var name string
 			if len(args) > 0 {
@@ -35,7 +35,7 @@ func getCmd(opts *bootstrap.Options) *cobra.Command {
 			}
 			if err := runGet(sc, cliOpts.Output, cliOpts.Template, name); err != nil {
 				fmt.Printf("Unable to get virtual service %q\n", err)
-				return
+				os.Exit(1)
 			}
 		},
 	}
