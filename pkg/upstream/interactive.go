@@ -6,6 +6,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
+
+	"github.com/gogo/protobuf/types"
 	"github.com/solo-io/gloo/pkg/coreplugins/service"
 
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
@@ -16,7 +19,6 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/plugins/aws"
 	"github.com/solo-io/gloo/pkg/plugins/google"
-	natsstreaming "github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 	"github.com/solo-io/gloo/pkg/storage"
 	psecret "github.com/solo-io/glooctl/pkg/secret"
 	survey "gopkg.in/AlecAivazis/survey.v1"
@@ -352,6 +354,45 @@ func natsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.
 
 	}
 	u.ServiceInfo.Type = natsstreaming.ServiceTypeNatsStreaming
+
+	if u.ServiceInfo.Properties == nil {
+		u.ServiceInfo.Properties = &types.Struct{}
+	}
+
+	// ClusterID and DiscoverPrefix
+	clusterID := ""
+	if u.ServiceInfo.Properties.Fields[natsstreaming.ClusterId] != nil {
+		clusterID = u.ServiceInfo.Properties.Fields[natsstreaming.ClusterId].GetStringValue()
+	}
+	discoverPrefix := ""
+	if u.ServiceInfo.Properties.Fields[natsstreaming.DiscoverPrefix] != nil {
+		discoverPrefix = u.ServiceInfo.Properties.Fields[natsstreaming.DiscoverPrefix].GetStringValue()
+	}
+
+	q := []*survey.Question{
+		{
+			Name: "clusterID",
+			Prompt: &survey.Input{
+				Message: fmt.Sprintf("Please enter the cluster ID (empty value defaults to %s):",
+					natsstreaming.DefaultClusterId),
+				Default: clusterID,
+			},
+		},
+		{
+			Name: "discoverPrefix",
+			Prompt: &survey.Input{
+				Message: fmt.Sprintf("Please enter the discovery prefix (empty value defaults to %s):",
+					natsstreaming.DefaultDiscoverPrefix),
+				Default: discoverPrefix,
+			},
+		},
+	}
+	a := natsstreaming.ServiceProperties{}
+	err := survey.Ask(q, &a)
+	if err != nil {
+		return err
+	}
+	u.ServiceInfo.Properties = natsstreaming.EncodeServiceProperties(a)
 
 	replace, err := askReplaceHosts(u, "NATS Servers", "Do you want to replace existing NATS server(s)?")
 	if err != nil {
