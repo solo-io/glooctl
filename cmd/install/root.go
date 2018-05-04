@@ -9,6 +9,6 @@ func Cmd() *cobra.Command {
 		Use:   "install",
 		Short: "install gloo on different platforms",
 	}
-	cmd.AddCommand(dockerCmd())
+	cmd.AddCommand(dockerCmd(), kubeCmd())
 	return cmd
 }
