@@ -5,7 +5,7 @@ import (
 	helper "github.com/solo-io/glooctl/internal/test-helper"
 )
 
-var _ = Describe("Getting upstream", func() {
+var _ = Describe("Updating upstream", func() {
 	BeforeEach(setupUpstreams)
 	AfterEach(helper.TearDownStorage)
 
