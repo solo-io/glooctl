@@ -267,7 +267,7 @@ func responseTransformation(s *types.Struct) error {
 		path := ""
 		err = survey.AskOne(&survey.Input{
 			Message: "Please enter path based parameter (leave empty if you don't need one):",
-			Help:    "Path based parameter help you extract parameters from the URL path",
+			Help:    "Path based parameter helps you extract parameters from the URL path",
 		}, &path, nil)
 		if err != nil {
 			return err
