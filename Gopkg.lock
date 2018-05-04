@@ -498,7 +498,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "8e9a321e8fcf33a676a4ec9fef7116311d12c3e4"
+  revision = "762f1533b5197a7edb8c7d508b7a7ba060018df5"
 
 [[projects]]
   branch = "master"
@@ -830,6 +830,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "29d3d049cb248c216b8a46596fa71edda9d97d4b3af62f387b008cffe4f6636c"
+  inputs-digest = "f2f531da29c8749a0eb0c20e4436d294e237193f5f2bb52dc0b8f53171f2229c"
   solver-name = "gps-cdcl"
   solver-version = 1
