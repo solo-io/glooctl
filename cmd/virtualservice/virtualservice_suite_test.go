@@ -1,6 +1,7 @@
 package virtualservice_test
 
 import (
+	"bufio"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -23,4 +24,9 @@ func setupVirtualServices() {
 	helper.RunWithArgs("virtualservice", "create", "-f", "testdata/with-domains.yaml").
 		ExpectExitCode(0)
 
+}
+
+// for interactive tests
+func expect(expected string, buf *bufio.Reader) {
+	helper.ExpectOutput(buf, expected)
 }
