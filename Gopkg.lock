@@ -314,6 +314,12 @@
   version = "v2.3.0"
 
 [[projects]]
+  name = "github.com/kr/pty"
+  packages = ["."]
+  revision = "282ce0e5322c82529687d609ee670fac7c7d917c"
+  version = "v1.1.1"
+
+[[projects]]
   name = "github.com/lyft/protoc-gen-validate"
   packages = ["validate"]
   revision = "8e6aaf55f4954f1ef9d3ee2e8f5a50e79cc04f8f"
@@ -830,6 +836,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "cc39828c954484e0cc0a8dec0ee0d85c1a0e018054598671e38505b1598c9a7e"
+  inputs-digest = "8643a543ec6de0972e27d7b2c3b89ac2538318c7b548b433ca4d498ca45d069b"
   solver-name = "gps-cdcl"
   solver-version = 1
