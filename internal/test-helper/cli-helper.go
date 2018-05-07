@@ -1,17 +1,27 @@
 package helper
 
 import (
+	"bufio"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
+	"strings"
 
+	"github.com/kr/pty"
 	"github.com/onsi/gomega/gbytes"
 	"github.com/onsi/gomega/gexec"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+)
+
+const (
+	RED   = "\033[31m"
+	RESET = "\033[0m"
 )
 
 var (
@@ -110,4 +120,57 @@ func (a *Args) ExpectExitCodeAndOutput(code int, messages ...string) {
 		Eventually(session.Out).Should(gbytes.Say(m))
 	}
 	Eventually(session).Should(gexec.Exit(code))
+}
+
+func (a *Args) Interact(code int, interaction func(*bufio.Reader, *os.File)) {
+	fh, tty, err := pty.Open()
+	Ω(err).ShouldNot(HaveOccurred())
+	defer tty.Close()
+	defer fh.Close()
+
+	command := exec.Command(Glooctl, a.Opts...)
+	command.Env = append(os.Environ(), "CHECKPOINT_DISABLE=1")
+	command.Stdin = tty
+	session, err := gexec.Start(command, tty, tty)
+
+	buf := bufio.NewReaderSize(fh, 1024)
+
+	interaction(buf, fh)
+
+	Eventually(session).Should(gexec.Exit(code))
+}
+
+// ExpectOutput compares the output of the interaction with expected
+// Taken from generated code from autoplay
+func ExpectOutput(buf *bufio.Reader, expected string) {
+	sofar := []rune{}
+	for _, r := range expected {
+		got, _, _ := buf.ReadRune()
+		sofar = append(sofar, got)
+		if got != r {
+			fmt.Fprintln(os.Stderr, RESET)
+
+			// we want to quote the string but we also want to make the unexpected character RED
+			// so we use the strconv.Quote function but trim off the quoted characters so we can
+			// merge multiple quoted strings into one.
+			expStart := strings.TrimSuffix(strconv.Quote(expected[:len(sofar)-1]), "\"")
+			expMiss := strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(string(expected[len(sofar)-1])), "\""), "\"")
+			expEnd := strings.TrimPrefix(strconv.Quote(expected[len(sofar):]), "\"")
+
+			fmt.Fprintf(os.Stderr, "Expected: %s%s%s%s%s\n", expStart, RED, expMiss, RESET, expEnd)
+
+			// read the rest of the buffer
+			p := make([]byte, buf.Buffered())
+			buf.Read(p)
+
+			gotStart := strings.TrimSuffix(strconv.Quote(string(sofar[:len(sofar)-1])), "\"")
+			gotMiss := strings.TrimSuffix(strings.TrimPrefix(strconv.Quote(string(sofar[len(sofar)-1])), "\""), "\"")
+			gotEnd := strings.TrimPrefix(strconv.Quote(string(p)), "\"")
+
+			fmt.Fprintf(os.Stderr, "Got:      %s%s%s%s%s\n", gotStart, RED, gotMiss, RESET, gotEnd)
+			Fail(fmt.Sprintf("Unexpected Rune %q, Expected %q\n", got, r))
+		} else {
+			fmt.Printf("%c", r)
+		}
+	}
 }

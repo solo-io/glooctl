@@ -31,4 +31,9 @@ var _ = Describe("Creating virtual service", func() {
 		helper.RunWithArgs("virtualservice", "get", "axhixh.com", "-o", "yaml").
 			ExpectExitCodeAndOutput(0, "domains:\n- axhixh.com")
 	})
+
+	It("should allow interactive mode", func() {
+		helper.RunWithArgs("virtualservice", "create", "-i").
+			Interact(0, interactionCreateWithDomain)
+	})
 })

@@ -20,4 +20,12 @@ var _ = Describe("Updating virtual service", func() {
 		helper.RunWithArgs("virtualservice", "update", "-f", "testdata/with-domains-update.yaml").
 			ExpectExitCodeAndOutput(0, "axhixh.net, www.axhixh.net")
 	})
+
+	It("should update in interactive mode", func() {
+		helper.RunWithArgs("virtualservice", "create", "-f", "testdata/with-domains.yaml").
+			ExpectExitCodeAndOutput(0, "axhixh.com, www.axhixh.com")
+
+		helper.RunWithArgs("virtualservice", "update", "-i").
+			Interact(0, interactionUpdateDomains)
+	})
 })
