@@ -498,7 +498,7 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "8e9a321e8fcf33a676a4ec9fef7116311d12c3e4"
+  revision = "ef95a89ef35cf8eaf9f247f91581d49b2510e281"
 
 [[projects]]
   branch = "master"
