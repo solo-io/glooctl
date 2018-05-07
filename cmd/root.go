@@ -24,8 +24,6 @@ import (
 	"github.com/solo-io/glooctl/cmd/virtualservice"
 	"github.com/solo-io/glooctl/pkg/config"
 	"github.com/spf13/cobra"
-	"path/filepath"
-	"os"
 )
 
 var (
@@ -97,11 +95,6 @@ func App(version string) *cobra.Command {
 	flags.AddKubernetesFlags(app, opts)
 	flags.AddConsulFlags(app, opts)
 	flags.AddVaultFlags(app, opts)
-
-	opts.ConfigStorageOptions.Type = bootstrap.WatcherTypeKube
-	opts.SecretStorageOptions.Type = bootstrap.WatcherTypeKube
-	opts.FileStorageOptions.Type = bootstrap.WatcherTypeKube
-	opts.KubeOptions.KubeConfig = filepath.Join(os.Getenv("HOME"), ".kube", "config")
 
 	config.LoadConfig(opts) // load saved configurations
 
