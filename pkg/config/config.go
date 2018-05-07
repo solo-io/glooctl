@@ -9,7 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/glooctl/pkg/util"
-	yaml "gopkg.in/yaml.v2"
+
+	"github.com/ghodss/yaml"
 )
 
 const (
@@ -20,16 +21,15 @@ const (
 // LoadConfig loads saved configuration if any
 // if not sets default configuration and also saves it
 func LoadConfig(opts *bootstrap.Options) {
+	defaultConfig(opts)
 	configDir, err := util.ConfigDir()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Unable to get config directory:", err)
-		defaultConfig(opts)
 		return
 	}
 	configFile := filepath.Join(configDir, configFile)
 	data, err := ioutil.ReadFile(configFile)
 	if err != nil {
-		defaultConfig(opts)
 		if os.IsNotExist(err) {
 			err = save(opts, configFile)
 			if err != nil {
@@ -41,7 +41,6 @@ func LoadConfig(opts *bootstrap.Options) {
 		return
 	}
 	if err := yaml.Unmarshal(data, opts); err != nil {
-		defaultConfig(opts)
 		fmt.Fprintln(os.Stderr, "Unable to parse configuration file:", err)
 	}
 }
