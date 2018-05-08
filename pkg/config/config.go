@@ -45,10 +45,11 @@ func LoadConfig(opts *bootstrap.Options) {
 	}
 }
 
+// SaveConfig saves options used to setup storage in user's glooctl directory
 func SaveConfig(opts *bootstrap.Options) error {
 	configDir, err := util.ConfigDir()
 	if err != nil {
-		errors.Wrap(err, "unable to get glooctl configuration directory")
+		return errors.Wrap(err, "unable to get glooctl configuration directory")
 	}
 	err = save(opts, filepath.Join(configDir, configFile))
 	if err != nil {
@@ -62,11 +63,7 @@ func save(opts *bootstrap.Options, configFile string) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(configFile, b, 0644)
-	if err != nil {
-		return err
-	}
-	return nil
+	return ioutil.WriteFile(configFile, b, 0644)
 }
 
 func defaultConfig(opts *bootstrap.Options) {
