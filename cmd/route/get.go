@@ -27,12 +27,12 @@ func getCmd(opts *bootstrap.Options) *cobra.Command {
 				fmt.Printf("Unable to create storage client %q\n", err)
 				return
 			}
-			routes, err := runGet(sc, routeOpt.virtualservice, routeOpt.domain)
+			routes, err := runGet(sc, routeOpt.Virtualservice, routeOpt.Domain)
 			if err != nil {
-				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.domain, err)
+				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.Domain, err)
 				return
 			}
-			util.PrintList(routeOpt.output, "", routes,
+			util.PrintList(routeOpt.Output, "", routes,
 				func(data interface{}, w io.Writer) error {
 					proute.PrintTable(data.([]*v1.Route), w)
 					return nil

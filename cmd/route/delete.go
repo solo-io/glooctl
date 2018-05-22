@@ -1,10 +1,11 @@
 package route
 
 import (
-	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"fmt"
 	"io"
 	"os"
+
+	"github.com/solo-io/glooctl/pkg/virtualservice"
 
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 
@@ -12,7 +13,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	proute "github.com/solo-io/glooctl/pkg/route"
+	"github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -37,12 +38,12 @@ matcher and destintation only. It doesn't include extensions.`,
 			runDelete(sc)
 		},
 	}
-	cmd.Flags().BoolVarP(&routeOpt.interactive, "interactive", "i", false, "interactive mode")
+	cmd.Flags().BoolVarP(&routeOpt.Interactive, "interactive", "i", false, "interactive mode")
 	return cmd
 }
 
 func runDelete(sc storage.Interface) {
-	vs, err := virtualservice.VirtualService(sc, routeOpt.virtualservice, routeOpt.domain, false)
+	vs, err := virtualservice.VirtualService(sc, routeOpt.Virtualservice, routeOpt.Domain, false)
 	if err != nil {
 		fmt.Printf("Unable to get virtual service for routes: %q\n", err)
 		os.Exit(1)
@@ -62,27 +63,27 @@ func runDelete(sc storage.Interface) {
 		fmt.Printf("Unable to save routes: %q\n", err)
 		os.Exit(1)
 	}
-	util.PrintList(routeOpt.output, "", saved,
+	util.PrintList(routeOpt.Output, "", saved,
 		func(data interface{}, w io.Writer) error {
-			proute.PrintTable(data.([]*v1.Route), w)
+			route.PrintTable(data.([]*v1.Route), w)
 			return nil
 		}, os.Stdout)
 }
 
-func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *routeOption) ([]*v1.Route, error) {
-	if opts.interactive {
-		result, err := proute.SelectInteractive(routes, true)
+func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *route.RouteOption) ([]*v1.Route, error) {
+	if opts.Interactive {
+		result, err := route.SelectInteractive(routes, true)
 		if err != nil {
 			return nil, err
 		}
 		return result.NotSelected, nil
 	}
 
-	route, err := route(opts, sc)
+	r, err := route.FromRouteOption(opts, sc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get route")
 	}
-	return remove(routes, route)
+	return remove(routes, r)
 
 }
 

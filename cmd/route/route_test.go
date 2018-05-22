@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
+	"github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/spf13/cobra"
 )
@@ -78,7 +79,7 @@ func TestToRoute(t *testing.T) {
 		setupRouteParams(cmd)
 		flags := cmd.Flags()
 		flags.Parse(tc.args)
-		route, err := fromRouteDetail(routeOpt.route)
+		route, err := route.FromRouteDetail(routeOpt.Route)
 		if err != nil {
 			t.Errorf("case %d failed conversion", i)
 		}
