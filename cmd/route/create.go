@@ -10,7 +10,7 @@ import (
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	storage "github.com/solo-io/gloo/pkg/storage"
-	proute "github.com/solo-io/glooctl/pkg/route"
+	"github.com/solo-io/glooctl/pkg/route"
 	"github.com/solo-io/glooctl/pkg/util"
 	"github.com/solo-io/glooctl/pkg/virtualservice"
 	"github.com/spf13/cobra"
@@ -31,48 +31,48 @@ the flags.`,
 				os.Exit(1)
 			}
 			var r *v1.Route
-			if routeOpt.interactive {
+			if routeOpt.Interactive {
 				r = &v1.Route{}
-				err = proute.Interactive(sc, r)
+				err = route.Interactive(sc, r)
 			} else {
-				r, err = route(routeOpt, sc)
+				r, err = route.FromRouteOption(routeOpt, sc)
 			}
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)
 				os.Exit(1)
 			}
 
-			routes, err := runCreate(sc, routeOpt.virtualservice, routeOpt.domain, r, routeOpt.sort)
+			routes, err := runCreate(sc, routeOpt.Virtualservice, routeOpt.Domain, r, routeOpt.Sort)
 			if err != nil {
-				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.domain, err)
+				fmt.Printf("Unable to get routes for %s: %q\n", routeOpt.Domain, err)
 				os.Exit(1)
 			}
-			util.PrintList(routeOpt.output, "", routes,
+			util.PrintList(routeOpt.Output, "", routes,
 				func(data interface{}, w io.Writer) error {
-					proute.PrintTable(data.([]*v1.Route), w)
+					route.PrintTable(data.([]*v1.Route), w)
 					return nil
 				}, os.Stdout)
 		},
 	}
-	kube := routeOpt.route.kube
+	kube := routeOpt.Route.Kube
 	flags := cmd.Flags()
-	flags.StringVar(&kube.name, flagKubeName, "", "kubernetes service name")
-	flags.StringVar(&kube.namespace, flagKubeNamespace, "", "kubernetes service namespace")
-	flags.IntVar(&kube.port, flagKubePort, 0, "kubernetes service port")
-	flags.BoolVar(&routeOpt.sort, "sort", false, "sort the routes after appending the new route")
-	flags.BoolVarP(&routeOpt.interactive, "interactive", "i", false, "interactive mode")
+	flags.StringVar(&kube.Name, flagKubeName, "", "kubernetes service name")
+	flags.StringVar(&kube.Namespace, flagKubeNamespace, "", "kubernetes service namespace")
+	flags.IntVar(&kube.Port, flagKubePort, 0, "kubernetes service port")
+	flags.BoolVar(&routeOpt.Sort, "sort", false, "sort the routes after appending the new route")
+	flags.BoolVarP(&routeOpt.Interactive, "interactive", "i", false, "interactive mode")
 	return cmd
 }
 
-func runCreate(sc storage.Interface, vservicename, domain string, route *v1.Route, sort bool) ([]*v1.Route, error) {
+func runCreate(sc storage.Interface, vservicename, domain string, r *v1.Route, sort bool) ([]*v1.Route, error) {
 	v, err := virtualservice.VirtualService(sc, vservicename, domain, true)
 	if err != nil {
 		return nil, err
 	}
 	fmt.Println("Using virtual service:", v.Name)
-	v.Routes = append(v.GetRoutes(), route)
+	v.Routes = append(v.GetRoutes(), r)
 	if sort {
-		proute.SortRoutes(v.Routes)
+		route.SortRoutes(v.Routes)
 	}
 	updated, err := sc.V1().VirtualServices().Update(v)
 	if err != nil {

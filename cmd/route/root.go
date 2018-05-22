@@ -2,6 +2,7 @@ package route
 
 import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
+	"github.com/solo-io/glooctl/pkg/route"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -28,7 +29,7 @@ const (
 )
 
 var (
-	routeOpt = &routeOption{route: &routeDetail{kube: &kubeUpstream{}}}
+	routeOpt = &route.RouteOption{Route: &route.RouteDetail{Kube: &route.KubeUpstream{}}}
 )
 
 // Cmd returns command related to managing routes on a virtual service
@@ -39,10 +40,10 @@ func Cmd(opts *bootstrap.Options) *cobra.Command {
 	}
 
 	pflags := cmd.PersistentFlags()
-	pflags.StringVarP(&routeOpt.output, "output", "o", "", "output format yaml|json")
-	pflags.StringVarP(&routeOpt.domain, flagDomain, "d", "", "domain for virtual service; empty defaults to default virtual service")
-	pflags.StringVarP(&routeOpt.virtualservice, flagVirtualService, "v", "", "specify virtual service by name; empty defaults to default virtual service")
-	pflags.StringVarP(&routeOpt.filename, flagFilename, "f", "", "file with route defintion")
+	pflags.StringVarP(&routeOpt.Output, "output", "o", "", "output format yaml|json")
+	pflags.StringVarP(&routeOpt.Domain, flagDomain, "d", "", "domain for virtual service; empty defaults to default virtual service")
+	pflags.StringVarP(&routeOpt.Virtualservice, flagVirtualService, "v", "", "specify virtual service by name; empty defaults to default virtual service")
+	pflags.StringVarP(&routeOpt.Filename, flagFilename, "f", "", "file with route defintion")
 	cmd.MarkFlagFilename(flagFilename, "yaml", "yml")
 
 	create := createCmd(opts)
@@ -56,20 +57,20 @@ func Cmd(opts *bootstrap.Options) *cobra.Command {
 }
 
 func setupRouteParams(cmds ...*cobra.Command) {
-	r := routeOpt.route
+	r := routeOpt.Route
 	for _, c := range cmds {
 		flags := c.Flags()
-		flags.StringVarP(&r.event, flagEvent, "e", "", "event type to match")
-		flags.StringVar(&r.pathExact, flagPathExact, "", "exact path to match")
-		flags.StringVar(&r.pathRegex, flagPathRegex, "", "path regex to match")
-		flags.StringVar(&r.pathPrefix, flagPathPrefix, "", "path prefix to match")
-		flags.StringVar(&r.verb, flagMethod, "", "HTTP method to match")
-		flags.StringVar(&r.headers, flagHeaders, "", "header to match")
-		flags.StringVar(&r.upstream, flagUpstream, "", "desitnation upstream")
-		flags.StringVar(&r.function, flagFunction, "", "destination function")
-		flags.StringVar(&r.prefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
+		flags.StringVarP(&r.Event, flagEvent, "e", "", "event type to match")
+		flags.StringVar(&r.PathExact, flagPathExact, "", "exact path to match")
+		flags.StringVar(&r.PathRegex, flagPathRegex, "", "path regex to match")
+		flags.StringVar(&r.PathPrefix, flagPathPrefix, "", "path prefix to match")
+		flags.StringVar(&r.Verb, flagMethod, "", "HTTP method to match")
+		flags.StringVar(&r.Headers, flagHeaders, "", "header to match")
+		flags.StringVar(&r.Upstream, flagUpstream, "", "desitnation upstream")
+		flags.StringVar(&r.Function, flagFunction, "", "destination function")
+		flags.StringVar(&r.PrefixRewrite, flagPrefixRewrite, "", "if specified, rewrite the matched portion of "+
 			"the path to this value")
-		flags.StringVar(&r.extensions, flagExtension, "", "yaml file with route extensions")
+		flags.StringVar(&r.Extensions, flagExtension, "", "yaml file with route extensions")
 		c.MarkFlagFilename(flagExtension, "yaml", "yml")
 
 		// auto complete

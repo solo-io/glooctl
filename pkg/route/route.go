@@ -24,35 +24,35 @@ const (
 	kubeSpecPort           = "service_port"
 )
 
-type routeOption struct {
-	route          *routeDetail
-	virtualservice string
-	domain         string
-	filename       string
-	output         string
-	sort           bool
-	interactive    bool
+type RouteOption struct {
+	Route          *RouteDetail
+	Virtualservice string
+	Domain         string
+	Filename       string
+	Output         string
+	Sort           bool
+	Interactive    bool
 }
 
-type kubeUpstream struct {
-	name      string
-	namespace string
-	port      int
+type KubeUpstream struct {
+	Name      string
+	Namespace string
+	Port      int
 }
 
-type routeDetail struct {
-	event         string
-	pathExact     string
-	pathRegex     string
-	pathPrefix    string
-	verb          string
-	headers       string
-	upstream      string
-	function      string
-	prefixRewrite string
-	extensions    string
+type RouteDetail struct {
+	Event         string
+	PathExact     string
+	PathRegex     string
+	PathPrefix    string
+	Verb          string
+	Headers       string
+	Upstream      string
+	Function      string
+	PrefixRewrite string
+	Extensions    string
 
-	kube *kubeUpstream
+	Kube *KubeUpstream
 }
 
 func parseFile(filename string) (*v1.Route, error) {
@@ -64,71 +64,71 @@ func parseFile(filename string) (*v1.Route, error) {
 	return &r, nil
 }
 
-func route(opts *routeOption, sc storage.Interface) (*v1.Route, error) {
-	if opts.filename != "" {
-		return parseFile(opts.filename)
+func FromRouteOption(opts *RouteOption, sc storage.Interface) (*v1.Route, error) {
+	if opts.Filename != "" {
+		return parseFile(opts.Filename)
 	}
 
-	rd := opts.route
-	if rd.kube.name != "" {
-		upstream, err := upstream(rd.kube, sc)
+	rd := opts.Route
+	if rd.Kube.Name != "" {
+		upstream, err := upstream(rd.Kube, sc)
 		if err != nil {
 			return nil, err
 		}
-		rd.upstream = upstream.Name
+		rd.Upstream = upstream.Name
 	}
-	return fromRouteDetail(rd)
+	return FromRouteDetail(rd)
 }
 
-func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
+func FromRouteDetail(rd *RouteDetail) (*v1.Route, error) {
 	route := &v1.Route{}
 
 	// matcher
-	if rd.event != "" {
+	if rd.Event != "" {
 		route.Matcher = &v1.Route_EventMatcher{
-			EventMatcher: &v1.EventMatcher{EventType: rd.event},
+			EventMatcher: &v1.EventMatcher{EventType: rd.Event},
 		}
 	} else {
 		var verbs []string
-		if rd.verb != "" {
-			verbs = strings.Split(strings.ToUpper(rd.verb), ",")
+		if rd.Verb != "" {
+			verbs = strings.Split(strings.ToUpper(rd.Verb), ",")
 			for i, v := range verbs {
 				verbs[i] = strings.TrimSpace(v)
 			}
 		}
 
 		var headers map[string]string
-		if rd.headers != "" {
+		if rd.Headers != "" {
 			headers = make(map[string]string)
-			entries := strings.Split(rd.headers, ",")
+			entries := strings.Split(rd.Headers, ",")
 			for _, e := range entries {
 				parts := strings.SplitN(e, ":", 2)
 				if len(parts) != 2 {
-					return nil, fmt.Errorf("unable to parse headers %s", rd.headers)
+					return nil, fmt.Errorf("unable to parse headers %s", rd.Headers)
 				}
 				headers[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
 			}
 		}
-		if rd.pathExact != "" {
+		if rd.PathExact != "" {
 			route.Matcher = &v1.Route_RequestMatcher{
 				RequestMatcher: &v1.RequestMatcher{
-					Path:    &v1.RequestMatcher_PathExact{PathExact: rd.pathExact},
+					Path:    &v1.RequestMatcher_PathExact{PathExact: rd.PathExact},
 					Verbs:   verbs,
 					Headers: headers,
 				},
 			}
-		} else if rd.pathRegex != "" {
+		} else if rd.PathRegex != "" {
 			route.Matcher = &v1.Route_RequestMatcher{
 				RequestMatcher: &v1.RequestMatcher{
-					Path:    &v1.RequestMatcher_PathRegex{PathRegex: rd.pathRegex},
+					Path:    &v1.RequestMatcher_PathRegex{PathRegex: rd.PathRegex},
 					Verbs:   verbs,
 					Headers: headers,
 				},
 			}
-		} else if rd.pathPrefix != "" {
+		} else if rd.PathPrefix != "" {
 			route.Matcher = &v1.Route_RequestMatcher{
 				RequestMatcher: &v1.RequestMatcher{
-					Path:    &v1.RequestMatcher_PathPrefix{PathPrefix: rd.pathPrefix},
+					Path:    &v1.RequestMatcher_PathPrefix{PathPrefix: rd.PathPrefix},
 					Verbs:   verbs,
 					Headers: headers,
 				},
@@ -139,8 +139,8 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 	}
 
 	// prefix rewrite
-	if rd.prefixRewrite != "" {
-		route.PrefixRewrite = rd.prefixRewrite
+	if rd.PrefixRewrite != "" {
+		route.PrefixRewrite = rd.PrefixRewrite
 	}
 
 	// destination
@@ -162,51 +162,51 @@ func fromRouteDetail(rd *routeDetail) (*v1.Route, error) {
 	return route, nil
 }
 
-func destinationFromDetails(rd *routeDetail) (*v1.Destination, error) {
-	if rd.upstream == "" {
+func destinationFromDetails(rd *RouteDetail) (*v1.Destination, error) {
+	if rd.Upstream == "" {
 		return nil, fmt.Errorf("an upstream is necessary for specifying destination")
 	}
 	// currently only support single destination
-	if rd.function != "" {
+	if rd.Function != "" {
 		return &v1.Destination{
 			DestinationType: &v1.Destination_Function{
 				Function: &v1.FunctionDestination{
-					UpstreamName: rd.upstream,
-					FunctionName: rd.function},
+					UpstreamName: rd.Upstream,
+					FunctionName: rd.Function},
 			},
 		}, nil
 	}
 
 	return &v1.Destination{
 		DestinationType: &v1.Destination_Upstream{
-			Upstream: &v1.UpstreamDestination{Name: rd.upstream},
+			Upstream: &v1.UpstreamDestination{Name: rd.Upstream},
 		},
 	}, nil
 }
 
-func extensionsFromDetails(rd *routeDetail) (*google_protobuf.Struct, error) {
-	if rd.extensions == "" {
+func extensionsFromDetails(rd *RouteDetail) (*google_protobuf.Struct, error) {
+	if rd.Extensions == "" {
 		return nil, nil
 	}
 	ext := &google_protobuf.Struct{}
 
 	// special case: reading from stdin
-	if rd.extensions == "-" {
+	if rd.Extensions == "-" {
 		if err := util.ReadStdinInto(ext); err != nil {
 			return nil, errors.Wrap(err, "reading extensions from stdin")
 		}
 		return ext, nil
 	}
 
-	err := file.ReadFileInto(rd.extensions, ext)
+	err := file.ReadFileInto(rd.Extensions, ext)
 	if err != nil {
-		return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.extensions)
+		return nil, errors.Wrapf(err, "unable to read file %s for extensions", rd.Extensions)
 	}
 
 	return ext, nil
 }
 
-func upstream(kube *kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
+func upstream(kube *KubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 	upstreams, err := sc.V1().Upstreams().List()
 	if err != nil {
 		return nil, err
@@ -223,29 +223,29 @@ func upstream(kube *kubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 		if !exists {
 			continue
 		}
-		if n != kube.name {
+		if n != kube.Name {
 			continue
 		}
-		if kube.namespace != "" {
+		if kube.Namespace != "" {
 			ns, exists := s[kubeSpecNamespace].(string)
 			if !exists {
 				continue
 			}
-			if ns != kube.namespace {
+			if ns != kube.Namespace {
 				continue
 			}
 		}
 
-		if kube.port != 0 {
+		if kube.Port != 0 {
 			p, exists := s[kubeSpecPort].(string)
 			if !exists {
 				continue
 			}
-			if p != strconv.Itoa(kube.port) {
+			if p != strconv.Itoa(kube.Port) {
 				continue
 			}
 		}
 		return u, nil
 	}
-	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.namespace, kube.name)
+	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.Namespace, kube.Name)
 }
