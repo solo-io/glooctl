@@ -72,7 +72,7 @@ func runCreate(sc storage.Interface, vservicename, domain string, route *v1.Rout
 	fmt.Println("Using virtual service:", v.Name)
 	v.Routes = append(v.GetRoutes(), route)
 	if sort {
-		sortRoutes(v.Routes)
+		proute.SortRoutes(v.Routes)
 	}
 	updated, err := sc.V1().VirtualServices().Update(v)
 	if err != nil {

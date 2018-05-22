@@ -94,7 +94,7 @@ func runUpdate(sc storage.Interface) {
 
 	v.Routes = updated
 	if routeOpt.sort {
-		sortRoutes(v.Routes)
+		proute.SortRoutes(v.Routes)
 	}
 
 	saved, err := save(sc, v)
