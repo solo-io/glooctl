@@ -12,7 +12,7 @@ import (
 type TestCase [][]*v1.Route
 
 var (
-	extensions, _ = protoutil.MarshalStruct(map[string]interface{}{
+	routeExtensions, _ = protoutil.MarshalStruct(map[string]interface{}{
 		"auth": map[string]interface{}{
 			"credentials": struct {
 				Username, Password string
@@ -38,7 +38,7 @@ var (
 				},
 			},
 		},
-		Extensions: extensions,
+		Extensions: routeExtensions,
 	}
 
 	route2 = &v1.Route{
@@ -59,7 +59,7 @@ var (
 				},
 			},
 		},
-		Extensions: extensions,
+		Extensions: routeExtensions,
 	}
 
 	route3 = &v1.Route{
@@ -80,7 +80,7 @@ var (
 				},
 			},
 		},
-		Extensions: extensions,
+		Extensions: routeExtensions,
 	}
 
 	route4 = &v1.Route{
@@ -97,7 +97,7 @@ var (
 				},
 			},
 		},
-		Extensions: extensions,
+		Extensions: routeExtensions,
 	}
 
 	route5 = &v1.Route{
@@ -118,7 +118,7 @@ var (
 				},
 			},
 		},
-		Extensions: extensions,
+		Extensions: routeExtensions,
 	}
 )
 
@@ -139,7 +139,7 @@ func TestSorting(t *testing.T) {
 	}
 
 	for _, tc := range data {
-		sortRoutes(tc[0])
+		SortRoutes(tc[0])
 		for i, r := range tc[0] {
 			if !r.Equal(tc[1][i]) {
 				t.Errorf("expected %s, got %s", toString(tc[1][i]), toString(r))
