@@ -1,7 +1,8 @@
 package docker
 
 import (
-	"io/ioutil"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 
@@ -11,26 +12,31 @@ import (
 	"github.com/pkg/errors"
 )
 
+const (
+	envoyYamlURL         = "https://raw.githubusercontent.com/solo-io/gloo/master/install/docker-compose/envoy-config.yaml"
+	dockerComposeYamlURL = "https://raw.githubusercontent.com/solo-io/gloo/master/install/docker-compose/docker-compose.yaml"
+)
+
 func Install(folder string) error {
 	err := createInstallFolder(folder)
 	if err != nil {
 		return err
 	}
-	err = writeDockerCompose(folder)
+	err = download(dockerComposeYamlURL, filepath.Join(folder, "docker-compose.yaml"))
 	if err != nil {
 		return err
 	}
-	err = writeEnvoyConfig(folder)
-	if err != nil {
-		return err
-	}
-
-	storageFolder, err := createStorageFolders(folder)
+	err = download(envoyYamlURL, filepath.Join(folder, "envoy-config.yaml"))
 	if err != nil {
 		return err
 	}
 
-	return updateGlooctlConfig(storageFolder)
+	err = createStorageFolders(folder)
+	if err != nil {
+		return err
+	}
+
+	return updateGlooctlConfig(folder)
 }
 
 func createInstallFolder(folder string) error {
@@ -53,39 +59,23 @@ func createInstallFolder(folder string) error {
 	return nil
 }
 
-func writeDockerCompose(folder string) error {
-	filename := filepath.Join(folder, "docker-compose.yml")
-	err := ioutil.WriteFile(filename, []byte(dockerComposeYAML), 0644)
-	if err != nil {
-		return errors.Wrap(err, "unable to create "+filename)
-	}
-	return nil
-}
-
-func writeEnvoyConfig(folder string) error {
-	filename := filepath.Join(folder, "envoy.yaml")
-	err := ioutil.WriteFile(filename, []byte(envoyYAML), 0644)
-	if err != nil {
-		return errors.Wrap(err, "unable to create "+filename)
-	}
-	return nil
-}
-
-func createStorageFolders(folder string) (string, error) {
-	glooConfig := filepath.Join(folder, "gloo-config")
-	err := os.MkdirAll(glooConfig, 0755)
-	if err != nil {
-		return "", errors.Wrap(err, "unable to create storage directory "+glooConfig)
-	}
-
-	for _, f := range []string{"_gloo_config", "_gloo_secrets", "_gloo_files"} {
-		err = os.MkdirAll(filepath.Join(glooConfig, f), 0755)
+func createStorageFolders(folder string) error {
+	for _, f := range []string{"_gloo_secrets", "_gloo_files"} {
+		err := os.MkdirAll(filepath.Join(folder, f), 0755)
 		if err != nil {
-			return "", errors.Wrap(err, "unable to create storage directory "+f)
+			return errors.Wrap(err, "unable to create storage directory "+f)
 		}
 	}
 
-	return glooConfig, nil
+	// _gloo_config/*
+	for _, f := range []string{"upstreams", "virtualservices"} {
+		err := os.MkdirAll(filepath.Join(folder, "_gloo_config", f), 0755)
+		if err != nil {
+			return errors.Wrap(err, "unable to create storage directory"+f)
+		}
+	}
+
+	return nil
 }
 
 func updateGlooctlConfig(folder string) error {
@@ -102,6 +92,25 @@ func updateGlooctlConfig(folder string) error {
 	err := config.SaveConfig(opts)
 	if err != nil {
 		return errors.Wrap(err, "unable to configure glooctl")
+	}
+
+	return nil
+}
+
+func download(src, dst string) error {
+	f, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	resp, err := http.Get(src)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	_, err = io.Copy(f, resp.Body)
+	if err != nil {
+		return err
 	}
 
 	return nil
