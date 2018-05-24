@@ -21,4 +21,13 @@ var _ = Describe("Deleting route", func() {
 			ExpectExitCode(0)
 	})
 
+	It("when using index to specify route should fail when index is too large", func() {
+		helper.RunWithArgs("route", "delete", "--index", "100").
+			ExpectExitCodeAndOutput(1, "invalid index")
+	})
+
+	It("when deleting with index the route should be delete", func() {
+		helper.RunWithArgs("route", "delete", "--index", "2").
+			ExpectExitCodeAndOutput(0, "POST", "\\*")
+	})
 })
