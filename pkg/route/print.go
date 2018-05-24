@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/olekukonko/tablewriter"
@@ -29,13 +30,13 @@ func (d *Destination) String() string {
 // PrintTable prints the list of routes as a table
 func PrintTable(list []*v1.Route, w io.Writer) {
 	table := tablewriter.NewWriter(w)
-	table.SetHeader([]string{"Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
+	table.SetHeader([]string{"Id", "Matcher", "Type", "Verb", "Header", "Upstream", "Function", "Extension"})
 
-	for _, r := range list {
+	for i, r := range list {
 		matcher, rType, verb, headers := Matcher(r)
 		ext := Extension(r)
 		for _, d := range Destinations(r) {
-			table.Append([]string{matcher, rType, verb, headers, d.Upstream, d.Function, ext})
+			table.Append([]string{strconv.Itoa(i + 1), matcher, rType, verb, headers, d.Upstream, d.Function, ext})
 		}
 	}
 

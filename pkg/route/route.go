@@ -32,6 +32,7 @@ type RouteOption struct {
 	Output         string
 	Sort           bool
 	Interactive    bool
+	Index          int
 }
 
 type KubeUpstream struct {
@@ -69,6 +70,10 @@ func FromRouteOption(opts *RouteOption, sc storage.Interface) (*v1.Route, error)
 		return parseFile(opts.Filename)
 	}
 
+	if opts.Index > 0 {
+		return fromIndex(opts.Index, opts.Virtualservice, sc)
+	}
+
 	rd := opts.Route
 	if rd.Kube.Name != "" {
 		upstream, err := upstream(rd.Kube, sc)
@@ -77,7 +82,20 @@ func FromRouteOption(opts *RouteOption, sc storage.Interface) (*v1.Route, error)
 		}
 		rd.Upstream = upstream.Name
 	}
+
 	return FromRouteDetail(rd)
+}
+
+func fromIndex(index int, virtualService string, sc storage.Interface) (*v1.Route, error) {
+	vs, err := sc.V1().VirtualServices().Get(virtualService)
+	if err != nil {
+		return nil, err
+	}
+	if len(vs.Routes) < index {
+		return nil, errors.Errorf("invalid index %d; should be between 1 and %d", index, len(vs.Routes))
+	}
+
+	return vs.Routes[index-1], nil
 }
 
 func FromRouteDetail(rd *RouteDetail) (*v1.Route, error) {

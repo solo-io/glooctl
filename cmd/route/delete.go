@@ -23,11 +23,14 @@ func deleteCmd(opts *bootstrap.Options) *cobra.Command {
 		Use:   "delete",
 		Short: "delete a route",
 		Long: `
-Delete a route based on either the definition in the YAML file
-or based on the route matcher and destintation provided in the CLI.
+There are three ways to select the route to delete:
 
-While selecting routes to delete, glooctl matches routes based on 
-matcher and destintation only. It doesn't include extensions.`,
+  1. Using the interactive mode
+  2. Passing the index of the route
+  3. Specifying the route details of the matcher and destination
+     in the CLI arguments or via YAML file.
+	 While selecting routes to delete, glooctl matches routes based
+	 on matcher and destintation only. It doesn't include extensions.`,
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
@@ -39,6 +42,7 @@ matcher and destintation only. It doesn't include extensions.`,
 		},
 	}
 	cmd.Flags().BoolVarP(&routeOpt.Interactive, "interactive", "i", false, "interactive mode")
+	cmd.Flags().IntVar(&routeOpt.Index, "index", 0, "index of the route you want to delete")
 	return cmd
 }
 
@@ -49,6 +53,7 @@ func runDelete(sc storage.Interface) {
 		os.Exit(1)
 	}
 	fmt.Println("Using virtual service:", vs.Name)
+	routeOpt.Virtualservice = vs.Name
 	routes := vs.GetRoutes()
 
 	filtered, err := removeRoutes(sc, routes, routeOpt)
