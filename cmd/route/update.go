@@ -20,7 +20,7 @@ import (
 
 var (
 	// represents the new route defintion for update
-	oldRouteOpt = &route.RouteOption{Route: &route.RouteDetail{Kube: &route.KubeUpstream{}}}
+	oldRouteOpt = &route.Option{Route: &route.Detail{Kube: &route.KubeUpstream{}}}
 )
 
 func updateCmd(opts *bootstrap.Options) *cobra.Command {
@@ -115,7 +115,7 @@ func runUpdate(sc storage.Interface) {
 		}, os.Stdout)
 }
 
-func updateRoutes(sc storage.Interface, routes []*v1.Route, opts, oldOpts *route.RouteOption) ([]*v1.Route, error) {
+func updateRoutes(sc storage.Interface, routes []*v1.Route, opts, oldOpts *route.Option) ([]*v1.Route, error) {
 	if opts.Interactive {
 		selection, err := route.SelectInteractive(routes, false)
 		if err != nil {
@@ -127,16 +127,16 @@ func updateRoutes(sc storage.Interface, routes []*v1.Route, opts, oldOpts *route
 		return routes, nil // we have been working with pointers so it has changed the original route
 	}
 
-	oldRoute, err := route.FromRouteOption(oldOpts, sc)
+	oldRoute, err := route.FromOption(oldOpts, sc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get old route")
 	}
-	oldRouteDetails, err := route.ToRouteDetails(oldRoute)
+	oldRouteDetails, err := route.ToDetails(oldRoute)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to convert old route")
 	}
 	copyMissingDetails(opts, oldRouteDetails)
-	newRoute, err := route.FromRouteOption(opts, sc)
+	newRoute, err := route.FromOption(opts, sc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get new route")
 	}
@@ -180,7 +180,7 @@ func mergeExtensions(route, old *v1.Route) *google_protobuf.Struct {
 // copy route details that are missing with old route
 // this allows us specify just the fields that have changed in
 // the new route
-func copyMissingDetails(opts *route.RouteOption, rd *route.RouteDetail) {
+func copyMissingDetails(opts *route.Option, rd *route.Detail) {
 	newRD := opts.Route
 
 	// copy missing matcher

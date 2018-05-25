@@ -25,8 +25,8 @@ const (
 	kubeSpecPort           = "service_port"
 )
 
-type RouteOption struct {
-	Route          *RouteDetail
+type Option struct {
+	Route          *Detail
 	Virtualservice string
 	Domain         string
 	Filename       string
@@ -42,7 +42,7 @@ type KubeUpstream struct {
 	Port      int
 }
 
-type RouteDetail struct {
+type Detail struct {
 	Event            string
 	PathExact        string
 	PathRegex        string
@@ -67,7 +67,7 @@ func parseFile(filename string) (*v1.Route, error) {
 	return &r, nil
 }
 
-func FromRouteOption(opts *RouteOption, sc storage.Interface) (*v1.Route, error) {
+func FromOption(opts *Option, sc storage.Interface) (*v1.Route, error) {
 	if opts.Filename != "" {
 		return parseFile(opts.Filename)
 	}
@@ -85,7 +85,7 @@ func FromRouteOption(opts *RouteOption, sc storage.Interface) (*v1.Route, error)
 		rd.Upstream = upstream.Name
 	}
 
-	return FromRouteDetail(rd)
+	return FromDetail(rd)
 }
 
 func fromIndex(index int, virtualService string, sc storage.Interface) (*v1.Route, error) {
@@ -100,7 +100,7 @@ func fromIndex(index int, virtualService string, sc storage.Interface) (*v1.Rout
 	return vs.Routes[index-1], nil
 }
 
-func FromRouteDetail(rd *RouteDetail) (*v1.Route, error) {
+func FromDetail(rd *Detail) (*v1.Route, error) {
 	route := &v1.Route{}
 
 	// matcher
@@ -182,7 +182,7 @@ func FromRouteDetail(rd *RouteDetail) (*v1.Route, error) {
 	return route, nil
 }
 
-func destinationFromDetails(rd *RouteDetail) (*v1.Destination, error) {
+func destinationFromDetails(rd *Detail) (*v1.Destination, error) {
 	if rd.Upstream == "" {
 		return nil, fmt.Errorf("an upstream is necessary for specifying destination")
 	}
@@ -204,7 +204,7 @@ func destinationFromDetails(rd *RouteDetail) (*v1.Destination, error) {
 	}, nil
 }
 
-func extensionsFromDetails(rd *RouteDetail) (*google_protobuf.Struct, error) {
+func extensionsFromDetails(rd *Detail) (*google_protobuf.Struct, error) {
 	if rd.Extensions == "" {
 		return nil, nil
 	}
@@ -270,8 +270,8 @@ func upstream(kube *KubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.Namespace, kube.Name)
 }
 
-func ToRouteDetails(r *v1.Route) (*RouteDetail, error) {
-	rd := &RouteDetail{}
+func ToDetails(r *v1.Route) (*Detail, error) {
+	rd := &Detail{}
 
 	// matcher
 	switch m := r.GetMatcher().(type) {

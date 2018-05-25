@@ -35,7 +35,7 @@ the flags.`,
 				r = &v1.Route{}
 				err = route.Interactive(sc, r)
 			} else {
-				r, err = route.FromRouteOption(routeOpt, sc)
+				r, err = route.FromOption(routeOpt, sc)
 			}
 			if err != nil {
 				fmt.Printf("Unable to get route %q\n", err)

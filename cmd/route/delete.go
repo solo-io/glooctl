@@ -75,7 +75,7 @@ func runDelete(sc storage.Interface) {
 		}, os.Stdout)
 }
 
-func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *route.RouteOption) ([]*v1.Route, error) {
+func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *route.Option) ([]*v1.Route, error) {
 	if opts.Interactive {
 		result, err := route.SelectInteractive(routes, true)
 		if err != nil {
@@ -84,7 +84,7 @@ func removeRoutes(sc storage.Interface, routes []*v1.Route, opts *route.RouteOpt
 		return result.NotSelected, nil
 	}
 
-	r, err := route.FromRouteOption(opts, sc)
+	r, err := route.FromOption(opts, sc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get route")
 	}
