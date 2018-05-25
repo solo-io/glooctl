@@ -270,7 +270,7 @@ func upstream(kube *KubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.Namespace, kube.Name)
 }
 
-func ToDetails(r *v1.Route) (*Detail, error) {
+func ToDetail(r *v1.Route) (*Detail, error) {
 	rd := &Detail{}
 
 	// matcher

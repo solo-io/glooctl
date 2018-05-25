@@ -131,7 +131,7 @@ func updateRoutes(sc storage.Interface, routes []*v1.Route, opts, oldOpts *route
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get old route")
 	}
-	oldRouteDetails, err := route.ToDetails(oldRoute)
+	oldRouteDetails, err := route.ToDetail(oldRoute)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to convert old route")
 	}
