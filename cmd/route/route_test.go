@@ -79,7 +79,7 @@ func TestToRoute(t *testing.T) {
 		setupRouteParams(cmd)
 		flags := cmd.Flags()
 		flags.Parse(tc.args)
-		route, err := route.FromRouteDetail(routeOpt.Route)
+		route, err := route.FromDetail(routeOpt.Route)
 		if err != nil {
 			t.Errorf("case %d failed conversion", i)
 		}

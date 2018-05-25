@@ -29,7 +29,7 @@ const (
 )
 
 var (
-	routeOpt = &route.RouteOption{Route: &route.RouteDetail{Kube: &route.KubeUpstream{}}}
+	routeOpt = &route.Option{Route: &route.Detail{Kube: &route.KubeUpstream{}}}
 )
 
 // Cmd returns command related to managing routes on a virtual service
