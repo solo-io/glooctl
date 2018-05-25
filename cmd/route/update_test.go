@@ -23,4 +23,9 @@ var _ = Describe("Update routes", func() {
 			ExpectExitCodeAndOutput(0, "/exact2", "exact-upstream")
 	})
 
+	It("using index to specify old route and change just the matcher path", func() {
+		helper.RunWithArgs("route", "update", "--index", "2", "--path-regex", "/regex").
+			ExpectExitCodeAndOutput(0, "/regex", "test-upstream")
+	})
+
 })

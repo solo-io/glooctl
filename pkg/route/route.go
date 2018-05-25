@@ -1,6 +1,7 @@
 package route
 
 import (
+	"bytes"
 	"fmt"
 	"strconv"
 	"strings"
@@ -42,16 +43,17 @@ type KubeUpstream struct {
 }
 
 type RouteDetail struct {
-	Event         string
-	PathExact     string
-	PathRegex     string
-	PathPrefix    string
-	Verb          string
-	Headers       string
-	Upstream      string
-	Function      string
-	PrefixRewrite string
-	Extensions    string
+	Event            string
+	PathExact        string
+	PathRegex        string
+	PathPrefix       string
+	Verb             string
+	Headers          string
+	Upstream         string
+	Function         string
+	PrefixRewrite    string
+	Extensions       string
+	InlineExtensions string
 
 	Kube *KubeUpstream
 }
@@ -266,4 +268,53 @@ func upstream(kube *KubeUpstream, sc storage.Interface) (*v1.Upstream, error) {
 		return u, nil
 	}
 	return nil, fmt.Errorf("unable to find kubernetes upstream %s/%s", kube.Namespace, kube.Name)
+}
+
+func ToRouteDetails(r *v1.Route) (*RouteDetail, error) {
+	rd := &RouteDetail{}
+
+	// matcher
+	switch m := r.GetMatcher().(type) {
+	case *v1.Route_EventMatcher:
+		rd.Event = m.EventMatcher.EventType
+	case *v1.Route_RequestMatcher:
+		switch p := m.RequestMatcher.GetPath().(type) {
+		case *v1.RequestMatcher_PathExact:
+			rd.PathExact = p.PathExact
+		case *v1.RequestMatcher_PathPrefix:
+			rd.PathPrefix = p.PathPrefix
+		case *v1.RequestMatcher_PathRegex:
+			rd.PathRegex = p.PathRegex
+		}
+
+		if len(m.RequestMatcher.Verbs) > 0 {
+			rd.Verb = strings.Join(m.RequestMatcher.Verbs, ",")
+		}
+		builder := bytes.Buffer{}
+		for k, v := range m.RequestMatcher.Headers {
+			builder.WriteString(k)
+			builder.WriteString(":")
+			builder.WriteString(v)
+			builder.WriteString("; ")
+		}
+		rd.Headers = builder.String()
+	}
+
+	// destination
+	dstList := Destinations(r)
+	// use the first one; TODO support for multiple desitinations
+	rd.Upstream = dstList[0].Upstream
+	rd.Function = dstList[0].Function
+
+	// additional
+	rd.PrefixRewrite = r.PrefixRewrite
+	if r.Extensions != nil {
+		b, err := protoutil.Marshal(r.Extensions)
+		if err != nil {
+			return nil, err
+		}
+		rd.InlineExtensions = string(b)
+	}
+
+	return rd, nil
 }

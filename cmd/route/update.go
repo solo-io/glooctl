@@ -28,11 +28,14 @@ func updateCmd(opts *bootstrap.Options) *cobra.Command {
 		Use:   "update",
 		Short: "update a route",
 		Long: `
-Update a route based on either the definition in the YAML file
-or based on the route matcher and destination provided in the CLI.
+There are three ways to select the route to update:
 
-While selecting route to update, glooctl matches routes based on
-matcher and destination only. It doesn't include extensions.`,
+1. Using the interactive mode
+2. Passing the index of the route
+3. Specifying the route details of the matcher and destination
+   in the CLI arguments or via YAML file.
+   While selecting route to update, glooctl matches routes based
+   on matcher and destintation only. It doesn't include extensions.`,
 		Run: func(c *cobra.Command, args []string) {
 			sc, err := configstorage.Bootstrap(*opts)
 			if err != nil {
@@ -57,6 +60,8 @@ matcher and destination only. It doesn't include extensions.`,
 
 func setupOldRouteParams(cmd *cobra.Command) {
 	flags := cmd.Flags()
+	flags.IntVar(&oldRouteOpt.Index, "index", 0, "index of route to update; don't need to specify other old-* parameters if given")
+
 	r := oldRouteOpt.Route
 	flags.StringVar(&r.Event, "old-"+flagEvent, "", "event type to match")
 	flags.StringVar(&r.PathExact, "old-"+flagPathExact, "", "exact path to match")
@@ -85,6 +90,7 @@ func runUpdate(sc storage.Interface) {
 		os.Exit(1)
 	}
 	fmt.Println("Using virtual service:", v.Name)
+	oldRouteOpt.Virtualservice = v.Name
 	routes := v.GetRoutes()
 	updated, err := updateRoutes(sc, routes, routeOpt, oldRouteOpt)
 	if err != nil {
@@ -121,14 +127,20 @@ func updateRoutes(sc storage.Interface, routes []*v1.Route, opts, oldOpts *route
 		return routes, nil // we have been working with pointers so it has changed the original route
 	}
 
-	newRoute, err := route.FromRouteOption(opts, sc)
-	if err != nil {
-		return nil, errors.Wrap(err, "unable to get new route")
-	}
 	oldRoute, err := route.FromRouteOption(oldOpts, sc)
 	if err != nil {
 		return nil, errors.Wrap(err, "unable to get old route")
 	}
+	oldRouteDetails, err := route.ToRouteDetails(oldRoute)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to convert old route")
+	}
+	copyMissingDetails(opts, oldRouteDetails)
+	newRoute, err := route.FromRouteOption(opts, sc)
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to get new route")
+	}
+
 	updated := make([]*v1.Route, len(routes))
 	var matches []*v1.Route
 	for i, r := range routes {
@@ -163,4 +175,39 @@ func mergeExtensions(route, old *v1.Route) *google_protobuf.Struct {
 	}
 
 	return old.Extensions
+}
+
+// copy route details that are missing with old route
+// this allows us specify just the fields that have changed in
+// the new route
+func copyMissingDetails(opts *route.RouteOption, rd *route.RouteDetail) {
+	newRD := opts.Route
+
+	// copy missing matcher
+	// only copy if all of the possible types are missing
+	if newRD.Event == "" && newRD.PathExact == "" && newRD.PathPrefix == "" && newRD.PathRegex == "" {
+		newRD.Event = rd.Event
+		newRD.PathExact = rd.PathExact
+		newRD.PathPrefix = rd.PathPrefix
+		newRD.PathRegex = rd.PathRegex
+	}
+
+	// copy additional matcher parameters only for non event matchers
+	if newRD.Event == "" {
+		newRD.Verb = rd.Verb
+		newRD.Headers = rd.Headers
+	}
+
+	// copy missing destination
+	// both upstream and function need to be missing; if the user wants to
+	// change just the function they need to still give the upstream
+	if newRD.Upstream == "" && newRD.Function == "" {
+		newRD.Upstream = rd.Upstream
+		newRD.Function = rd.Function
+	}
+
+	// we aren't going to copy rest of the stuff so that we can unset them
+	// if we always copy when the parameters are empty we will not
+	// be able to unset these values
+
 }
