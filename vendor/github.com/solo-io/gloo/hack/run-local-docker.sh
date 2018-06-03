@@ -50,7 +50,7 @@ CONTROL_PLANE_IP=localhost
 cat > ${CONFIG_DIR}/envoy.yaml <<EOF
 node:
   cluster: ingress
-  id: ingress
+  id: ingress~1
 
 static_resources:
   clusters:
@@ -86,7 +86,7 @@ docker run --rm  -i \
     -v ${CONFIG_DIR}:/config \
     --net=host \
     --name envoy \
-    soloio/envoy:v0.1.6-127 \
+    soloio/envoy:v0.1.6-132 \
     envoy \
     -c /config/envoy.yaml \
     --v2-config-only &

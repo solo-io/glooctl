@@ -14,6 +14,7 @@ import (
 	"github.com/solo-io/gloo/internal/function-discovery/nats-streaming"
 	"github.com/solo-io/gloo/internal/function-discovery/openfaas"
 	"github.com/solo-io/gloo/internal/function-discovery/options"
+	"github.com/solo-io/gloo/internal/function-discovery/projectfn"
 	"github.com/solo-io/gloo/internal/function-discovery/resolver"
 	"github.com/solo-io/gloo/internal/function-discovery/swagger"
 	"github.com/solo-io/gloo/internal/function-discovery/updater"
@@ -58,6 +59,11 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		return errors.Wrap(err, "failed to set up secret storage client")
 	}
 
+	files, err := artifactstorage.Bootstrap(opts)
+	if err != nil {
+		return errors.Wrap(err, "creating file storage client")
+	}
+
 	go secretWatcher.Run(stop)
 
 	resolve := createResolver(opts)
@@ -68,8 +74,12 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		detectors = append(detectors, nats.NewNatsDetector(""))
 	}
 
-	detectors = append(detectors, openfaas.NewFaaSDetector())
-
+	if discoveryOpts.AutoDiscoverFaaS {
+		detectors = append(detectors, openfaas.NewFaaSDetector())
+	}
+	if discoveryOpts.AutoDiscoverProjectFn {
+		detectors = append(detectors, projectfn.NewProjectFnDetector())
+	}
 	if discoveryOpts.AutoDiscoverFission {
 		detectors = append(detectors, fission.NewFissionDetector())
 	}
@@ -78,10 +88,6 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		detectors = append(detectors, swagger.NewSwaggerDetector(discoveryOpts.SwaggerUrisToTry))
 	}
 	if discoveryOpts.AutoDiscoverGRPC {
-		files, err := artifactstorage.Bootstrap(opts)
-		if err != nil {
-			return errors.Wrap(err, "creating file storage client")
-		}
 		detectors = append(detectors, grpc.NewGRPCDetector(files))
 	}
 
@@ -99,7 +105,7 @@ func Run(opts bootstrap.Options, discoveryOpts options.DiscoveryOptions, stop <-
 		if err := updater.UpdateServiceInfo(store, us.Name, marker); err != nil {
 			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
 		}
-		if err := updater.UpdateFunctions(resolve, store, secretStore, us.Name, secrets); err != nil {
+		if err := updater.UpdateFunctions(resolve, store, secretStore, files, us.Name, secrets); err != nil {
 			errs <- errors.Wrapf(err, "updating upstream %v", us.Name)
 		}
 	}

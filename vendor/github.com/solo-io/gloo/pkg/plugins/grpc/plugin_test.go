@@ -5,7 +5,6 @@ import (
 	envoyroute "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
 	"io/ioutil"
 
 	"github.com/gogo/protobuf/types"
@@ -113,7 +112,10 @@ var _ = Describe("Plugin", func() {
 			out := &envoyapi.Cluster{}
 			err = p.ProcessUpstream(params, in, out)
 			Expect(err).To(BeNil())
-			Expect(p.upstreamServices["myupstream"].FullServiceName).To(Equal("bookstore.Bookstore"))
+			Expect(p.upstreamServices["myupstream"].ServiceNames).To(HaveLen(1))
+			Expect(p.upstreamServices["myupstream"].PackageNames).To(HaveLen(1))
+			Expect(p.upstreamServices["myupstream"].PackageNames[0]).To(Equal("bookstore"))
+			Expect(p.upstreamServices["myupstream"].ServiceNames[0]).To(Equal("Bookstore"))
 			Expect(p.upstreamServices["myupstream"].Descriptors).NotTo(BeNil())
 			route := &v1.Route{
 				Matcher: &v1.Route_RequestMatcher{
@@ -162,7 +164,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -185,7 +187,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -208,7 +210,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "/test\\?([\\.\\-_[:alnum:]]+)",
+																						StringValue: `/test\?([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -231,7 +233,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {
@@ -254,7 +256,7 @@ var _ = Describe("Plugin", func() {
 																				},
 																				"regex": {
 																					Kind: &types.Value_StringValue{
-																						StringValue: "([\\.\\-_[:alnum:]]+)",
+																						StringValue: `([\-._[:alnum:]]+)`,
 																					},
 																				},
 																				"subgroup": {

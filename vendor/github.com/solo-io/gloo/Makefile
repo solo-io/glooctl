@@ -79,7 +79,7 @@ $(BINARY)-debug: $(OUTPUT_BINARY)-debug
 $(OUTPUT_BINARY): $(OUTPUT_DIR) $(PREREQUISITES)
 	CGO_ENABLED=0 GOOS=linux go build -v -o $(OUTPUT_BINARY) cmd/$(BINARY)/main.go
 $(OUTPUT_BINARY)-debug: $(OUTPUT_DIR) $(PREREQUISITES)
-	go build -i -gcflags "-N -l" -o $(OUTPUT_BINARY)-debug cmd/$(BINARY)/main.go
+	go build -i -gcflags "all=-N -l" -o $(OUTPUT_BINARY)-debug cmd/$(BINARY)/main.go
 
 # docker
 $(BINARY)-docker: $(OUTPUT_BINARY)
@@ -93,7 +93,7 @@ $(BINARY)-docker-push-debug: $(BINARY)-docker-debug
 
 endef
 
-PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES)
+PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES) generated-code clientset
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
 clean:
@@ -105,7 +105,7 @@ clean:
 #----------------------------------------------------------------------------------
 
 .PHONY: manifests
-manifests: install/kube/install.yaml
+manifests: install/kube/install.yaml install/openshift/install.yaml
 
 install/kube/install.yaml: $(shell find install/helm/ -name '*.yaml')
 	cat install/helm/bootstrap.yaml \
@@ -117,6 +117,11 @@ install/kube/install.yaml: $(shell find install/helm/ -name '*.yaml')
 		-n REMOVEME install/helm/gloo | \
 		sed s/REMOVEME-//g | \
 		sed '/^.*REMOVEME$$/d' >> $@
+
+install/openshift/install.yaml: install/kube/install.yaml
+	cat install/kube/install.yaml \
+	  | sed -e "s@apps/v1beta2@extensions/v1beta1@" \
+	  | sed -e "s@rbac.authorization.k8s.io/v1@rbac.authorization.k8s.io/v1beta1@" > $@
 
 #----------------------------------------------------------------------------------
 # Docs
@@ -140,13 +145,12 @@ hackrun: $(BINARY)
 	./hack/run-local.sh
 
 unit:
-	ginkgo -r -v pkg/ internal/
+	ginkgo -r pkg/ internal/
 
 e2e:
-	ginkgo -r -v test/
+	ginkgo -r test/
 
-test: e2e unit
-
+test: unit e2e
 
 
 

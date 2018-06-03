@@ -8,7 +8,15 @@
 
 ### What is Gloo?
 
-Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+Gloo is a high-performance, plugin-extendable, platform-agnostic function Gateway built on top of Envoy. Gloo is designed for microservice, monolithic, and serverless applications. By employing function-level routing, Gloo can completely decouple client APIs from upstream APIs at the routing level. Gloo serves as an abstraction layer between clients and upstream services, allowing front-end teams to work independently of teams developing the microservices their apps connect to.
+
+<BR>
+<p align="center">
+<img src="docs/introduction/high_level_architecture.png" alt="Gloo" width="676" height="400">
+</p>    
+<BR>
+    
+## Features
 
 **Microservice Platform Integrations with Service Discovery**:
 * Kubernetes
@@ -42,6 +50,8 @@ Gloo is a high-performance, plugin-extendable, platform-agnostic API Gateway bui
 * **Events**: Invoke APIs using CloudEvents.
 * **Pub/Sub**: Publish HTTP requests to NATS
 * **JSON-to-gRPC transcoding**: Connect JSON clients to gRPC services
+
+## Documentation
 
 ### About gloo:
 * [Introduction](docs/introduction/introduction.md): Introduction to Gloo with a basic overview of Gloo itself and its use cases 

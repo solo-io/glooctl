@@ -135,7 +135,6 @@
   revision = "23def4e6c14b4da8ac2ed8007337bc5eb5007998"
 
 [[projects]]
-  branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
     "proto",
@@ -145,7 +144,8 @@
     "ptypes/duration",
     "ptypes/timestamp"
   ]
-  revision = "e09c5db296004fbe3f74490e84dcd62c3c5ddb1b"
+  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
+  version = "v1.1.0"
 
 [[projects]]
   branch = "master"
@@ -468,7 +468,6 @@
   revision = "ed9870dad3170c0b25ab9b11830cc57c3a7798fb"
 
 [[projects]]
-  branch = "master"
   name = "github.com/solo-io/gloo"
   packages = [
     "internal/control-plane/filewatcher",
@@ -504,7 +503,8 @@
     "pkg/storage/dependencies/vault",
     "pkg/storage/file"
   ]
-  revision = "ef95a89ef35cf8eaf9f247f91581d49b2510e281"
+  revision = "319c70cc1dc29e8e7aae167a142331f4400ff4d0"
+  version = "0.2.26"
 
 [[projects]]
   branch = "master"

@@ -3,6 +3,7 @@ package localhelpers
 import (
 	"fmt"
 	"net"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -21,14 +22,14 @@ const (
 	containerName = "e2e_envoy"
 )
 
-func buildBootstrap(glooAddr string, xdsPort uint32) []byte {
-	return []byte(fmt.Sprintf(envoyConfigTemplate, glooAddr, xdsPort))
+func buildBootstrap(nodeId, glooAddr string, xdsPort uint32) []byte {
+	return []byte(fmt.Sprintf(envoyConfigTemplate, nodeId, glooAddr, xdsPort))
 }
 
 const envoyConfigTemplate = `
 node:
  cluster: ingress
- id: testnode
+ id: %s
 
 static_resources:
   clusters:
@@ -67,7 +68,6 @@ type EnvoyFactory struct {
 }
 
 func NewEnvoyFactory() (*EnvoyFactory, error) {
-
 	// if an envoy binary is explicitly specified
 	// use it
 	envoypath := os.Getenv("ENVOY_BINARY")
@@ -185,26 +185,42 @@ func (ef *EnvoyFactory) NewEnvoyInstance() (*EnvoyInstance, error) {
 
 }
 
-func (ei *EnvoyInstance) Run() error {
-	return ei.RunWithPort(8081)
+func (ei *EnvoyInstance) RunWithId(id string) error {
+	return ei.runWithPort(id, 8081)
 }
 
-func (ei *EnvoyInstance) RunWithPort(port uint32) error {
-	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(ei.localAddr, port), 0644)
+func (ei *EnvoyInstance) Run() error {
+	return ei.runWithPort("", 8081)
+}
+
+func (ei *EnvoyInstance) DebugMode() error {
+
+	_, err := http.Get("http://localhost:19000/logging?level=debug")
+
+	return err
+}
+
+func (ei *EnvoyInstance) runWithPort(id string, port uint32) error {
+	if id == "" {
+		id = "ingress~for-testing"
+	}
+	err := ioutil.WriteFile(ei.envoycfgpath, buildBootstrap(id, ei.localAddr, port), 0644)
 	if err != nil {
 		return err
 	}
 
 	if ei.useDocker {
-		err := runContainer(ei.envoycfgpath, port)
+		err := runContainer(ei.envoycfgpath)
 		if err != nil {
 			return err
 		}
 		return nil
 	}
 
+	args := []string{"-c", ei.envoycfgpath, "--v2-config-only"}
+
 	// run directly
-	cmd := exec.Command(ei.envoypath, "-c", ei.envoycfgpath, "--v2-config-only")
+	cmd := exec.Command(ei.envoypath, args...)
 	cmd.Dir = ei.tmpdir
 	buf := &bytes.Buffer{}
 	ei.logs = buf
@@ -245,7 +261,7 @@ func (ei *EnvoyInstance) Clean() error {
 	return nil
 }
 
-func runContainer(cfgpath string, port uint32) error {
+func runContainer(cfgpath string) error {
 	envoyImageTag := os.Getenv("ENVOY_IMAGE_TAG")
 	if envoyImageTag == "" {
 		envoyImageTag = "latest"
@@ -262,6 +278,7 @@ func runContainer(cfgpath string, port uint32) error {
 		"/usr/local/bin/envoy", "--v2-config-only",
 		"-c", "/etc/config/" + filepath.Base(cfgpath),
 	}
+
 	fmt.Fprintln(ginkgo.GinkgoWriter, args)
 	cmd := exec.Command("docker", args...)
 	cmd.Dir = cfgDir

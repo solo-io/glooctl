@@ -2,44 +2,32 @@ package eventloop
 
 import (
 	envoycache "github.com/envoyproxy/go-control-plane/pkg/cache"
-	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
+	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 
 	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/configwatcher"
+	"github.com/solo-io/gloo/internal/control-plane/endpointswatcher"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/internal/control-plane/translator"
 	"github.com/solo-io/gloo/internal/control-plane/xds"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/bootstrap/artifactstorage"
 	"github.com/solo-io/gloo/pkg/bootstrap/configstorage"
 	secretwatchersetup "github.com/solo-io/gloo/pkg/bootstrap/secretwatcher"
-	"github.com/solo-io/gloo/pkg/endpointdiscovery"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/pkg/plugins"
-	"github.com/solo-io/gloo/pkg/secretwatcher"
 )
 
+const defaultRole = "ingress"
+
 type eventLoop struct {
-	configWatcher       configwatcher.Interface
-	secretWatcher       secretwatcher.Interface
-	fileWatcher         filewatcher.Interface
-	endpointDiscoveries []endpointdiscovery.Interface
-	reporter            reporter.Interface
-	translator          *translator.Translator
-	xdsConfig           envoycache.SnapshotCache
-	getDependencies     func(cfg *v1.Config) []*plugins.Dependencies
-
-	startFuncs []func() error
-}
-
-func translatorConfig(opts bootstrap.Options) translator.TranslatorConfig {
-	return translator.TranslatorConfig{
-		IngressBindAddress: opts.IngressOptions.BindAddress,
-		IngressPort:        uint32(opts.IngressOptions.Port),
-		IngressSecurePort:  uint32(opts.IngressOptions.SecurePort),
-	}
+	snapshotEmitter *snapshot.Emitter
+	reporter        reporter.Interface
+	translator      *translator.Translator
+	xdsConfig       envoycache.SnapshotCache
 }
 
 func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoop, error) {
@@ -63,40 +51,37 @@ func Setup(opts bootstrap.Options, xdsPort int, stop <-chan struct{}) (*eventLoo
 		return nil, errors.Wrap(err, "failed to set up file watcher")
 	}
 
-	xdsConfig, _, err := xds.RunXDS(xdsPort)
+	plugs := plugins.RegisteredPlugins()
+
+	var edPlugins []plugins.EndpointDiscoveryPlugin
+	for _, plug := range plugs {
+		if edp, ok := plug.(plugins.EndpointDiscoveryPlugin); ok {
+			edPlugins = append(edPlugins, edp)
+		}
+	}
+
+	endpointsWatcher := endpointswatcher.NewEndpointsWatcher(opts.Options, edPlugins...)
+
+	snapshotEmitter := snapshot.NewEmitter(cfgWatcher, secretWatcher,
+		fileWatcher, endpointsWatcher, getDependenciesFor(plugs))
+
+	trans := translator.NewTranslator(opts.IngressOptions, plugs)
+
+	// create a snapshot to give to misconfigured envoy instances
+	badNodeSnapshot := xds.BadNodeSnapshot(opts.IngressOptions.BindAddress, opts.IngressOptions.Port)
+
+	xdsConfig, _, err := xds.RunXDS(xdsPort, badNodeSnapshot)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to start xds server")
 	}
 
-	plugs := plugins.RegisteredPlugins()
-
-	trans := translator.NewTranslator(translatorConfig(opts), plugs)
-
 	e := &eventLoop{
-		configWatcher:   cfgWatcher,
-		secretWatcher:   secretWatcher,
-		fileWatcher:     fileWatcher,
+		snapshotEmitter: snapshotEmitter,
 		translator:      trans,
 		xdsConfig:       xdsConfig,
-		getDependencies: getDependenciesFor(plugs),
 		reporter:        reporter.NewReporter(store),
 	}
 
-	for _, endpointDiscoveryInitializer := range plugins.EndpointDiscoveryInitializers() {
-		startfunc := func(edi plugins.EndpointDiscoveryInitFunc) func() error {
-			return func() error {
-				discovery, err := edi(opts.Options)
-				if err != nil {
-					log.Warnf("Starting endpoint discovery failed: %v, endpoints will not be discovered for this "+
-						"upstream type", err)
-					return nil
-				}
-				e.endpointDiscoveries = append(e.endpointDiscoveries, discovery)
-				return nil
-			}
-		}(endpointDiscoveryInitializer)
-		e.startFuncs = append(e.startFuncs, startfunc)
-	}
 	return e, nil
 }
 
@@ -122,202 +107,172 @@ func setupFileWatcher(opts bootstrap.Options) (filewatcher.Interface, error) {
 	return filewatcher.NewFileWatcher(store)
 }
 
-func (e *eventLoop) Run(stop <-chan struct{}) error {
-	for _, fn := range e.startFuncs {
-		if err := fn(); err != nil {
-			return err
-		}
-	}
-	for _, eds := range e.endpointDiscoveries {
-		go eds.Run(stop)
-	}
-
-	go e.configWatcher.Run(stop)
-	go e.fileWatcher.Run(stop)
-	go e.secretWatcher.Run(stop)
-
-	endpointDiscovery := e.endpointDiscovery()
-	workerErrors := e.errors()
+func (e *eventLoop) Run(stop <-chan struct{}) {
+	go e.snapshotEmitter.Run(stop)
 
 	// cache the most recent read for any of these
-	var hash uint64
-	current := newCache()
-	sync := func(current *cache) {
-		newHash := current.hash()
-		if hash == newHash {
-			return
-		}
-		hash = newHash
-		e.updateXds(current)
-	}
+	var oldHash uint64
 	for {
 		select {
-		case cfg := <-e.configWatcher.Config():
-			log.Debugf("change triggered by config")
-			current.cfg = cfg
-			dependencies := e.getDependencies(cfg)
-			var secretRefs, fileRefs []string
-			for _, dep := range dependencies {
-				secretRefs = append(secretRefs, dep.SecretRefs...)
-				fileRefs = append(fileRefs, dep.FileRefs...)
+		case <-stop:
+			log.Printf("event loop shutting down")
+			return
+		case snap := <-e.snapshotEmitter.Snapshot():
+			newHash := snap.Hash()
+			log.Printf("\nold hash: %v\nnew hash: %v", oldHash, newHash)
+			if newHash == oldHash {
+				continue
 			}
-			// secrets for virtualservices
-			for _, vService := range cfg.VirtualServices {
-				if vService.SslConfig != nil && vService.SslConfig.SecretRef != "" {
-					secretRefs = append(secretRefs, vService.SslConfig.SecretRef)
-				}
-			}
-			go e.secretWatcher.TrackSecrets(secretRefs)
-			go e.fileWatcher.TrackFiles(fileRefs)
-			for _, discovery := range e.endpointDiscoveries {
-				go func(epd endpointdiscovery.Interface) {
-					epd.TrackUpstreams(cfg.Upstreams)
-				}(discovery)
-			}
-			sync(current)
-		case secrets := <-e.secretWatcher.Secrets():
-			log.Debugf("change triggered by secrets")
-			current.secrets = secrets
-			sync(current)
-		case files := <-e.fileWatcher.Files():
-			log.Debugf("change triggered by files")
-			current.files = files
-			sync(current)
-		case endpointTuple := <-endpointDiscovery:
-			log.Debugf("change triggered by endpoints")
-			current.endpoints[endpointTuple.discoveredBy] = endpointTuple.endpoints
-			sync(current)
-		case err := <-workerErrors:
+			log.Debugf("new snapshot received")
+			oldHash = newHash
+			e.updateXds(snap)
+		case err := <-e.snapshotEmitter.Error():
 			log.Warnf("error in control plane event loop: %v", err)
 		}
 	}
 }
 
-func (e *eventLoop) updateXds(cache *cache) {
-	if !cache.ready() {
-		log.Debugf("cache is not fully constructed to produce a first snapshot yet")
+func (e *eventLoop) updateXds(snap *snapshot.Cache) {
+	if !snap.Ready() {
+		log.Debugf("snapshot is not ready for translation yet")
 		return
 	}
 
-	aggregatedEndpoints := make(endpointdiscovery.EndpointGroups)
-	for _, endpointGroups := range cache.endpoints {
-		for upstreamName, endpointSet := range endpointGroups {
-			aggregatedEndpoints[upstreamName] = endpointSet
+	// map each virtual service to one or more roles
+	// if no roles are defined, we fall back to the default Role, which is 'ingress'
+	virtualServicesByRole := make(map[string][]*v1.VirtualService)
+	for _, vs := range snap.Cfg.VirtualServices {
+		if len(vs.Roles) == 0 {
+			virtualServicesByRole[defaultRole] = append(virtualServicesByRole[defaultRole], vs)
+		}
+		for _, role := range vs.Roles {
+			virtualServicesByRole[role] = append(virtualServicesByRole[role], vs)
 		}
 	}
-	snapshot, reports, err := e.translator.Translate(translator.Inputs{
-		Cfg:       cache.cfg,
-		Secrets:   cache.secrets,
-		Files:     cache.files,
-		Endpoints: aggregatedEndpoints,
-	})
-	if err != nil {
-		// TODO: panic or handle these internal errors smartly
-		log.Warnf("failed to translate based on the latest config: %v", err)
-		return
+
+	// aggregate reports across all the roles
+	allReports := make(map[string]reporter.ConfigObjectReport)
+
+	// translate each set of resources (grouped by role) individually
+	// and set the snapshot for that role
+	for role, virtualServices := range virtualServicesByRole {
+		if len(virtualServices) == 0 {
+			log.Printf("nothing to do yet for role %v", role)
+			continue
+		}
+
+		// get only the upstreams required for these virtual services
+		upstreams := destinationUpstreams(snap.Cfg.Upstreams, virtualServices)
+		endpoints := destinationEndpoints(upstreams, snap.Endpoints)
+		roleSnapshot := &snapshot.Cache{
+			Cfg: &v1.Config{
+				Upstreams:       upstreams,
+				VirtualServices: virtualServices,
+			},
+			Secrets:   snap.Secrets,
+			Files:     snap.Files,
+			Endpoints: endpoints,
+		}
+
+		log.Debugf("\nRole: %v\nGloo Snapshot (%v): %v", role, snap.Hash(), snap)
+
+		// create new role object
+		// this will be used to store the report for role-level errors
+		var vsNames []string
+		for _, vs := range virtualServices {
+			vsNames = append(vsNames, vs.Name)
+		}
+		roleObject := &v1.Role{
+			Name:            role,
+			VirtualServices: vsNames,
+		}
+
+		xdsSnapshot, reports, err := e.translator.Translate(roleObject, roleSnapshot)
+		if err != nil {
+			// TODO: panic or handle these internal errors smartly
+			log.Warnf("INTERNAL ERROR: failed to run translator for role %v: %v", role, err)
+			continue
+		}
+
+		var roleRejected bool
+		// merge reports them together
+		for _, rep := range reports {
+			allReports[rep.CfgObject.GetName()] = rep
+
+			if rep.Err != nil {
+				log.Warnf("user config in role %v failed with err %v", role, rep.Err.Error())
+				roleRejected = true
+			}
+		}
+
+		if roleRejected {
+			log.Warnf("role %v rejected", role)
+			continue
+		}
+
+		log.Debugf("Setting xDS Snapshot for Role %v: %v", role, xdsSnapshot)
+		e.xdsConfig.SetSnapshot(role, *xdsSnapshot)
+	}
+
+	var reports []reporter.ConfigObjectReport
+	for _, rep := range allReports {
+		reports = append(reports, rep)
 	}
 
 	if err := e.reporter.WriteReports(reports); err != nil {
 		log.Warnf("error writing reports: %v", err)
 	}
-
-	for _, st := range reports {
-		if st.Err != nil {
-			log.Warnf("user config error: %v: %v", st.CfgObject.GetName(), st.Err)
-		}
-	}
-
-	log.Debugf("FINAL: XDS Snapshot: %v", snapshot)
-	e.xdsConfig.SetSnapshot(xds.NodeKey, *snapshot)
 }
 
-// fan out to cover all endpoint discovery services
-func (e *eventLoop) endpointDiscovery() <-chan endpointTuple {
-	aggregatedEndpointsChan := make(chan endpointTuple)
-	for _, ed := range e.endpointDiscoveries {
-		go func(endpointDisc endpointdiscovery.Interface) {
-			for endpoints := range endpointDisc.Endpoints() {
-				aggregatedEndpointsChan <- endpointTuple{
-					endpoints:    endpoints,
-					discoveredBy: endpointDisc,
+// gets the subset of upstreams which are destinations for at least one route in at least one
+// virtual service
+func destinationUpstreams(allUpstreams []*v1.Upstream, virtualServices []*v1.VirtualService) []*v1.Upstream {
+	destinationUpstreamNames := make(map[string]bool)
+	for _, vs := range virtualServices {
+		for _, route := range vs.Routes {
+			dests := getAllDestinations(route)
+			for _, dest := range dests {
+				var upstreamName string
+				switch typedDest := dest.DestinationType.(type) {
+				case *v1.Destination_Upstream:
+					upstreamName = typedDest.Upstream.Name
+				case *v1.Destination_Function:
+					upstreamName = typedDest.Function.UpstreamName
+				default:
+					panic("unknown destination type")
 				}
+				destinationUpstreamNames[upstreamName] = true
 			}
-		}(ed)
-	}
-	return aggregatedEndpointsChan
-}
-
-// fan out to cover all channels that return errors
-func (e *eventLoop) errors() <-chan error {
-	aggregatedErrorsChan := make(chan error)
-	go func() {
-		for err := range e.configWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "config watcher encountered an error")
 		}
-	}()
-	go func() {
-		for err := range e.secretWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "secret watcher encountered an error")
+	}
+	var destinationUpstreams []*v1.Upstream
+	for _, us := range allUpstreams {
+		if _, ok := destinationUpstreamNames[us.Name]; ok {
+			destinationUpstreams = append(destinationUpstreams, us)
 		}
-	}()
-	go func() {
-		for err := range e.fileWatcher.Error() {
-			aggregatedErrorsChan <- errors.Wrap(err, "file watcher encountered an error")
+	}
+	return destinationUpstreams
+}
+
+func getAllDestinations(route *v1.Route) []*v1.Destination {
+	var dests []*v1.Destination
+	if route.SingleDestination != nil {
+		dests = append(dests, route.SingleDestination)
+	}
+	for _, dest := range route.MultipleDestinations {
+		dests = append(dests, dest.Destination)
+	}
+	return dests
+}
+
+func destinationEndpoints(upstreams []*v1.Upstream, allEndpoints endpointdiscovery.EndpointGroups) endpointdiscovery.EndpointGroups {
+	destinationEndpoints := make(endpointdiscovery.EndpointGroups)
+	for _, us := range upstreams {
+		eps, ok := allEndpoints[us.Name]
+		if !ok {
+			continue
 		}
-	}()
-	for _, ed := range e.endpointDiscoveries {
-		go func() {
-			for err := range ed.Error() {
-				aggregatedErrorsChan <- err
-			}
-		}()
+		destinationEndpoints[us.Name] = eps
 	}
-	return aggregatedErrorsChan
-}
-
-// cache contains the latest "gloo snapshot"
-type cache struct {
-	cfg     *v1.Config
-	secrets secretwatcher.SecretMap
-	files   filewatcher.Files
-	// need to separate endpoints by the service who discovered them
-	endpoints map[endpointdiscovery.Interface]endpointdiscovery.EndpointGroups
-}
-
-func newCache() *cache {
-	return &cache{
-		endpoints: make(map[endpointdiscovery.Interface]endpointdiscovery.EndpointGroups),
-	}
-}
-
-// ready doesn't necessarily tell us whetehr endpoints have been discovered yet
-// but that's okay. envoy won't mind
-func (c *cache) ready() bool {
-	return c.cfg != nil
-}
-
-func (c *cache) hash() uint64 {
-	h0, err := hashstructure.Hash(*c.cfg, nil)
-	if err != nil {
-		panic(err)
-	}
-	h1, err := hashstructure.Hash(c.secrets, nil)
-	if err != nil {
-		panic(err)
-	}
-	h2, err := hashstructure.Hash(c.endpoints, nil)
-	if err != nil {
-		panic(err)
-	}
-	h3, err := hashstructure.Hash(c.files, nil)
-	if err != nil {
-		panic(err)
-	}
-	h := h0 + h1 + h2 + h3
-	return h
-}
-
-type endpointTuple struct {
-	discoveredBy endpointdiscovery.Interface
-	endpoints    endpointdiscovery.EndpointGroups
+	return destinationEndpoints
 }

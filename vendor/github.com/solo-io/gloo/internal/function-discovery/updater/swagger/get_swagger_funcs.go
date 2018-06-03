@@ -21,6 +21,9 @@ func GetFuncs(us *v1.Upstream) ([]*v1.Function, error) {
 		return nil, err
 	}
 	var consumesJson bool
+	if len(swaggerSpec.Consumes) == 0 {
+		consumesJson = true
+	}
 	for _, contentType := range swaggerSpec.Consumes {
 		if contentType == "application/json" {
 			consumesJson = true
@@ -209,7 +212,7 @@ type Annotations struct {
 }
 
 func IsSwagger(us *v1.Upstream) bool {
-	return us.Metadata.Annotations[AnnotationKeySwaggerURL] != "" || us.Metadata.Annotations[AnnotationKeySwaggerDoc] != ""
+	return us.Metadata != nil && us.Metadata.Annotations != nil && (us.Metadata.Annotations[AnnotationKeySwaggerURL] != "" || us.Metadata.Annotations[AnnotationKeySwaggerDoc] != "")
 }
 
 func RetrieveSwaggerDocFromUrl(url string) (*spec.Swagger, error) {
