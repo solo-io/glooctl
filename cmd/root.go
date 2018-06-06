@@ -27,6 +27,15 @@ import (
 )
 
 var (
+	// Functions like __glooctl_get_* etc are custom functions in
+	// bash script to get completion parameters. It uses `compgen` to
+	// setup COMPREPLY variable.
+	// compgen takes a space separate list of options. We use glooctl
+	// itself to genertae these options. We use -o template to format
+	// the glooctl output.
+	//
+	// for additional documentation on how auto completion works
+	// please see https://github.com/spf13/cobra/blob/master/bash_completions.md
 	bashCompletion = `
 __glooctl_route_http_methods()
 {
