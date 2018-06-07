@@ -23,7 +23,7 @@ import (
 	"github.com/solo-io/glooctl/pkg/util"
 )
 
-var Version = "unknown"
+var Version = "0.2.26"
 
 func main() {
 	start := time.Now()
