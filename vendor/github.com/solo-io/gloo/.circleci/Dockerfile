@@ -43,4 +43,17 @@ RUN mkdir -p ${GOPATH}/src/github.com/solo-io/ && \
     rm -rf ${GOPATH}/src/github.com/solo-io/
 
 
+RUN go get github.com/paulvollmer/2gobytes
+RUN mkdir -p ${HOME}/workspace && \
+    git clone https://github.com/googleapis/googleapis ${HOME}/workspace/googleapis
+
+RUN go get -v github.com/golang/protobuf/...
+
+RUN mkdir -p ${GOPATH}/src/k8s.io && \
+    git clone https://github.com/kubernetes/code-generator ${GOPATH}/src/k8s.io/code-generator
+
+RUN git clone https://github.com/kubernetes/apimachinery ${GOPATH}/src/k8s.io/apimachinery
+
+RUN go get -v github.com/go-swagger/go-swagger/cmd/swagger
+
 CMD ["/bin/bash"]

@@ -44,9 +44,11 @@ var _ = Describe("CrdReporter", func() {
 			reports         []ConfigObjectReport
 			upstreams       []*v1.Upstream
 			virtualServices []*v1.VirtualService
+			roles           []*v1.Role
 		)
 		Context("writes status reports for cfg crds with 0 errors", func() {
 			BeforeEach(func() {
+				reports = nil
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 				Expect(err).NotTo(HaveOccurred())
 				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)
@@ -66,6 +68,13 @@ var _ = Describe("CrdReporter", func() {
 					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, vService)
+				}
+				roles = testCfg.Roles
+				for _, role := range roles {
+					_, err := glooClient.V1().Roles().Create(role)
+					Expect(err).NotTo(HaveOccurred())
+
+					storables = append(storables, role)
 				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
@@ -90,10 +99,17 @@ var _ = Describe("CrdReporter", func() {
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Accepted))
 				}
+				updatedroles, err := glooClient.V1().Roles().List()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedroles).To(HaveLen(len(upstreams)))
+				for _, updatedrole := range updatedroles {
+					Expect(updatedrole.Status.State).To(Equal(v1.Status_Accepted))
+				}
 			})
 		})
 		Context("writes status reports for cfg crds with SOME errors", func() {
 			BeforeEach(func() {
+				reports = nil
 				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
 				Expect(err).NotTo(HaveOccurred())
 				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)
@@ -113,6 +129,12 @@ var _ = Describe("CrdReporter", func() {
 					_, err := glooClient.V1().VirtualServices().Create(vService)
 					Expect(err).NotTo(HaveOccurred())
 					storables = append(storables, vService)
+				}
+				roles = testCfg.Roles
+				for _, role := range roles {
+					_, err := glooClient.V1().Roles().Create(role)
+					Expect(err).NotTo(HaveOccurred())
+					storables = append(storables, role)
 				}
 				for _, storable := range storables {
 					reports = append(reports, ConfigObjectReport{
@@ -136,6 +158,54 @@ var _ = Describe("CrdReporter", func() {
 				Expect(updatedvServices).To(HaveLen(len(upstreams)))
 				for _, updatedvService := range updatedvServices {
 					Expect(updatedvService.Status.State).To(Equal(v1.Status_Rejected))
+				}
+				updatedroles, err := glooClient.V1().Roles().List()
+				Expect(err).NotTo(HaveOccurred())
+				Expect(updatedroles).To(HaveLen(len(upstreams)))
+				for _, updatedrole := range updatedroles {
+					Expect(updatedrole.Status.State).To(Equal(v1.Status_Rejected))
+				}
+			})
+		})
+
+		Context("creates the role crd if writing a report for a role that doesn't exist", func() {
+			BeforeEach(func() {
+				reports = nil
+				cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+				Expect(err).NotTo(HaveOccurred())
+				glooClient, err = crd.NewStorage(cfg, namespace, time.Second)
+				Expect(err).NotTo(HaveOccurred())
+				rptr = NewReporter(glooClient)
+
+				var storables []v1.ConfigObject
+				roles = NewTestConfig().Roles
+				for _, role := range roles {
+					storables = append(storables, role)
+				}
+				for _, storable := range storables {
+					reports = append(reports, ConfigObjectReport{
+						CfgObject: storable,
+						Err:       errors.New("oh no an error what did u do!"),
+					})
+				}
+			})
+
+			It("writes an rejected status for each crd", func() {
+				err := rptr.WriteReports(reports)
+				Expect(err).NotTo(HaveOccurred())
+				roleList, err := glooClient.V1().Roles().List()
+				Expect(err).NotTo(HaveOccurred())
+				// zero out fields we dont care about & expect to be different
+				for _, role := range roleList {
+					role.Metadata = &v1.Metadata{}
+				}
+				for _, role := range roles {
+					role.Status = &v1.Status{
+						State:  v1.Status_Rejected,
+						Reason: "oh no an error what did u do!",
+					}
+					role.Metadata = &v1.Metadata{}
+					Expect(roleList).To(ContainElement(role))
 				}
 			})
 		})

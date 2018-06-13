@@ -1,6 +1,8 @@
 package kube_e2e
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	"github.com/solo-io/gloo/pkg/log"
 	"github.com/solo-io/gloo/test/helpers"
@@ -8,6 +10,8 @@ import (
 	"os"
 	"testing"
 )
+
+const maxLogLines = 250
 
 func TestKubernetes(t *testing.T) {
 	if os.Getenv("RUN_KUBE_TESTS") != "1" {
@@ -19,7 +23,13 @@ func TestKubernetes(t *testing.T) {
 		var logs string
 		for _, component := range []string{"control-plane", "ingress"} {
 			l, err := helpers.KubectlOut("logs", "-l", "gloo="+component)
-			logs += string(l) + "\n"
+
+			split := strings.Split(l, "\n")
+			if len(split) > maxLogLines {
+				l = strings.Join(split[len(split)-maxLogLines:], "\n")
+			}
+
+			logs += l + "\n"
 			if err != nil {
 				logs += "error getting logs for " + component + ": " + err.Error()
 			}

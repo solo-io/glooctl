@@ -18,8 +18,10 @@ import (
 	"github.com/mitchellh/hashstructure"
 	"github.com/pkg/errors"
 
+	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
 	"github.com/solo-io/gloo/internal/control-plane/filewatcher"
 	"github.com/solo-io/gloo/internal/control-plane/reporter"
+	"github.com/solo-io/gloo/internal/control-plane/snapshot"
 	"github.com/solo-io/gloo/internal/control-plane/translator/defaults"
 	"github.com/solo-io/gloo/pkg/api/types/v1"
 	"github.com/solo-io/gloo/pkg/coreplugins/matcher"
@@ -42,32 +44,19 @@ const (
 	routerFilter  = "envoy.router"
 )
 
-type TranslatorConfig struct {
-	IngressBindAddress             string
-	IngressPort, IngressSecurePort uint32
-}
-
 type Translator struct {
 	plugins []plugins.TranslatorPlugin
-	config  TranslatorConfig
+	config  bootstrap.IngressOptions
 }
 
 // all built-in plugins should go here
 var corePlugins = []plugins.TranslatorPlugin{
 	&matcher.Plugin{},
 	&extensions.Plugin{},
-	&service.Plugin{},
+	service.NewPlugin(),
 }
 
-func addDefaults(cfg TranslatorConfig) TranslatorConfig {
-	if cfg.IngressBindAddress == "" {
-		cfg.IngressBindAddress = "::"
-	}
-
-	return cfg
-}
-
-func NewTranslator(cfg TranslatorConfig, translatorPlugins []plugins.TranslatorPlugin) *Translator {
+func NewTranslator(opts bootstrap.IngressOptions, translatorPlugins []plugins.TranslatorPlugin) *Translator {
 	translatorPlugins = append(corePlugins, translatorPlugins...)
 	// special routing must be done for upstream plugins that support functions
 	var functionPlugins []plugins.FunctionPlugin
@@ -93,15 +82,8 @@ func NewTranslator(cfg TranslatorConfig, translatorPlugins []plugins.TranslatorP
 
 	return &Translator{
 		plugins: translatorPlugins,
-		config:  addDefaults(cfg),
+		config:  opts,
 	}
-}
-
-type Inputs struct {
-	Cfg       *v1.Config
-	Secrets   secretwatcher.SecretMap
-	Files     filewatcher.Files
-	Endpoints endpointdiscovery.EndpointGroups
 }
 
 type pluginDependencies struct {
@@ -109,7 +91,7 @@ type pluginDependencies struct {
 	Files   filewatcher.Files
 }
 
-func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
+func (t *Translator) Translate(role *v1.Role, inputs *snapshot.Cache) (*envoycache.Snapshot, []reporter.ConfigObjectReport, error) {
 	cfg := inputs.Cfg
 	dependencies := &pluginDependencies{Secrets: inputs.Secrets, Files: inputs.Files}
 	secrets := inputs.Secrets
@@ -126,7 +108,7 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	errored := getErroredUpstreams(upstreamReports)
 
 	// envoy virtual hosts
-	sslVirtualHosts, noSslVirtualHosts, virtualServiceReports := t.computeVirtualHosts(cfg, errored, secrets)
+	sslVirtualHosts, noSslVirtualHosts, virtualServiceReports := t.computeVirtualHosts(role, cfg, errored, secrets)
 
 	noSslRouteConfig := &envoyapi.RouteConfiguration{
 		Name:         noSslRdsName,
@@ -144,7 +126,7 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "constructing http filter chain %v", noSslListenerName)
 	}
-	noSslListener := t.constructHttpListener(noSslListenerName, t.config.IngressPort, noSslFilters)
+	noSslListener := t.constructHttpListener(noSslListenerName, t.config.Port, noSslFilters)
 
 	// https filters
 	sslRouteConfig := &envoyapi.RouteConfiguration{
@@ -159,7 +141,7 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 
 	// finally, the listeners
 	httpsListener, err := t.constructHttpsListener(sslListenerName,
-		t.config.IngressSecurePort,
+		t.config.SecurePort,
 		sslFilters,
 		cfg.VirtualServices,
 		virtualServiceReports,
@@ -205,12 +187,12 @@ func (t *Translator) Translate(inputs Inputs) (*envoycache.Snapshot, []reporter.
 		return nil, nil, errors.Wrap(err, "constructing version hash for envoy snapshot components")
 	}
 	// construct snapshot
-	snapshot := envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
+	xdsSnapshot := envoycache.NewSnapshot(fmt.Sprintf("%v", version), endpointsProto, clustersProto, routesProto, listenersProto)
 
 	// aggregate reports
 	reports := append(upstreamReports, virtualServiceReports...)
 
-	return &snapshot, reports, nil
+	return &xdsSnapshot, reports, nil
 }
 
 // Endpoints
@@ -352,26 +334,31 @@ func dependenciesForPlugin(cfg *v1.Config, plug plugins.TranslatorPlugin, depend
 
 // VirtualServices
 
-func (t *Translator) computeVirtualHosts(cfg *v1.Config,
+func (t *Translator) computeVirtualHosts(role *v1.Role,
+	cfg *v1.Config,
 	erroredUpstreams map[string]bool,
 	secrets secretwatcher.SecretMap) ([]envoyroute.VirtualHost, []envoyroute.VirtualHost, []reporter.ConfigObjectReport) {
 	var (
 		reports           []reporter.ConfigObjectReport
 		sslVirtualHosts   []envoyroute.VirtualHost
 		noSslVirtualHosts []envoyroute.VirtualHost
+
+		// this applies to the whole role, not an individual virtual service
+		roleErr error
 	)
 
 	// check for bad domains, then add those errors to the vService error list
-	vServicesWithBadDomains := virtualServicesWithConflictingDomains(cfg.VirtualServices, reports)
+	vServicesWithBadDomains := findVirtualServicesWithConflictingDomains(cfg.VirtualServices)
 
 	for _, virtualService := range cfg.VirtualServices {
-		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
 		if domainErr, invalidVService := vServicesWithBadDomains[virtualService.Name]; invalidVService {
-			err = multierror.Append(err, domainErr)
+			roleErr = multierror.Append(roleErr, domainErr)
 		}
+
+		envoyVirtualHost, err := t.computeVirtualHost(cfg.Upstreams, virtualService, erroredUpstreams, secrets)
 		reports = append(reports, createReport(virtualService, err))
 		// don't append errored virtual services
-		if err != nil {
+		if err != nil || roleErr != nil {
 			continue
 		}
 		if virtualService.SslConfig != nil && virtualService.SslConfig.SecretRef != "" {
@@ -383,11 +370,14 @@ func (t *Translator) computeVirtualHosts(cfg *v1.Config,
 		}
 	}
 
+	// add report for the role
+	reports = append(reports, createReport(role, roleErr))
+
 	return sslVirtualHosts, noSslVirtualHosts, reports
 }
 
 // adds errors to report if virtualservice domains are not unique
-func virtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService, reports []reporter.ConfigObjectReport) map[string]error {
+func findVirtualServicesWithConflictingDomains(virtualServices []*v1.VirtualService) map[string]error {
 	domainsToVirtualServices := make(map[string][]string) // this shouldbe a 1-1 mapping
 	// if len(domainsToVirtualServices[domain]) > 1, error
 	for _, vService := range virtualServices {
@@ -589,7 +579,7 @@ func (t *Translator) constructHttpListener(name string, port uint32, filters []e
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  t.config.IngressBindAddress,
+					Address:  t.config.BindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
@@ -638,7 +628,7 @@ func (t *Translator) constructHttpsListener(name string,
 			Address: &envoycore.Address_SocketAddress{
 				SocketAddress: &envoycore.SocketAddress{
 					Protocol: envoycore.TCP,
-					Address:  t.config.IngressBindAddress,
+					Address:  t.config.BindAddress,
 					PortSpecifier: &envoycore.SocketAddress_PortValue{
 						PortValue: port,
 					},
