@@ -109,6 +109,7 @@ func App(version string) *cobra.Command {
 
 	app.SuggestionsMinimumDistance = 1
 	app.AddCommand(
+		configcmd.Cmd(opts),
 		upstream.Cmd(opts),
 		functionCmd(opts),
 		virtualservice.Cmd(opts),

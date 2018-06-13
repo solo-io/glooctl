@@ -5,8 +5,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/solo-io/glooctl/pkg/install/docker"
 	"github.com/spf13/cobra"
+	"github.com/solo-io/glooctl/pkg/install/docker"
 )
 
 const (
