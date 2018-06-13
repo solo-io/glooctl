@@ -37,6 +37,8 @@ func apply(gloo storage.Interface, cfg *v1.Config, overwriteExisting, deleteExis
 	if err != nil {
 		return err
 	}
+	fmt.Printf("existing upstreams: %v, existing virtualservices: %v\n", len(actualUpstreams), len(actualVirtualServices))
+	fmt.Printf("desired upstreams: %v, desired virtualservices: %v\n", len(cfg.Upstreams), len(cfg.VirtualServices))
 	if err := syncObjects(gloo, usToConfigObj(cfg.Upstreams), usToConfigObj(actualUpstreams), overwriteExisting, deleteExisting); err  != nil {
 		return errors.Wrap(err, "syncing upstreams")
 	}

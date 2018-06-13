@@ -18,6 +18,7 @@ import (
 	"github.com/solo-io/gloo/pkg/bootstrap"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/glooctl/cmd/install"
+	configcmd "github.com/solo-io/glooctl/cmd/config"
 	"github.com/solo-io/glooctl/cmd/route"
 	"github.com/solo-io/glooctl/cmd/secret"
 	"github.com/solo-io/glooctl/cmd/upstream"

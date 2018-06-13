@@ -17,7 +17,8 @@ var (
 func Cmd(opts *bootstrap.Options) *cobra.Command {
 	cmd := &cobra.Command{
 		Use: "configure",
-		Short: `apply an entire configuration (upstreams and virtualservices) to Gloo.
+		Short: `apply an entire configuration (upstreams and virtualservices) to Gloo.`,
+		Long: `apply an entire configuration (upstreams and virtualservices) to Gloo.
 
 To disable overwriting existing resources defined in the target file, run with -w=false 
 To delete any existing resources not defined in the target file, run with -d
