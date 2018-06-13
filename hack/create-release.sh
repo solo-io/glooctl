@@ -22,7 +22,6 @@ fi
 curl -o /dev/null -sH "$AUTH" $GH_REPO || { echo "Error: Invalid repo, token or network issue!";  exit 1; }
 
 
-
 BODY=$(cat <<EOF
 {
   "tag_name": "${tag}",
