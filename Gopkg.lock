@@ -186,8 +186,8 @@
 [[projects]]
   name = "github.com/hashicorp/consul"
   packages = ["api"]
-  revision = "fb848fc48818f58690db09d14640513aa6bf3c02"
-  version = "v1.0.7"
+  revision = "39f93f011e591c842acc8053a7f5972aa6e592fd"
+  version = "v1.2.1"
 
 [[projects]]
   branch = "master"
@@ -435,17 +435,18 @@
   revision = "ed9870dad3170c0b25ab9b11830cc57c3a7798fb"
 
 [[projects]]
+  branch = "master"
   name = "github.com/solo-io/gloo"
   packages = [
-    "internal/control-plane/filewatcher",
     "pkg/api/types/v1",
     "pkg/bootstrap",
     "pkg/bootstrap/configstorage",
     "pkg/bootstrap/flags",
     "pkg/bootstrap/secretstorage",
+    "pkg/control-plane/filewatcher",
     "pkg/coreplugins/common",
-    "pkg/coreplugins/route-extensions",
-    "pkg/coreplugins/service",
+    "pkg/coreplugins/routing",
+    "pkg/coreplugins/static",
     "pkg/endpointdiscovery",
     "pkg/log",
     "pkg/plugins",
@@ -468,10 +469,10 @@
     "pkg/storage/dependencies/file",
     "pkg/storage/dependencies/kube",
     "pkg/storage/dependencies/vault",
-    "pkg/storage/file"
+    "pkg/storage/file",
+    "pkg/utils/kube"
   ]
-  revision = "319c70cc1dc29e8e7aae167a142331f4400ff4d0"
-  version = "0.2.26"
+  revision = "320811ec6d71a2111b2efc99936f14f8013ebde9"
 
 [[projects]]
   branch = "master"
@@ -813,6 +814,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "def28454951a02376b8977ca222c30469c33a30ca401cc58a4fb95af804426da"
+  inputs-digest = "e36db81d9fb734f145027f3b7d72ffdab3878c4d95705f6a75dd393c7963c9f9"
   solver-name = "gps-cdcl"
   solver-version = 1

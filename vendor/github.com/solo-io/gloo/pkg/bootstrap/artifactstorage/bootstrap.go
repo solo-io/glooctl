@@ -1,6 +1,8 @@
 package artifactstorage
 
 import (
+	"os"
+
 	"github.com/pkg/errors"
 
 	"github.com/solo-io/gloo/pkg/bootstrap"
@@ -8,7 +10,7 @@ import (
 	consulfiles "github.com/solo-io/gloo/pkg/storage/dependencies/consul"
 	filestorage "github.com/solo-io/gloo/pkg/storage/dependencies/file"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/kube"
-	"k8s.io/client-go/tools/clientcmd"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func Bootstrap(opts bootstrap.Options) (dependencies.FileStorage, error) {
@@ -18,13 +20,17 @@ func Bootstrap(opts bootstrap.Options) (dependencies.FileStorage, error) {
 		if dir == "" {
 			return nil, errors.New("must provide directory for file file storage client")
 		}
+		err := os.MkdirAll(dir, 0755)
+		if err != nil && err != os.ErrExist {
+			return nil, errors.Wrap(err, "creating files dir")
+		}
 		store, err := filestorage.NewFileStorage(dir, opts.FileStorageOptions.SyncFrequency)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to start file based file storage client for directory %v", dir)
 		}
 		return store, nil
 	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}

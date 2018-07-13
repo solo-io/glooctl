@@ -9,7 +9,7 @@ import (
 
 	"github.com/gogo/protobuf/types"
 	"github.com/pkg/errors"
-	core "github.com/solo-io/gloo/pkg/coreplugins/route-extensions"
+	core "github.com/solo-io/gloo/pkg/coreplugins/routing"
 	survey "gopkg.in/AlecAivazis/survey.v1"
 )
 
@@ -63,8 +63,8 @@ func addRequestHeader(s *types.Struct) error {
 			Prompt: &survey.Confirm{Message: "Append HTTP header"},
 		},
 	}
-	header := core.HeaderValue{}
-	if err := survey.Ask(questions, &header); err != nil {
+	header := &core.HeaderValue{}
+	if err := survey.Ask(questions, header); err != nil {
 		return err
 	}
 	spec.AddRequestHeaders = append(spec.AddRequestHeaders, header)
@@ -92,8 +92,8 @@ func addResponseHeader(s *types.Struct) error {
 			Prompt: &survey.Confirm{Message: "Append HTTP header"},
 		},
 	}
-	header := core.HeaderValue{}
-	if err := survey.Ask(questions, &header); err != nil {
+	header := &core.HeaderValue{}
+	if err := survey.Ask(questions, header); err != nil {
 		return err
 	}
 	spec.AddResponseHeaders = append(spec.AddResponseHeaders, header)
@@ -151,7 +151,8 @@ func setTimeout(s *types.Struct) error {
 	if err != nil {
 		return errors.Wrap(err, "unable to get timetout")
 	}
-	spec.Timeout = time.Duration(timeout) * time.Second
+	t := time.Duration(timeout) * time.Second
+	spec.Timeout = &t
 	addAll(s, core.EncodeRouteExtensionSpec(spec))
 	return nil
 }
@@ -233,12 +234,13 @@ func corsPolicy(s *types.Struct) error {
 	for i, s := range origins {
 		origins[i] = strings.TrimSpace(s)
 	}
+	t := time.Duration(answers.MaxAge) * time.Second
 	spec.Cors = &core.CorsPolicy{
 		AllowOrigin:      origins,
 		AllowMethods:     answers.Methods,
 		AllowHeaders:     answers.AllowHeaders,
 		ExposeHeaders:    answers.ExposeHeaders,
-		MaxAge:           time.Duration(answers.MaxAge) * time.Second,
+		MaxAge:           &t,
 		AllowCredentials: answers.Credentials,
 	}
 

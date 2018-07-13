@@ -30,7 +30,7 @@ type endpointController struct {
 	upstreamsToTrack chan []*v1.Upstream
 }
 
-func newEndpointController(cfg *api.Config) (*endpointController, error) {
+func NewEndpointController(cfg *api.Config) (*endpointController, error) {
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create consul client: %v", err)
@@ -170,10 +170,18 @@ func (c *endpointController) beginTrackingUpstream(ctx context.Context, us *v1.U
 	}
 }
 
+func (c *endpointController) getEndpoints(service string, useConnectApi bool, q *api.QueryOptions) ([]*api.CatalogService, *api.QueryMeta, error) {
+	if useConnectApi {
+		return c.consul.Catalog().Connect(service, "", q)
+	}
+	return c.consul.Catalog().Service(service, "", q)
+}
+
 func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec *UpstreamSpec, lastIndex uint64) ([]endpointdiscovery.Endpoint, uint64, error) {
 	opts := &api.QueryOptions{RequireConsistent: true, WaitIndex: lastIndex}
 	opts = opts.WithContext(ctx)
-	instances, meta, err := c.consul.Catalog().Service(spec.ServiceName, "", opts)
+	isConnectUpstream := spec.Connect != nil && spec.Connect.TlsSecretRef != ""
+	instances, meta, err := c.getEndpoints(spec.ServiceName, isConnectUpstream, opts)
 	if err != nil {
 		return nil, lastIndex, errors.Wrapf(err, "failed to find %v in service catalog", spec.ServiceName)
 	}
@@ -185,11 +193,15 @@ func (c *endpointController) getNextUpdateForUpstream(ctx context.Context, spec 
 		if !hasRequiredTags(inst.ServiceTags, spec.ServiceTags) {
 			continue
 		}
-		if inst.ServiceAddress == "" || inst.ServicePort == 0 {
+		addr := inst.ServiceAddress
+		if addr == "" {
+			addr = inst.Address
+		}
+		if addr == "" || inst.ServicePort == 0 {
 			continue
 		}
 		ep := endpointdiscovery.Endpoint{
-			Address: inst.ServiceAddress,
+			Address: addr,
 			Port:    int32(inst.ServicePort),
 		}
 		eps = append(eps, ep)

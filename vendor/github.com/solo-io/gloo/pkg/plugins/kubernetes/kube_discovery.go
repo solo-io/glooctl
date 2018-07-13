@@ -4,13 +4,12 @@ import (
 	"fmt"
 	"time"
 
-	"k8s.io/client-go/tools/clientcmd"
-
 	"github.com/solo-io/gloo/pkg/endpointdiscovery"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func NewEndpointDiscovery(masterUrl, kubeconfigPath string, resyncDuration time.Duration) (endpointdiscovery.Interface, error) {
-	cfg, err := clientcmd.BuildConfigFromFlags(masterUrl, kubeconfigPath)
+	cfg, err := kubeutils.GetConfig(masterUrl, kubeconfigPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build rest config: %v", err)
 	}

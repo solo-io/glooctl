@@ -160,6 +160,12 @@
   revision = "02af3965c54e8cacf948b97fef38925c4120652c"
 
 [[projects]]
+  name = "github.com/envoyproxy/envoy"
+  packages = ["examples/grpc-bridge/service/gen"]
+  revision = "3f59fb5c0f6554f8b3f2e73ab4c1437a63d42668"
+  version = "v1.7.0"
+
+[[projects]]
   branch = "master"
   name = "github.com/envoyproxy/go-control-plane"
   packages = [
@@ -173,6 +179,7 @@
     "envoy/config/filter/accesslog/v2",
     "envoy/config/filter/http/transcoder/v2",
     "envoy/config/filter/network/http_connection_manager/v2",
+    "envoy/config/filter/network/tcp_proxy/v2",
     "envoy/service/discovery/v2",
     "envoy/type",
     "pkg/cache",
@@ -310,6 +317,7 @@
   revision = "66deaeb636dff1ac7d938ce666d090556056a4b0"
 
 [[projects]]
+  branch = "master"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -323,8 +331,7 @@
     "ptypes/struct",
     "ptypes/timestamp"
   ]
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "9eb2c01ac278a5d89ce4b2be68fe4500955d8179"
 
 [[projects]]
   branch = "master"
@@ -411,8 +418,8 @@
 [[projects]]
   name = "github.com/hashicorp/consul"
   packages = ["api"]
-  revision = "fb848fc48818f58690db09d14640513aa6bf3c02"
-  version = "v1.0.7"
+  revision = "28141971f966e99916da2c5e461dd968746491cd"
+  version = "v1.2.0"
 
 [[projects]]
   branch = "master"
@@ -595,8 +602,8 @@
 [[projects]]
   name = "github.com/lyft/protoc-gen-validate"
   packages = ["validate"]
-  revision = "930a67cf7ba41b9d9436ad7a1be70a5d5ff6e1fc"
-  version = "v0.0.6"
+  revision = "8e6aaf55f4954f1ef9d3ee2e8f5a50e79cc04f8f"
+  version = "v0.0.5"
 
 [[projects]]
   branch = "master"
@@ -1287,6 +1294,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "02c40678adf18b77f6706fb042f7aa3f395dd905305073d92f82454e03872a93"
+  inputs-digest = "67fa99f474a8bc7f23bd075a5a5e19106b65149d2577e9f380c0cd26de42f79d"
   solver-name = "gps-cdcl"
   solver-version = 1

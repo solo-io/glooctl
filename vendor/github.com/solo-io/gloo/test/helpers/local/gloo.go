@@ -103,16 +103,20 @@ type GlooInstance struct {
 	Args []string
 }
 
+func (gi *GlooInstance) TmpDir() string {
+	return gi.tmpdir
+}
+
 func (gi *GlooInstance) ConfigDir() string {
-	return filepath.Join(gi.tmpdir)
+	return filepath.Join(gi.TmpDir(), "_gloo_config")
 }
 
 func (gi *GlooInstance) FilesDir() string {
-	return filepath.Join(gi.tmpdir, "_gloo_files")
+	return filepath.Join(gi.ConfigDir(), "files")
 }
 
 func (gi *GlooInstance) SecretsDir() string {
-	return filepath.Join(gi.tmpdir, "_gloo_secrets")
+	return filepath.Join(gi.ConfigDir(), "secrets")
 }
 
 func (gi *GlooInstance) EnvoyPort() uint32 {
@@ -146,9 +150,8 @@ func (gi *GlooInstance) DeletevService(name string) error {
 }
 
 func (gi *GlooInstance) AddSecret(name string, secret map[string]string) error {
-	secretdir := filepath.Join(gi.tmpdir, "_gloo_secrets")
-	os.Mkdir(secretdir, 0755)
-	secretfile := filepath.Join(secretdir, name)
+	os.Mkdir(gi.SecretsDir(), 0755)
+	secretfile := filepath.Join(gi.SecretsDir(), name)
 
 	data, err := yaml.Marshal(&secret)
 	if err != nil {
@@ -158,21 +161,20 @@ func (gi *GlooInstance) AddSecret(name string, secret map[string]string) error {
 }
 
 func (gi *GlooInstance) initStorage() error {
-	dir := gi.tmpdir
-	client, err := file.NewStorage(filepath.Join(dir, "_gloo_config"), time.Hour)
+	client, err := file.NewStorage(gi.ConfigDir(), time.Hour)
 	if err != nil {
-		return errors.New("failed to start file config watcher for directory " + dir)
+		return errors.New("failed to start file config watcher for directory " + gi.ConfigDir())
 	}
 	err = client.V1().Register()
 	if err != nil {
-		return errors.New("failed to register file config watcher for directory " + dir)
+		return errors.New("failed to register file config watcher for directory " + gi.ConfigDir())
 	}
 	// enable file storage
-	if err := os.MkdirAll(filepath.Join(gi.tmpdir, "_gloo_files"), 0755); err != nil {
+	if err := os.MkdirAll(gi.FilesDir(), 0755); err != nil {
 		return err
 	}
 	// enable secret storage
-	if err := os.MkdirAll(filepath.Join(gi.tmpdir, "_gloo_secrets"), 0755); err != nil {
+	if err := os.MkdirAll(gi.SecretsDir(), 0755); err != nil {
 		return err
 	}
 	gi.store = client
@@ -184,7 +186,6 @@ func (gi *GlooInstance) Run() error {
 }
 
 func (gi *GlooInstance) RunWithPort(xdsport uint32) error {
-
 	var cmd *exec.Cmd
 	glooargs := []string{
 		"--storage.type=file",
@@ -202,7 +203,7 @@ func (gi *GlooInstance) RunWithPort(xdsport uint32) error {
 		cmd = exec.Command(gi.gloopath, glooargs...)
 	}
 
-	cmd.Dir = gi.tmpdir
+	cmd.Dir = gi.TmpDir()
 	cmd.Stdout = ginkgo.GinkgoWriter
 	cmd.Stderr = ginkgo.GinkgoWriter
 	err := cmd.Start()
@@ -221,8 +222,8 @@ func (gi *GlooInstance) Clean() error {
 		gi.cmd.Process.Kill()
 		gi.cmd.Wait()
 	}
-	if gi.tmpdir != "" {
-		defer os.RemoveAll(gi.tmpdir)
+	if gi.TmpDir() != "" {
+		defer os.RemoveAll(gi.TmpDir())
 
 	}
 

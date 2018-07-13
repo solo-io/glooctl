@@ -1,7 +1,12 @@
+# Change this if your googleapis is in a different directory
+ifndef GOOGLE_PROTOS_HOME
+export GOOGLE_PROTOS_HOME=$(HOME)/workspace/googleapis
+endif
+
 ROOTDIR := $(shell pwd)
 PROTOS := $(shell find api/v1 -name "*.proto")
 SOURCES := $(shell find . -name "*.go" | grep -v test)
-GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go") docs/api.json
+GENERATED_PROTO_FILES := $(shell find pkg/api/types/v1 -name "*.pb.go")
 OUTPUT_DIR ?= _output
 
 PACKAGE_PATH:=github.com/solo-io/gloo
@@ -9,6 +14,48 @@ PACKAGE_PATH:=github.com/solo-io/gloo
 #----------------------------------------------------------------------------------
 # Build
 #----------------------------------------------------------------------------------
+
+# Generated code
+
+.PHONY: all
+all: build
+
+.PHONY: proto
+proto: $(GENERATED_PROTO_FILES)
+
+$(GENERATED_PROTO_FILES): $(PROTOS)
+	cd api/v1/ && \
+	mkdir -p $(ROOTDIR)/pkg/api/types/v1 && \
+	protoc \
+	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types,Mgoogle/protobuf/duration.proto=github.com/gogo/protobuf/types:$(GOPATH)/src/ \
+	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
+	-I=$(GOPATH)/src/github.com/gogo/protobuf/protobuf/ \
+	-I=. \
+	./*.proto
+
+$(OUTPUT_DIR):
+	mkdir -p $@
+
+# kubernetes custom clientsets
+.PHONY: clientset
+clientset: $(OUTPUT_DIR)/.clientset
+
+$(OUTPUT_DIR)/.clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
+	cd ${GOPATH}/src/k8s.io/code-generator && \
+	./generate-groups.sh all \
+		$(PACKAGE_PATH)/pkg/storage/crd/client \
+		$(PACKAGE_PATH)/pkg/storage/crd \
+		"solo.io:v1"
+	touch $@
+
+.PHONY: generated-code
+generated-code: $(OUTPUT_DIR)/.generated-code
+
+$(OUTPUT_DIR)/.generated-code:
+	go generate ./pkg/...
+	touch $@
+
+# Core Binaries
 
 BINARIES ?= control-plane function-discovery kube-ingress-controller upstream-discovery
 DEBUG_BINARIES = $(foreach BINARY,$(BINARIES),$(BINARY)-debug)
@@ -23,41 +70,6 @@ debug-build: $(DEBUG_BINARIES)
 
 docker: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker))
 docker-push: $(foreach BINARY,$(BINARIES),$(shell echo $(BINARY)-docker-push))
-proto: $(GENERATED_PROTO_FILES)
-
-$(GENERATED_PROTO_FILES): $(PROTOS)
-	export DISABLE_SORT=1 && \
-	cd api/v1/ && \
-	mkdir -p $(ROOTDIR)/pkg/api/types/v1 && \
-	protoc \
-	-I=. \
-	-I=$(GOPATH)/src \
-	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
-	--plugin=protoc-gen-doc=$(GOPATH)/bin/protoc-gen-doc \
-    --doc_out=$(ROOTDIR)/docs/ \
-    --doc_opt=json,api.json \
-	--gogo_out=Mgoogle/protobuf/struct.proto=github.com/gogo/protobuf/types:\
-	$(ROOTDIR)/pkg/api/types/v1 \
-	./*.proto
-
-$(OUTPUT_DIR):
-	mkdir -p $@
-
-# kubernetes custom clientsets
-.PHONY: clientset
-clientset: $(GENERATED_PROTO_FILES) $(SOURCES)
-	cd ${GOPATH}/src/k8s.io/code-generator && \
-	./generate-groups.sh all \
-		$(PACKAGE_PATH)/pkg/storage/crd/client \
-		$(PACKAGE_PATH)/pkg/storage/crd \
-		"solo.io:v1"
-
-.PHONY: generated-code
-generated-code:
-	go generate ./...
-
-$(OUTPUT):
-	mkdir -p $(OUTPUT)
 
 define BINARY_TARGETS
 $(eval VERSION := $(shell cat version))
@@ -96,6 +108,15 @@ endef
 PREREQUISITES := $(SOURCES) $(GENERATED_PROTO_FILES) generated-code clientset
 $(foreach BINARY,$(BINARIES),$(eval $(BINARY_TARGETS)))
 
+# localgloo
+.PHONY: localgloo
+localgloo: $(OUTPUT_DIR)/localgloo
+
+$(OUTPUT_DIR)/localgloo:  $(OUTPUT_DIR) $(PREREQUISITES)
+	go build -i -gcflags "all=-N -l" -o $@ cmd/localgloo/main.go
+
+# clean
+
 clean:
 	rm -rf $(OUTPUT_DIR)
 
@@ -127,9 +148,21 @@ install/openshift/install.yaml: install/kube/install.yaml
 # Docs
 #----------------------------------------------------------------------------------
 
-doc: proto
+docs/api.json: $(PROTOS)
+	export DISABLE_SORT=1 && \
+	cd api/v1/ && \
+	mkdir -p $(ROOTDIR)/pkg/api/types/v1 && \
+	protoc \
+	-I=. \
+	-I=$(GOPATH)/src \
+	-I=$(GOPATH)/src/github.com/gogo/protobuf/ \
+	--plugin=protoc-gen-doc=$(GOPATH)/bin/protoc-gen-doc \
+    --doc_out=$(ROOTDIR)/docs/ \
+    --doc_opt=json,api.json \
+	./*.proto
+
+doc: docs/api.json
 	go run docs/gen_docs.go
-#	godocdown pkg/api/types/v1/ > docs/go.md
 
 site: doc
 	mkdocs build
@@ -145,7 +178,7 @@ hackrun: $(BINARY)
 	./hack/run-local.sh
 
 unit:
-	ginkgo -r pkg/ internal/
+	ginkgo -r pkg/
 
 e2e:
 	ginkgo -r test/
@@ -169,3 +202,17 @@ test: unit e2e
 
 # go packages#
 #  github.com/gogo/protobuf
+
+envoy:
+	cd build-envoy && bazel build -c dbg //:envoy
+
+envoy-in-docker:
+	docker run -v $(shell pwd):$(shell pwd) -w $(shell pwd)/build-envoy envoyproxy/envoy-build bash -c "bazel build -c dbg //:envoy && cd .. && cp -f build-envoy/bazel-bin/envoy $(OUTPUT_DIR)"
+
+envoy-docker: envoy
+	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
+	docker build -t soloio/envoy:$(IMAGE_TAG) $(OUTPUT_DIR)
+
+envoy-dev-docker: envoy
+	cp -f build-envoy/Dockerfile  build-envoy/bazel-bin/envoy $(OUTPUT_DIR)
+	docker build -t soloio/envoy-dev:$(IMAGE_TAG) $(OUTPUT_DIR)
