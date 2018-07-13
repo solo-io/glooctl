@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/consul/acl"
+	ca "github.com/hashicorp/consul/agent/connect/ca"
 	"github.com/hashicorp/consul/agent/consul/autopilot"
 	"github.com/hashicorp/consul/agent/consul/fsm"
 	"github.com/hashicorp/consul/agent/consul/state"
@@ -95,6 +96,22 @@ type Server struct {
 
 	// autopilotWaitGroup is used to block until Autopilot shuts down.
 	autopilotWaitGroup sync.WaitGroup
+
+	// caProvider is the current CA provider in use for Connect. This is
+	// only non-nil when we are the leader.
+	caProvider ca.Provider
+	// caProviderRoot is the CARoot that was stored along with the ca.Provider
+	// active. It's only updated in lock-step with the caProvider. This prevents
+	// races between state updates to active roots and the fetch of the provider
+	// instance.
+	caProviderRoot *structs.CARoot
+	caProviderLock sync.RWMutex
+
+	// caPruningCh is used to shut down the CA root pruning goroutine when we
+	// lose leadership.
+	caPruningCh      chan struct{}
+	caPruningLock    sync.RWMutex
+	caPruningEnabled bool
 
 	// Consul configuration
 	config *Config
@@ -208,6 +225,9 @@ type Server struct {
 	shutdown     bool
 	shutdownCh   chan struct{}
 	shutdownLock sync.Mutex
+
+	// embedded struct to hold all the enterprise specific data
+	EnterpriseServer
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -295,6 +315,12 @@ func NewServerLogger(config *Config, logger *log.Logger, tokens *token.Store) (*
 		tombstoneGC:      gc,
 		serverLookup:     NewServerLookup(),
 		shutdownCh:       shutdownCh,
+	}
+
+	// Initialize enterprise specific server functionality
+	if err := s.initEnterprise(); err != nil {
+		s.Shutdown()
+		return nil, err
 	}
 
 	// Initialize the stats fetcher that autopilot will use.
@@ -400,6 +426,12 @@ func NewServerLogger(config *Config, logger *log.Logger, tokens *token.Store) (*
 			return 0, false
 		}
 		go s.Flood(nil, portFn, s.serfWAN)
+	}
+
+	// Start enterprise specific functionality
+	if err := s.startEnterprise(); err != nil {
+		s.Shutdown()
+		return nil, err
 	}
 
 	// Start monitoring leadership. This must happen after Serf is set up
@@ -1019,6 +1051,17 @@ func (s *Server) Stats() map[string]map[string]string {
 	if s.serfWAN != nil {
 		stats["serf_wan"] = s.serfWAN.Stats()
 	}
+
+	for outerKey, outerValue := range s.enterpriseStats() {
+		if _, ok := stats[outerKey]; ok {
+			for innerKey, innerValue := range outerValue {
+				stats[outerKey][innerKey] = innerValue
+			}
+		} else {
+			stats[outerKey] = outerValue
+		}
+	}
+
 	return stats
 }
 
@@ -1038,6 +1081,12 @@ func (s *Server) GetLANCoordinate() (lib.CoordinateSet, error) {
 		cs[name] = c
 	}
 	return cs, nil
+}
+
+// ReloadConfig is used to have the Server do an online reload of
+// relevant configuration information
+func (s *Server) ReloadConfig(config *Config) error {
+	return nil
 }
 
 // Atomically sets a readiness state flag when leadership is obtained, to indicate that server is past its barrier write

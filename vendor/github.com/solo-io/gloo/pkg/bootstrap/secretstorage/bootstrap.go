@@ -12,15 +12,19 @@ import (
 	"github.com/solo-io/gloo/pkg/storage/dependencies/file"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/kube"
 	"github.com/solo-io/gloo/pkg/storage/dependencies/vault"
-	"k8s.io/client-go/tools/clientcmd"
+	kubeutils "github.com/solo-io/gloo/pkg/utils/kube"
 )
 
 func Bootstrap(opts bootstrap.Options) (dependencies.SecretStorage, error) {
 	switch opts.SecretStorageOptions.Type {
 	case bootstrap.WatcherTypeFile:
+		err := os.MkdirAll(opts.FileOptions.SecretDir, 0755)
+		if err != nil && err != os.ErrExist {
+			return nil, errors.Wrap(err, "creating secret dir")
+		}
 		return file.NewSecretStorage(opts.FileOptions.SecretDir, opts.SecretStorageOptions.SyncFrequency)
 	case bootstrap.WatcherTypeKube:
-		cfg, err := clientcmd.BuildConfigFromFlags(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
+		cfg, err := kubeutils.GetConfig(opts.KubeOptions.MasterURL, opts.KubeOptions.KubeConfig)
 		if err != nil {
 			return nil, errors.Wrap(err, "building kube restclient")
 		}

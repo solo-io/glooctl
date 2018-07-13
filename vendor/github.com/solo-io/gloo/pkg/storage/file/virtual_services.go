@@ -25,6 +25,9 @@ type virtualServicesClient struct {
 }
 
 func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualService, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	// set resourceversion on clone
 	virtualServiceClone, ok := proto.Clone(item).(*v1.VirtualService)
 	if !ok {
@@ -53,6 +56,9 @@ func (c *virtualServicesClient) Create(item *v1.VirtualService) (*v1.VirtualServ
 }
 
 func (c *virtualServicesClient) Update(item *v1.VirtualService) (*v1.VirtualService, error) {
+	if item.Name == "" {
+		return nil, errors.Errorf("name required")
+	}
 	if item.Metadata == nil || item.Metadata.ResourceVersion == "" {
 		return nil, errors.New("resource version must be set for update operations")
 	}
@@ -135,14 +141,30 @@ func (c *virtualServicesClient) pathsToVirtualServices() (map[string]*v1.Virtual
 		if !strings.HasSuffix(path, ".yml") && !strings.HasSuffix(path, ".yaml") {
 			continue
 		}
-		var virtualService v1.VirtualService
-		err := ReadFileInto(path, &virtualService)
-		if err != nil {
-			return nil, errors.Wrap(err, "unable to parse .yml file as virtualService")
-		}
-		virtualServices[path] = &virtualService
+
+		virtualService, err := pathToVirtualService(path)
+        if err != nil {
+            return nil, errors.Wrap(err, "unable to parse .yml file as virtualService")
+        }
+
+        virtualServices[path] = virtualService
 	}
 	return virtualServices, nil
+}
+
+func pathToVirtualService(path string) (*v1.VirtualService, error) {
+	var virtualService v1.VirtualService
+	err := ReadFileInto(path, &virtualService)
+	if err != nil {
+		return nil, err
+	}
+	if virtualService.Metadata == nil {
+		virtualService.Metadata = &v1.Metadata{}
+	}
+	if virtualService.Metadata.ResourceVersion == "" {
+		virtualService.Metadata.ResourceVersion = "1"
+	}
+	return &virtualService, nil
 }
 
 func (u *virtualServicesClient) Watch(handlers ...storage.VirtualServiceEventHandler) (*storage.Watcher, error) {
@@ -200,21 +222,19 @@ func (u *virtualServicesClient) onEvent(event watcher.Event, handlers ...storage
 	switch event.Op {
 	case watcher.Create:
 		for _, h := range handlers {
-			var created v1.VirtualService
-			err := ReadFileInto(event.Path, &created)
+			created, err := pathToVirtualService(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnAdd(current, &created)
+			h.OnAdd(current, created)
 		}
 	case watcher.Write:
 		for _, h := range handlers {
-			var updated v1.VirtualService
-			err := ReadFileInto(event.Path, &updated)
+			updated, err := pathToVirtualService(event.Path)
 			if err != nil {
 				return err
 			}
-			h.OnUpdate(current, &updated)
+			h.OnUpdate(current, updated)
 		}
 	case watcher.Remove:
 		for _, h := range handlers {

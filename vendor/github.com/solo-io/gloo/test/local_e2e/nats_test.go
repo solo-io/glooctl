@@ -8,7 +8,7 @@ import (
 	"fmt"
 
 	"github.com/solo-io/gloo/pkg/api/types/v1"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 
 	"github.com/nats-io/go-nats-streaming"
@@ -17,7 +17,6 @@ import (
 )
 
 var _ = Describe("Nats streaming test", func() {
-
 	It("Receive proxied nats request", func() {
 		err := envoyInstance.Run()
 		Expect(err).NotTo(HaveOccurred())
@@ -30,8 +29,8 @@ var _ = Describe("Nats streaming test", func() {
 
 		envoyPort := glooInstance.EnvoyPort()
 
-		serviceSpec := service.UpstreamSpec{
-			Hosts: []service.Host{{
+		serviceSpec := &static.UpstreamSpec{
+			Hosts: []*static.Host{{
 				Addr: envoyInstance.LocalAddr(),
 				Port: natsStreamingInstance.NatsPort(),
 			}},
@@ -40,7 +39,7 @@ var _ = Describe("Nats streaming test", func() {
 		u := &v1.Upstream{
 			Name: "local", // TODO: randomize
 			Type: "service",
-			Spec: service.EncodeUpstreamSpec(serviceSpec),
+			Spec: static.EncodeUpstreamSpec(serviceSpec),
 			ServiceInfo: &v1.ServiceInfo{
 				Type: natsstreaming.ServiceTypeNatsStreaming,
 			},

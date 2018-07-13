@@ -45,19 +45,19 @@ func SetupKubeForTest(namespace string) error {
 	}
 	// TODO(yuval-k): this changes the context for the user? can we do this less intrusive? maybe add it to
 	// each kubectl command?
-	if err := kubectl("config", "set-context", context, "--namespace="+namespace); err != nil {
+	if err := Kubectl("config", "set-context", context, "--namespace="+namespace); err != nil {
 		return errors.Wrap(err, "setting context")
 	}
-	return kubectl("create", "namespace", namespace)
+	return Kubectl("create", "namespace", namespace)
 }
 
 func TeardownKube(namespace string) error {
-	return kubectl("delete", "namespace", namespace)
+	return Kubectl("delete", "namespace", namespace)
 }
 func TeardownKubeE2E(namespace string) error {
 	TeardownKube(namespace)
-	kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "install.yml"))
-	return kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "testing-resources.yml"))
+	Kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "install.yml"))
+	return Kubectl("delete", "-f", filepath.Join(KubeE2eDirectory(), "kube_resources", "testing-resources.yml"))
 }
 
 func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error {
@@ -139,10 +139,10 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	}
 
 	// test stuff first
-	if err := kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "testing-resources.yml")); err != nil {
+	if err := Kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "testing-resources.yml")); err != nil {
 		return errors.Wrapf(err, "creating kube resource from testing-resources.yml")
 	}
-	if err := waitPodsRunning(
+	if err := WaitPodsRunning(
 		testrunner,
 		helloservice,
 		helloservice2,
@@ -153,10 +153,10 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 		return errors.Wrap(err, "waiting for pods to start")
 	}
 
-	if err := kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "install.yml")); err != nil {
+	if err := Kubectl("apply", "-f", filepath.Join(kubeResourcesDir, "install.yml")); err != nil {
 		return errors.Wrapf(err, "creating kube resource from install.yml")
 	}
-	if err := waitPodsRunning(
+	if err := WaitPodsRunning(
 		envoy,
 		gloo,
 		kubeIngressController,
@@ -167,11 +167,11 @@ func SetupKubeForE2eTest(namespace string, buildImages, push, debug bool) error 
 	}
 	time.Sleep(time.Second * 3)
 	_, err = TestRunner("curl", "test-ingress:19000/logging?level=debug")
-	Must(err)
-	return nil
+
+	return err
 }
 
-func kubectl(args ...string) error {
+func Kubectl(args ...string) error {
 	cmd := exec.Command("kubectl", args...)
 	log.Debugf("k command: %v", cmd.Args)
 	cmd.Env = os.Environ()
@@ -231,13 +231,13 @@ func KubectlOutAsync(args ...string) (*bytes.Buffer, chan struct{}, error) {
 	return buf, done, err
 }
 
-// waitPodsRunning waits for all pods to be running
-func waitPodsRunning(podNames ...string) error {
+// WaitPodsRunning waits for all pods to be running
+func WaitPodsRunning(podNames ...string) error {
 	finished := func(output string) bool {
 		return strings.Contains(output, "Running")
 	}
 	for _, pod := range podNames {
-		if err := waitPodStatus(pod, "Running", finished); err != nil {
+		if err := WaitPodStatus(pod, "Running", finished); err != nil {
 			return err
 		}
 	}
@@ -245,12 +245,12 @@ func waitPodsRunning(podNames ...string) error {
 }
 
 // waitPodsTerminated waits for all pods to be terminated
-func waitPodsTerminated(podNames ...string) error {
+func WaitPodsTerminated(podNames ...string) error {
 	for _, pod := range podNames {
 		finished := func(output string) bool {
 			return !strings.Contains(output, pod)
 		}
-		if err := waitPodStatus(pod, "terminated", finished); err != nil {
+		if err := WaitPodStatus(pod, "terminated", finished); err != nil {
 			return err
 		}
 	}
@@ -270,7 +270,7 @@ func TestRunnerAsync(args ...string) (*bytes.Buffer, chan struct{}, error) {
 	return KubectlOutAsync(args...)
 }
 
-func waitPodStatus(pod, status string, finished func(output string) bool) error {
+func WaitPodStatus(pod, status string, finished func(output string) bool) error {
 	timeout := time.Second * 20
 	interval := time.Millisecond * 1000
 	tick := time.Tick(interval)
@@ -308,7 +308,7 @@ func KubeLogs(pod string) string {
 	return out
 }
 
-func waitNamespaceStatus(namespace, status string, finished func(output string) bool) error {
+func WaitNamespaceStatus(namespace, status string, finished func(output string) bool) error {
 	timeout := time.Second * 20
 	interval := time.Millisecond * 1000
 	tick := time.Tick(interval)

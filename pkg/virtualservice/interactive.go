@@ -169,7 +169,7 @@ func sslConfigInteractive(si dependencies.SecretStorage, ssl *v1.SSLConfig) (*v1
 	if "None" == secretRef {
 		return nil, nil
 	}
-	return &v1.SSLConfig{SecretRef: secretRef}, nil
+	return &v1.SSLConfig{SslSecrets: &v1.SSLConfig_SecretRef{SecretRef: secretRef}}, nil
 }
 
 func isCertificate(s *dependencies.Secret) bool {
@@ -183,7 +183,7 @@ func isCertificate(s *dependencies.Secret) bool {
 }
 
 func printSSLConfig(ssl *v1.SSLConfig) {
-	fmt.Printf("Secret Ref for SSL: %s\n\n\n", ssl.SecretRef)
+	fmt.Printf("Secret Ref for SSL: %s\n\n\n", ssl.SslSecrets.(*v1.SSLConfig_SecretRef).SecretRef)
 }
 
 func printDomains(list []string) {

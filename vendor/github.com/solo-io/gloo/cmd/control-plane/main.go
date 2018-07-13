@@ -7,14 +7,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/solo-io/gloo/internal/control-plane/bootstrap"
-	internalflags "github.com/solo-io/gloo/internal/control-plane/bootstrap/flags"
-	"github.com/solo-io/gloo/internal/control-plane/eventloop"
+	"github.com/solo-io/gloo/pkg/control-plane/bootstrap"
+	internalflags "github.com/solo-io/gloo/pkg/control-plane/bootstrap/flags"
+	"github.com/solo-io/gloo/pkg/control-plane/eventloop"
 	"github.com/solo-io/gloo/pkg/bootstrap/flags"
 	"github.com/solo-io/gloo/pkg/signals"
 
 	//register plugins
-	_ "github.com/solo-io/gloo/internal/control-plane/install"
+	_ "github.com/solo-io/gloo/pkg/control-plane/install"
 )
 
 func main() {
@@ -34,7 +34,7 @@ var rootCmd = &cobra.Command{
 	Short: "runs the gloo control plane to manage Envoy as a Function Gateway",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		stop := signals.SetupSignalHandler()
-		eventLoop, err := eventloop.Setup(opts, xdsPort, stop)
+		eventLoop, err := eventloop.Setup(opts, xdsPort)
 		if err != nil {
 			return errors.Wrap(err, "setting up event loop")
 		}

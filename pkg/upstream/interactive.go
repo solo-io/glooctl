@@ -9,7 +9,7 @@ import (
 	"github.com/solo-io/gloo/pkg/plugins/nats-streaming"
 
 	"github.com/gogo/protobuf/types"
-	"github.com/solo-io/gloo/pkg/coreplugins/service"
+	"github.com/solo-io/gloo/pkg/coreplugins/static"
 
 	"github.com/solo-io/gloo/pkg/storage/dependencies"
 
@@ -41,7 +41,7 @@ var (
 		{"AWS", typeBasedMatcher(aws.UpstreamTypeAws), awsInteractive},
 		{"Google", typeBasedMatcher(gfunc.UpstreamTypeGoogle), googleInteractive},
 		{"NATS", natsMatcher, natsInteractive},
-		{"Service", typeBasedMatcher(service.UpstreamTypeService), serviceInteractive},
+		{"Service", typeBasedMatcher(static.UpstreamTypeService), serviceInteractive},
 	}
 
 	// name regex
@@ -336,7 +336,7 @@ func isGoogleSecret(s *dependencies.Secret) bool {
 }
 
 func natsMatcher(u *v1.Upstream) bool {
-	if u.Type != service.UpstreamTypeService {
+	if u.Type != static.UpstreamTypeService {
 		return false
 	}
 
@@ -348,7 +348,7 @@ func natsMatcher(u *v1.Upstream) bool {
 }
 
 func natsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
-	u.Type = service.UpstreamTypeService
+	u.Type = static.UpstreamTypeService
 	if u.ServiceInfo == nil {
 		u.ServiceInfo = &v1.ServiceInfo{}
 
@@ -409,7 +409,7 @@ func natsInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.
 }
 
 func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *v1.Upstream) error {
-	u.Type = service.UpstreamTypeService
+	u.Type = static.UpstreamTypeService
 
 	replace, err := askReplaceHosts(u, "Hosts", "Do you want to replace existing host(s)?")
 	if err != nil {
@@ -426,9 +426,9 @@ func serviceInteractive(sc storage.Interface, si dependencies.SecretStorage, u *
 }
 
 func askReplaceHosts(u *v1.Upstream, title, message string) (bool, error) {
-	var existingHosts []service.Host
+	var existingHosts []*static.Host
 	if u.Spec != nil {
-		spec, err := service.DecodeUpstreamSpec(u.Spec)
+		spec, err := static.DecodeUpstreamSpec(u.Spec)
 		if err == nil {
 			existingHosts = spec.Hosts
 		}
@@ -452,7 +452,7 @@ type hostQuestions struct {
 }
 
 func askNewHosts(u *v1.Upstream, title string, q hostQuestions) error {
-	var hosts []service.Host
+	var hosts []*static.Host
 	add := true
 	for add {
 		questions := []*survey.Question{
@@ -467,7 +467,7 @@ func askNewHosts(u *v1.Upstream, title string, q hostQuestions) error {
 				Validate: validatePort,
 			},
 		}
-		host := service.Host{}
+		host := &static.Host{}
 		if err := survey.Ask(questions, &host); err != nil {
 			return err
 		}
@@ -478,7 +478,7 @@ func askNewHosts(u *v1.Upstream, title string, q hostQuestions) error {
 		}
 	}
 
-	spec, err := protoutil.MarshalStruct(service.UpstreamSpec{Hosts: hosts})
+	spec, err := protoutil.MarshalStruct(static.UpstreamSpec{Hosts: hosts})
 	if err != nil {
 		return err
 	}
@@ -486,7 +486,7 @@ func askNewHosts(u *v1.Upstream, title string, q hostQuestions) error {
 	return nil
 }
 
-func printHosts(label string, list []service.Host) {
+func printHosts(label string, list []*static.Host) {
 	fmt.Println(label)
 	for i, h := range list {
 		fmt.Printf("%2d: %s:%d\n", (i + 1), h.Addr, h.Port)

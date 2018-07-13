@@ -10,7 +10,17 @@ import (
 type UpstreamSpec struct {
 	ServiceName string   `json:"service_name"`
 	ServiceTags []string `json:"service_tags"`
+	Connect     *Connect `json:"connect"`
 }
+
+// Indicates whether this upstream is part of the Consul Connect mesh
+type Connect struct {
+	TlsSecretRef string `json:"tls_secret_ref"`
+}
+
+const (
+	LeafCertificateSecret = "certificates"
+)
 
 func DecodeUpstreamSpec(generic v1.UpstreamSpec) (*UpstreamSpec, error) {
 	s := new(UpstreamSpec)
@@ -33,4 +43,9 @@ func (s *UpstreamSpec) validateUpstream() error {
 		return errors.New("service name must be set")
 	}
 	return nil
+}
+
+// TODO(ilackarms + yuval-k): assess where this function should ive
+func UpstreamNameForConnectService(serviceName string) string {
+	return serviceName + "-connectproxy"
 }
