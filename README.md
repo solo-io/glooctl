@@ -1,3 +1,5 @@
+# DEPRECATED 
+Functionality moved to the main Gloo repository: https://github.com/solo-io/gloo
 
 <h1 align="center">
     <img src="Glooctl-01.png" alt="glooctl" width="250" height="222">
